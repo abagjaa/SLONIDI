@@ -506,7 +506,7 @@ function bestMatch(name, names) {
 async function processAll() {
   // Only process PDFs not yet processed — preserves existing results
   const toProcess = pdfFiles.filter(f => !processedFiles.has(f.name));
-  if (toProcess.length === 0) { alert('Semua PDF sudah diproses!'); return; }
+  if (toProcess.length === 0) { showToast('Semua PDF sudah diproses!', 'info'); return; }
 
   const logEl = document.getElementById('logBox');
   if (hasProcessedOnce) {
@@ -650,7 +650,7 @@ function applyManualInput(inputIdx, elIdx) {
   const needInput = unmatched.filter(u => !u.number);
   const u = needInput[inputIdx];
   const number = document.getElementById('mi_' + elIdx).value.trim();
-  if (!number) { alert('Nomor tidak boleh kosong!'); return; }
+  if (!number) { showToast('Nomor tidak boleh kosong!', 'warn'); return; }
   const idx = parseInt(document.getElementById('ms_' + elIdx).value);
   if (u.type === 'SLO') results[idx]._SLO = number;
   if (u.type === 'NIDI') results[idx]._NIDI = number;
@@ -725,6 +725,33 @@ function resetAll() {
   document.getElementById('pdfIn').value = '';
   ['dot1','dot2'].forEach(id => { const d = document.getElementById(id); d.className = 'step-dot'; d.textContent = id.slice(-1); });
   checkReady();
+}
+</script>
+<!-- TOAST -->
+<div id="toast" style="
+  position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(20px);
+  background:#1E293B; color:#fff; padding:.75rem 1.25rem;
+  border-radius:12px; font-size:13px; font-weight:500;
+  box-shadow:0 8px 30px rgba(0,0,0,0.2); z-index:9999;
+  opacity:0; transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  display:flex; align-items:center; gap:8px;
+  pointer-events:none; max-width:90vw;
+"></div>
+<script>
+function showToast(msg, type) {
+  type = type || 'info';
+  var t = document.getElementById('toast');
+  var icons = { success:'✅', error:'❌', warn:'⚠️', info:'💡' };
+  var colors = { success:'#10B981', error:'#EF4444', warn:'#F59E0B', info:'#60A5FA' };
+  t.innerHTML = '<span style="font-size:15px">' + (icons[type]||'💡') + '</span><span>' + msg + '</span>';
+  t.style.borderLeft = '3px solid ' + (colors[type] || colors.info);
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function() {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(20px)';
+  }, 3000);
 }
 </script>
 </body>

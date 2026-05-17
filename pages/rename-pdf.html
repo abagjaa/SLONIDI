@@ -621,7 +621,7 @@ async function downloadAll() {
     a.click();
     URL.revokeObjectURL(url);
   } catch (e) {
-    alert('Gagal membuat ZIP: ' + e.message);
+    showToast('Gagal membuat ZIP: ' + e.message, 'error');
   }
 
   btn.disabled = false;
@@ -664,9 +664,9 @@ async function downloadFiles() {
         saved++;
         btn.textContent = `⏳ Menyimpan ${saved}/${items.length}...`;
       }
-      alert(`✅ ${saved} file berhasil disimpan ke folder yang dipilih!`);
+      showToast(saved + ' file berhasil disimpan ke folder yang dipilih!', 'success');
     } catch (e) {
-      alert('Gagal menyimpan file: ' + e.message);
+      showToast('Gagal menyimpan file: ' + e.message, 'error');
     }
 
     btn.disabled = false;
@@ -720,6 +720,33 @@ function resetAll() {
 
 // addFiles calls updatePreview which no longer exists — remove that call
 
+</script>
+<!-- TOAST -->
+<div id="toast" style="
+  position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(20px);
+  background:#1E293B; color:#fff; padding:.75rem 1.25rem;
+  border-radius:12px; font-size:13px; font-weight:500;
+  box-shadow:0 8px 30px rgba(0,0,0,0.2); z-index:9999;
+  opacity:0; transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  display:flex; align-items:center; gap:8px;
+  pointer-events:none; max-width:90vw;
+"></div>
+<script>
+function showToast(msg, type) {
+  type = type || 'info';
+  var t = document.getElementById('toast');
+  var icons = { success:'✅', error:'❌', warn:'⚠️', info:'💡' };
+  var colors = { success:'#10B981', error:'#EF4444', warn:'#F59E0B', info:'#60A5FA' };
+  t.innerHTML = '<span style="font-size:15px">' + (icons[type]||'💡') + '</span><span>' + msg + '</span>';
+  t.style.borderLeft = '3px solid ' + (colors[type] || colors.info);
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function() {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(20px)';
+  }, 3000);
+}
 </script>
 </body>
 </html>
