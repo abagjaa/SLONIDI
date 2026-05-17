@@ -179,6 +179,10 @@
   .badge-nidi { background: var(--green-light); color: var(--green); }
   .badge-dup { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
   .badge-ok { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .badge-kosong { background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; }
+  .badge-partial { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
+
+  tr.kosong-row td { background: #FAFAFA; color: #94A3B8; }
 
   .mono { font-family: 'Consolas', monospace; font-size: 12px; font-weight: 600; }
   .td-row { color: var(--slate-400); font-size: 11px; }
@@ -249,7 +253,8 @@
       <div class="filter-tabs" id="filterTabs">
         <button class="tab-btn active" onclick="setFilter('all', this)">Semua</button>
         <button class="tab-btn" onclick="setFilter('dup', this)">⚠️ Duplikat</button>
-        <button class="tab-btn" onclick="setFilter('ok', this)">✅ Unik</button>
+        <button class="tab-btn" onclick="setFilter('ok', this)">✅ Unik & Lengkap</button>
+        <button class="tab-btn" onclick="setFilter('kosong', this)">⬜ Belum Ada SLO/NIDI</button>
         <button class="tab-btn" onclick="setFilter('slo', this)">SLO saja</button>
         <button class="tab-btn" onclick="setFilter('nidi', this)">NIDI saja</button>
       </div>
@@ -408,27 +413,43 @@ function loadExcel(file) {
 
       sheetSummary.push({ sheetName, headerRowIdx, sloColIdx, nidiColIdx, nameColIdx });
 
+      // Cari kolom "No" sebagai anchor tambahan untuk validasi baris data
+      const headerRow = rows[headerRowIdx].map(c => String(c || '').trim());
+      const noColIdx = headerRow.findIndex(h => /^no\.?$|^nomor$/i.test(h));
+
       // Ambil baris data (setelah header)
+      // Baris dianggap data jika: kolom Nama atau No terisi (anchor), atau ada nilai apapun di kolom SLO/NIDI
       for (let i = headerRowIdx + 1; i < rows.length; i++) {
         const row = rows[i];
-        const slo  = sloColIdx  >= 0 ? String(row[sloColIdx]  || '').trim() : '';
-        const nidi = nidiColIdx >= 0 ? String(row[nidiColIdx] || '').trim() : '';
-        const name = nameColIdx >= 0 ? String(row[nameColIdx] || '').trim() : '';
+        const getCel = col => col >= 0 && col < row.length ? String(row[col] || '').trim() : '';
 
-        // Skip baris kosong atau baris yang tidak punya nilai ID apapun
-        if (!slo && !nidi) continue;
+        const sloRaw  = getCel(sloColIdx);
+        const nidiRaw = getCel(nidiColIdx);
+        const name    = getCel(nameColIdx);
+        const noVal   = getCel(noColIdx);
 
-        // Filter: hanya terima baris yang nilai SLO/NIDI-nya mengandung angka (bukan nama kota / rekap)
-        const sloValid  = looksLikeId(slo);
-        const nidiValid = looksLikeId(nidi);
-        if (!sloValid && !nidiValid) continue;
+        // Baris valid = ada nama ATAU ada nomor urut (No), itu artinya ini baris data pelanggan
+        // Jika tidak ada kolom Nama/No, fallback: baris tidak seluruhnya kosong
+        const isDataRow = name
+          ? name.length > 0
+          : noVal
+            ? /^\d/.test(noVal)  // kolom No terisi angka
+            : row.some(c => String(c || '').trim().length > 0); // ada nilai apapun
+
+        if (!isDataRow) continue;
+
+        // Validasi SLO/NIDI: jika terisi harus benar-benar ID (bukan nomor urut/teks rekap)
+        const slo  = looksLikeId(sloRaw)  ? sloRaw  : '';
+        const nidi = looksLikeId(nidiRaw) ? nidiRaw : '';
 
         allRows.push({
           sheet: sheetName,
           rowNum: i + 1,  // nomor baris di Excel (1-based)
           name,
-          slo:  sloValid  ? slo  : '',
-          nidi: nidiValid ? nidi : '',
+          slo,
+          nidi,
+          hasSlo:  slo.length > 0,
+          hasNidi: nidi.length > 0,
           dupSlo: false,
           dupNidi: false
         });
@@ -487,10 +508,11 @@ function loadExcel(file) {
 
 // ── SUMMARY ───────────────────────────────────────────────────────
 function renderSummary() {
-  const dupRows = allRows.filter(r => r.dupSlo || r.dupNidi);
+  const dupRows      = allRows.filter(r => r.dupSlo || r.dupNidi);
   const dupSloCount  = allRows.filter(r => r.dupSlo).length;
   const dupNidiCount = allRows.filter(r => r.dupNidi).length;
-  const okRows = allRows.filter(r => !r.dupSlo && !r.dupNidi);
+  const kosongRows   = allRows.filter(r => !r.hasSlo && !r.hasNidi);
+  const okRows       = allRows.filter(r => !r.dupSlo && !r.dupNidi && r.hasSlo && r.hasNidi);
 
   document.getElementById('summaryGrid').innerHTML = `
     <div class="summary-card info">
@@ -509,17 +531,24 @@ function renderSummary() {
       <div class="sc-num">${dupNidiCount}</div>
       <div class="sc-label">Nomor NIDI Duplikat</div>
     </div>
+    <div class="summary-card ${kosongRows.length > 0 ? 'warn' : 'ok'}">
+      <div class="sc-num">${kosongRows.length}</div>
+      <div class="sc-label">Belum Ada SLO/NIDI</div>
+    </div>
     <div class="summary-card ok">
       <div class="sc-num">${okRows.length}</div>
-      <div class="sc-label">Data Aman</div>
+      <div class="sc-label">Data Aman & Lengkap</div>
     </div>
   `;
 
   const alertBox = document.getElementById('alertBox');
-  if (dupRows.length === 0) {
-    alertBox.innerHTML = `<div class="alert alert-green">✅ Tidak ditemukan duplikat! Semua nomor SLO & NIDI unik.</div>`;
+  const msgs = [];
+  if (dupRows.length > 0)    msgs.push(`<strong>${dupRows.length} baris</strong> duplikat`);
+  if (kosongRows.length > 0) msgs.push(`<strong>${kosongRows.length} baris</strong> belum ada SLO/NIDI`);
+  if (msgs.length === 0) {
+    alertBox.innerHTML = `<div class="alert alert-green">✅ Tidak ditemukan duplikat! Semua nomor SLO & NIDI unik dan lengkap.</div>`;
   } else {
-    alertBox.innerHTML = `<div class="alert alert-red">⚠️ Ditemukan <strong>${dupRows.length} baris</strong> dengan nomor duplikat — cek tabel di bawah ini dan perbaiki di file Excel asli.</div>`;
+    alertBox.innerHTML = `<div class="alert alert-red">⚠️ Ditemukan ${msgs.join(' dan ')} — cek tabel di bawah ini.</div>`;
   }
 }
 
@@ -539,10 +568,11 @@ function renderTable() {
   const colCount  = 4 + (showSheet ? 1 : 0) + (showName ? 1 : 0);
 
   let filtered = allRows.filter(r => {
-    if (currentFilter === 'dup')  return r.dupSlo || r.dupNidi;
-    if (currentFilter === 'ok')   return !r.dupSlo && !r.dupNidi;
-    if (currentFilter === 'slo')  return !!r.slo;
-    if (currentFilter === 'nidi') return !!r.nidi;
+    if (currentFilter === 'dup')    return r.dupSlo || r.dupNidi;
+    if (currentFilter === 'ok')     return !r.dupSlo && !r.dupNidi && r.hasSlo && r.hasNidi;
+    if (currentFilter === 'kosong') return !r.hasSlo && !r.hasNidi;
+    if (currentFilter === 'slo')    return r.hasSlo;
+    if (currentFilter === 'nidi')   return r.hasNidi;
     return true;
   });
 
@@ -556,9 +586,9 @@ function renderTable() {
   }
 
   const hl = txt => {
-    if (!q || !txt) return txt || '<span class="td-empty">—</span>';
+    if (!q || !txt) return txt || '<span style="color:var(--slate-300)">—</span>';
     const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
-    return txt.replace(re, '<mark>$1</mark>') || '<span class="td-empty">—</span>';
+    return txt.replace(re, '<mark>$1</mark>');
   };
 
   const tbody = document.getElementById('tableBody');
@@ -571,16 +601,36 @@ function renderTable() {
   }
 
   tbody.innerHTML = filtered.map(r => {
-    const isDup = r.dupSlo || r.dupNidi;
-    const statusBadge = isDup
-      ? `<span class="badge badge-dup">⚠️ Duplikat${r.dupSlo && r.dupNidi ? ' SLO+NIDI' : r.dupSlo ? ' SLO' : ' NIDI'}</span>`
-      : `<span class="badge badge-ok">✅ Aman</span>`;
-    return `<tr class="${isDup ? 'dup-row' : ''}">
+    const isDup    = r.dupSlo || r.dupNidi;
+    const isKosong = !r.hasSlo && !r.hasNidi;
+    const isSebagian = (r.hasSlo && !r.hasNidi) || (!r.hasSlo && r.hasNidi);
+
+    let rowClass = '';
+    if (isDup) rowClass = 'dup-row';
+    else if (isKosong) rowClass = 'kosong-row';
+
+    let statusBadge;
+    if (isDup) {
+      const label = r.dupSlo && r.dupNidi ? ' SLO+NIDI' : r.dupSlo ? ' SLO' : ' NIDI';
+      statusBadge = `<span class="badge badge-dup">⚠️ Duplikat${label}</span>`;
+    } else if (isKosong) {
+      statusBadge = `<span class="badge badge-kosong">⬜ Belum Ada</span>`;
+    } else if (isSebagian) {
+      const missing = !r.hasSlo ? 'SLO' : 'NIDI';
+      statusBadge = `<span class="badge badge-partial">🔶 Kurang ${missing}</span>`;
+    } else {
+      statusBadge = `<span class="badge badge-ok">✅ Aman</span>`;
+    }
+
+    const sloCell  = r.hasSlo  ? `<span class="mono" style="color:var(--blue-dark)">${hl(r.slo)}</span>`  : `<span style="color:var(--slate-300)">—</span>`;
+    const nidiCell = r.hasNidi ? `<span class="mono" style="color:var(--green)">${hl(r.nidi)}</span>` : `<span style="color:var(--slate-300)">—</span>`;
+
+    return `<tr class="${rowClass}">
       <td class="td-row">${r.rowNum}</td>
       ${showSheet ? `<td style="font-size:11px;color:var(--slate-400)">${hl(r.sheet)}</td>` : ''}
-      ${showName  ? `<td>${hl(r.name) || '<span class="td-empty">—</span>'}</td>` : ''}
-      <td class="mono" style="color:var(--blue-dark)">${r.slo  ? hl(r.slo)  : '<span class="td-empty">—</span>'}</td>
-      <td class="mono" style="color:var(--green)">${r.nidi ? hl(r.nidi) : '<span class="td-empty">—</span>'}</td>
+      ${showName  ? `<td>${r.name ? hl(r.name) : '<span style="color:var(--slate-300)">—</span>'}</td>` : ''}
+      <td>${sloCell}</td>
+      <td>${nidiCell}</td>
       <td>${statusBadge}</td>
     </tr>`;
   }).join('');
