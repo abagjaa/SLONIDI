@@ -219,38 +219,10 @@
     </div>
   </div>
 
-  <!-- STEP 2: Format nama -->
+  <!-- STEP 2: Proses -->
   <div class="card">
     <div class="card-header">
       <div class="step-dot" id="dot2">2</div>
-      <span class="card-title">Format nama file baru</span>
-    </div>
-    <div class="card-body">
-      <p style="font-size:13px; color:var(--slate-600); margin-bottom:.75rem;">
-        Pilih format nama file hasil rename. Variabel yang tersedia:
-      </p>
-      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:1rem;">
-        <code style="background:var(--blue-50);border:1px solid var(--blue-200);color:var(--blue-dark);padding:3px 10px;border-radius:6px;font-size:12px;">{TIPE}</code>
-        <code style="background:var(--blue-50);border:1px solid var(--blue-200);color:var(--blue-dark);padding:3px 10px;border-radius:6px;font-size:12px;">{NAMA}</code>
-        <code style="background:var(--blue-50);border:1px solid var(--blue-200);color:var(--blue-dark);padding:3px 10px;border-radius:6px;font-size:12px;">{NOMOR}</code>
-      </div>
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <label style="font-size:12px;font-weight:700;color:var(--slate-600);">Format:</label>
-        <input type="text" id="formatInput" value="{TIPE} {NAMA}"
-          style="flex:1;min-width:220px;padding:8px 12px;border:1.5px solid var(--blue-200);border-radius:10px;font-size:14px;font-family:'Consolas',monospace;font-weight:600;color:var(--slate-800);background:var(--blue-50);outline:none;"
-          oninput="updatePreview()">
-        <span style="font-size:13px;color:var(--slate-400);font-weight:600;">.pdf</span>
-      </div>
-      <div id="formatPreview" style="margin-top:.5rem;font-size:12px;color:var(--slate-400);">
-        Contoh: <span id="previewSample" style="font-family:monospace;color:var(--blue-dark);font-weight:600;"></span>
-      </div>
-    </div>
-  </div>
-
-  <!-- STEP 3: Proses -->
-  <div class="card">
-    <div class="card-header">
-      <div class="step-dot" id="dot3">3</div>
       <span class="card-title">Ekstrak & Generate Nama Baru</span>
     </div>
     <div class="card-body">
@@ -322,7 +294,6 @@ function addFiles(files) {
   files.forEach(f => { if (!pdfFiles.find(p => p.name === f.name)) pdfFiles.push(f); });
   renderFileList();
   checkReady();
-  updatePreview();
 }
 
 function clearFiles() {
@@ -368,23 +339,13 @@ function renderFileList() {
 function removeFile(i) { pdfFiles.splice(i, 1); renderFileList(); checkReady(); }
 function checkReady() { document.getElementById('btnProses').disabled = pdfFiles.length === 0; }
 
-// ── FORMAT PREVIEW ───────────────────────────────────────────────
-function buildName(fmt, tipe, nama, nomor) {
-  return fmt
-    .replace(/{TIPE}/g, tipe || 'SLO')
-    .replace(/{NAMA}/g, nama || 'NAMA PEMILIK')
-    .replace(/{NOMOR}/g, nomor || '0000.000.A.0.000000')
-    .replace(/[\\/:*?"<>|]/g, '-')  // sanitize invalid filename chars
-    .trim();
-}
-
-function updatePreview() {
-  const fmt = document.getElementById('formatInput').value;
-  document.getElementById('previewSample').textContent =
-    buildName(fmt, 'SLO', 'PT EXAMPLE PELANGGAN', '0412.100.A.0.000123') + '.pdf';
-
-  // Re-render table names live if results exist
-  if (items.length) renderResult();
+// ── BUILD NAME ────────────────────────────────────────────────────
+// Format: NamaFileLama (Nama Pemilik).pdf
+function buildName(namaFileLama, nama) {
+  const tanpaExt = namaFileLama.replace(/\.pdf$/i, '');
+  const namaBersih = sanitize(nama || '');
+  if (!namaBersih) return tanpaExt;
+  return `${tanpaExt} (${namaBersih})`;
 }
 
 // ── OCR WORKER ───────────────────────────────────────────────────
@@ -505,7 +466,6 @@ async function processAll() {
     document.getElementById('progressLabel').textContent = lbl;
   };
 
-  const fmt = document.getElementById('formatInput').value;
   log(`Memproses ${pdfFiles.length} file PDF...`, 'lok');
 
   for (let i = 0; i < pdfFiles.length; i++) {
@@ -527,8 +487,8 @@ async function processAll() {
       if (nama) log(`  Nama: <span class="lok">${nama}</span>`);
       else      log('  ⚠ Nama tidak terdeteksi', 'lwarn');
 
-      const status = (nomor || nama) ? (nomor && nama ? 'ok' : 'warn') : 'err';
-      const newName = buildName(fmt, type, sanitize(nama), nomor) + '.pdf';
+      const status = nama ? (nomor ? 'ok' : 'warn') : 'err';
+      const newName = buildName(file.name, nama) + '.pdf';
 
       items.push({ file, type, nomor, nama, newName: newName.replace(/\.pdf\.pdf$/i, '.pdf'), status, isOcr });
       log(`  → <span class="lnum">${newName}</span>`, 'lok');
@@ -543,8 +503,8 @@ async function processAll() {
   log('', '');
   log(`${items.filter(x => x.status === 'ok').length} berhasil, ${items.filter(x => x.status === 'warn').length} sebagian, ${items.filter(x => x.status === 'err').length} gagal.`, 'lok');
 
-  document.getElementById('dot3').classList.add('done');
-  document.getElementById('dot3').textContent = '✓';
+  document.getElementById('dot2').classList.add('done');
+  document.getElementById('dot2').textContent = '✓';
   renderResult();
 }
 
@@ -642,16 +602,16 @@ function resetAll() {
   document.getElementById('progressWrap').style.display = 'none';
   document.getElementById('resultCard').style.display = 'none';
   document.getElementById('fileActions').style.display = 'none';
-  ['dot1','dot3'].forEach((id, idx) => {
+  ['dot1','dot2'].forEach((id) => {
     const d = document.getElementById(id);
     d.classList.remove('done');
-    d.textContent = id === 'dot1' ? '1' : '3';
+    d.textContent = id === 'dot1' ? '1' : '2';
   });
   checkReady();
 }
 
-// Init preview on load
-updatePreview();
+// addFiles calls updatePreview which no longer exists — remove that call
+
 </script>
 </body>
 </html>
