@@ -264,6 +264,7 @@
           <thead>
             <tr>
               <th>Baris</th>
+              <th id="th-sheet" style="display:none">Sheet</th>
               <th id="th-name" style="display:none">Nama</th>
               <th>Nomor SLO</th>
               <th>Nomor NIDI</th>
@@ -288,9 +289,9 @@
 
 <script>
 // ── STATE ─────────────────────────────────────────────────────────
-let allRows = [];      // { rowNum, name, slo, nidi, dupSlo, dupNidi }
+let allRows = [];      // { sheet, rowNum, name, slo, nidi, dupSlo, dupNidi }
 let currentFilter = 'all';
-let sloColIdx = -1, nidiColIdx = -1, nameColIdx = -1;
+let hasName = false;
 let xlsxFile = null;
 
 // ── DRAG & DROP ───────────────────────────────────────────────────
@@ -302,6 +303,31 @@ function onDrop(e) {
   if (f) loadExcel(f);
 }
 
+// ── HELPER: Cari header row dalam sheet ──────────────────────────
+// Mencari baris pertama yang mengandung kata "SLO" atau "NIDI" di salah satu kolom
+// Mengembalikan { headerRowIdx, sloColIdx, nidiColIdx, nameColIdx } atau null jika tidak ditemukan
+function findHeaderRow(rows) {
+  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+    const row = rows[i].map(c => String(c || ''));
+    const sloIdx  = row.findIndex(h => /\bslo\b/i.test(h));
+    const nidiIdx = row.findIndex(h => /\bnidi\b/i.test(h));
+    // Harus ada minimal salah satu kolom SLO atau NIDI
+    if (sloIdx >= 0 || nidiIdx >= 0) {
+      const nameIdx = row.findIndex(h => /nama/i.test(h));
+      return { headerRowIdx: i, sloColIdx: sloIdx, nidiColIdx: nidiIdx, nameColIdx: nameIdx };
+    }
+  }
+  return null;
+}
+
+// ── HELPER: Cek apakah nilai kemungkinan nomor SLO/NIDI asli ──────
+// Bukan nama kota / rekap header — harus mengandung angka
+function looksLikeId(val) {
+  if (!val) return false;
+  // Nomor SLO/NIDI biasanya mengandung angka; nama kota (Bandung, Garut, dll) tidak
+  return /\d/.test(val);
+}
+
 // ── LOAD EXCEL ────────────────────────────────────────────────────
 function loadExcel(file) {
   if (!file) return;
@@ -309,60 +335,94 @@ function loadExcel(file) {
   const r = new FileReader();
   r.onload = e => {
     const wb = XLSX.read(e.target.result, { type: 'array' });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
-    if (rows.length < 2) { showToast('File Excel kosong atau tidak ada data.', 'warn'); return; }
-
-    const header = rows[0].map(h => String(h || ''));
-    sloColIdx  = header.findIndex(h => /slo/i.test(h));
-    nidiColIdx = header.findIndex(h => /nidi/i.test(h));
-    nameColIdx = header.findIndex(h => /nama/i.test(h));
-
-    // Show detected columns
-    const pills = document.getElementById('colPills');
-    pills.innerHTML = header.map((h, i) => {
-      let cls = 'col-pill-gray';
-      if (i === sloColIdx)  cls = 'col-pill-blue';
-      if (i === nidiColIdx) cls = 'col-pill-green';
-      if (i === nameColIdx) cls = 'col-pill-blue';
-      return `<span class="col-pill ${cls}">${h || '(kosong)'}</span>`;
-    }).join('');
-
-    let hint = '';
-    if (sloColIdx === -1 && nidiColIdx === -1) hint = '⚠️ Kolom SLO dan NIDI tidak ditemukan. Pastikan header kolom mengandung kata "SLO" atau "NIDI".';
-    else if (sloColIdx === -1) hint = '⚠️ Kolom SLO tidak ditemukan.';
-    else if (nidiColIdx === -1) hint = '⚠️ Kolom NIDI tidak ditemukan.';
-    document.getElementById('colHint').textContent = hint;
-    document.getElementById('colDetect').style.display = '';
-
-    // Parse data rows
     allRows = [];
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      const slo  = sloColIdx  >= 0 ? String(row[sloColIdx]  || '').trim() : '';
-      const nidi = nidiColIdx >= 0 ? String(row[nidiColIdx] || '').trim() : '';
-      const name = nameColIdx >= 0 ? String(row[nameColIdx] || '').trim() : '';
-      if (!slo && !nidi) continue; // skip completely empty rows
-      allRows.push({ rowNum: i + 1, name, slo, nidi, dupSlo: false, dupNidi: false });
+    hasName = false;
+    const sheetSummary = []; // untuk info kolom per sheet
+
+    // ── Proses SETIAP sheet ──────────────────────────────────────
+    for (const sheetName of wb.SheetNames) {
+      const ws = wb.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (rows.length < 2) continue;
+
+      // Cari baris header yang valid (mengandung kolom SLO/NIDI)
+      const found = findHeaderRow(rows);
+      if (!found) continue; // sheet ini tidak punya kolom SLO/NIDI, skip
+
+      const { headerRowIdx, sloColIdx, nidiColIdx, nameColIdx } = found;
+      if (nameColIdx >= 0) hasName = true;
+
+      sheetSummary.push({ sheetName, headerRowIdx, sloColIdx, nidiColIdx, nameColIdx });
+
+      // Ambil baris data (setelah header)
+      for (let i = headerRowIdx + 1; i < rows.length; i++) {
+        const row = rows[i];
+        const slo  = sloColIdx  >= 0 ? String(row[sloColIdx]  || '').trim() : '';
+        const nidi = nidiColIdx >= 0 ? String(row[nidiColIdx] || '').trim() : '';
+        const name = nameColIdx >= 0 ? String(row[nameColIdx] || '').trim() : '';
+
+        // Skip baris kosong atau baris yang tidak punya nilai ID apapun
+        if (!slo && !nidi) continue;
+
+        // Filter: hanya terima baris yang nilai SLO/NIDI-nya mengandung angka (bukan nama kota / rekap)
+        const sloValid  = looksLikeId(slo);
+        const nidiValid = looksLikeId(nidi);
+        if (!sloValid && !nidiValid) continue;
+
+        allRows.push({
+          sheet: sheetName,
+          rowNum: i + 1,  // nomor baris di Excel (1-based)
+          name,
+          slo:  sloValid  ? slo  : '',
+          nidi: nidiValid ? nidi : '',
+          dupSlo: false,
+          dupNidi: false
+        });
+      }
     }
 
-    // Detect duplicates
+    if (allRows.length === 0) {
+      showToast('Tidak ditemukan data SLO/NIDI yang valid di file ini. Pastikan kolom header mengandung kata "SLO" atau "NIDI" dan nilai berisi angka.', 'warn');
+      return;
+    }
+
+    // ── Tampilkan info sheet yang diproses ───────────────────────
+    const pills = document.getElementById('colPills');
+    pills.innerHTML = sheetSummary.map(s => {
+      const cols = [];
+      if (s.sloColIdx >= 0)  cols.push(`<span class="col-pill col-pill-blue">SLO</span>`);
+      if (s.nidiColIdx >= 0) cols.push(`<span class="col-pill col-pill-green">NIDI</span>`);
+      if (s.nameColIdx >= 0) cols.push(`<span class="col-pill col-pill-gray">Nama</span>`);
+      return `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px;margin-bottom:4px;">
+        <span class="col-pill col-pill-gray">📄 ${s.sheetName}</span>${cols.join('')}
+      </span>`;
+    }).join('');
+
+    const sheetsWithData = sheetSummary.length;
+    const sheetsSkipped  = wb.SheetNames.length - sheetsWithData;
+    document.getElementById('colHint').textContent =
+      `${sheetsWithData} sheet diproses${sheetsSkipped > 0 ? `, ${sheetsSkipped} sheet dilewati (tidak ada kolom SLO/NIDI)` : ''} — Total ${allRows.length} baris data ditemukan`;
+    document.getElementById('colDetect').style.display = '';
+
+    // ── Deteksi duplikat lintas sheet ───────────────────────────
     const sloMap = {}, nidiMap = {};
     allRows.forEach((r, idx) => {
-      if (r.slo) { if (!sloMap[r.slo]) sloMap[r.slo] = []; sloMap[r.slo].push(idx); }
+      if (r.slo)  { if (!sloMap[r.slo])   sloMap[r.slo]   = []; sloMap[r.slo].push(idx);   }
       if (r.nidi) { if (!nidiMap[r.nidi]) nidiMap[r.nidi] = []; nidiMap[r.nidi].push(idx); }
     });
     Object.values(sloMap).forEach(idxs  => { if (idxs.length > 1) idxs.forEach(i => allRows[i].dupSlo  = true); });
     Object.values(nidiMap).forEach(idxs => { if (idxs.length > 1) idxs.forEach(i => allRows[i].dupNidi = true); });
 
-    // Update UI
+    // ── Update UI ────────────────────────────────────────────────
     document.getElementById('xlsxDrop').style.display = 'none';
     document.getElementById('xlsxReady').style.display = '';
     document.getElementById('xlsxName').textContent = file.name;
     document.getElementById('dot1').className = 'step-dot done';
     document.getElementById('dot1').textContent = '✓';
-    document.getElementById('th-name').style.display = nameColIdx >= 0 ? '' : 'none';
+    // Tampilkan kolom sheet & nama jika ada
+    document.getElementById('th-sheet').style.display = sheetsWithData > 1 ? '' : 'none';
+    document.getElementById('th-name').style.display  = hasName ? '' : 'none';
 
     renderSummary();
     renderTable();
@@ -421,7 +481,9 @@ function setFilter(f, btn) {
 // ── RENDER TABLE ──────────────────────────────────────────────────
 function renderTable() {
   const q = document.getElementById('searchInput').value.toLowerCase().trim();
-  const showName = nameColIdx >= 0;
+  const showSheet = document.getElementById('th-sheet').style.display !== 'none';
+  const showName  = document.getElementById('th-name').style.display  !== 'none';
+  const colCount  = 4 + (showSheet ? 1 : 0) + (showName ? 1 : 0);
 
   let filtered = allRows.filter(r => {
     if (currentFilter === 'dup')  return r.dupSlo || r.dupNidi;
@@ -435,7 +497,8 @@ function renderTable() {
     filtered = filtered.filter(r =>
       r.slo.toLowerCase().includes(q) ||
       r.nidi.toLowerCase().includes(q) ||
-      r.name.toLowerCase().includes(q)
+      r.name.toLowerCase().includes(q) ||
+      r.sheet.toLowerCase().includes(q)
     );
   }
 
@@ -447,7 +510,7 @@ function renderTable() {
 
   const tbody = document.getElementById('tableBody');
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="${showName ? 5 : 4}">
+    tbody.innerHTML = `<tr><td colspan="${colCount}">
       <div class="empty-state"><div class="es-icon">🔍</div>Tidak ada data yang cocok</div>
     </td></tr>`;
     document.getElementById('tableHint').textContent = '';
@@ -461,8 +524,9 @@ function renderTable() {
       : `<span class="badge badge-ok">✅ Aman</span>`;
     return `<tr class="${isDup ? 'dup-row' : ''}">
       <td class="td-row">${r.rowNum}</td>
-      ${showName ? `<td>${hl(r.name) || '<span class="td-empty">—</span>'}</td>` : ''}
-      <td class="mono" style="color:var(--blue-dark)">${r.slo ? hl(r.slo) : '<span class="td-empty">—</span>'}</td>
+      ${showSheet ? `<td style="font-size:11px;color:var(--slate-400)">${hl(r.sheet)}</td>` : ''}
+      ${showName  ? `<td>${hl(r.name) || '<span class="td-empty">—</span>'}</td>` : ''}
+      <td class="mono" style="color:var(--blue-dark)">${r.slo  ? hl(r.slo)  : '<span class="td-empty">—</span>'}</td>
       <td class="mono" style="color:var(--green)">${r.nidi ? hl(r.nidi) : '<span class="td-empty">—</span>'}</td>
       <td>${statusBadge}</td>
     </tr>`;
@@ -477,24 +541,20 @@ async function downloadReport() {
   const dupRows = allRows.filter(r => r.dupSlo || r.dupNidi);
   if (dupRows.length === 0) { showToast('Tidak ada duplikat yang ditemukan!', 'info'); return; }
 
-  const showName = nameColIdx >= 0;
-  const header = showName
-    ? ['Baris di Excel', 'Nama', 'Nomor SLO', 'Nomor NIDI', 'Status']
-    : ['Baris di Excel', 'Nomor SLO', 'Nomor NIDI', 'Status'];
+  const showSheet = document.getElementById('th-sheet').style.display !== 'none';
+  const header = ['Baris di Excel', ...(showSheet ? ['Sheet'] : []), ...(hasName ? ['Nama'] : []), 'Nomor SLO', 'Nomor NIDI', 'Status'];
 
   const dataRows = dupRows.map(r => {
     const status = r.dupSlo && r.dupNidi ? 'Duplikat SLO & NIDI' : r.dupSlo ? 'Duplikat SLO' : 'Duplikat NIDI';
-    return showName
-      ? [r.rowNum, r.name, r.slo, r.nidi, status]
-      : [r.rowNum, r.slo, r.nidi, status];
+    return [r.rowNum, ...(showSheet ? [r.sheet] : []), ...(hasName ? [r.name] : []), r.slo, r.nidi, status];
   });
 
   const ws = XLSX.utils.aoa_to_sheet([header, ...dataRows]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Duplikat');
+  const wb2 = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb2, ws, 'Duplikat');
 
   const fileName = `Laporan_Duplikat_${new Date().toISOString().slice(0,10)}.xlsx`;
-  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const wbout = XLSX.write(wb2, { bookType: 'xlsx', type: 'array' });
   const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
   if ('showSaveFilePicker' in window) {
@@ -519,7 +579,7 @@ async function downloadReport() {
 
 // ── RESET ─────────────────────────────────────────────────────────
 function resetAll() {
-  allRows = []; sloColIdx = -1; nidiColIdx = -1; nameColIdx = -1; xlsxFile = null;
+  allRows = []; hasName = false; xlsxFile = null;
   currentFilter = 'all';
   document.getElementById('xlsxDrop').style.display = '';
   document.getElementById('xlsxReady').style.display = 'none';
