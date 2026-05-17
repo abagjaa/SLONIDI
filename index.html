@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PPILN Tools</title>
+<title>Tools NADIA</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -262,17 +262,89 @@
   }
   .content { position: relative; z-index: 1; }
   .topbar { position: sticky; top: 0; z-index: 40; }
+
+  /* ── HAMBURGER BUTTON ── */
+  .hamburger {
+    display: none;
+    background: none; border: none;
+    cursor: pointer; padding: 6px;
+    border-radius: 10px;
+    color: var(--slate-600);
+    transition: background .15s;
+  }
+  .hamburger:hover { background: var(--blue-50); }
+
+  /* ── SIDEBAR OVERLAY ── */
+  .sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 45;
+    backdrop-filter: blur(2px);
+  }
+  .sidebar-overlay.visible { display: block; }
+
+  /* ── MOBILE RESPONSIVE ── */
+  @media (max-width: 768px) {
+    :root { --sidebar-w: 0px; }
+
+    .hamburger { display: flex; align-items: center; justify-content: center; }
+
+    .sidebar {
+      width: 260px;
+      transform: translateX(-100%);
+      transition: transform .25s ease;
+      z-index: 50;
+    }
+    .sidebar.open { transform: translateX(0); }
+
+    .main {
+      margin-left: 0;
+      width: 100%;
+    }
+    .main::before { left: 0; }
+
+    .topbar { padding: 0 1rem; gap: 8px; }
+    .topbar-title { font-size: 14px; }
+    .topbar-date { font-size: 11px; }
+
+    .content { padding: 1rem; }
+
+    .welcome-card { padding: 1.5rem; border-radius: 18px; }
+    .welcome-card h2 { font-size: 17px; }
+    .welcome-card p { font-size: 13px; }
+    .welcome-emoji { font-size: 28px; right: 1rem; }
+
+    .stats-grid { grid-template-columns: 1fr 1fr; gap: .75rem; }
+    .stat-num { font-size: 20px; }
+
+    .tools-grid { grid-template-columns: 1fr; }
+
+    .tool-frame { border-radius: 16px; min-height: calc(100vh - 120px); }
+    .tool-frame iframe { min-height: calc(100vh - 120px); border-radius: 16px; }
+
+    .section-title { font-size: 17px; }
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .welcome-card { padding: 1.25rem; }
+    .welcome-emoji { display: none; }
+  }
 </style>
 </head>
 <body>
 
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
 <!-- SIDEBAR -->
-<aside class="sidebar">
+<aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-icon"><span>PP</span></div>
+    <div class="logo-icon"><span>N</span></div>
     <div>
-      <div class="logo-text">PPILN Tools</div>
-      <div class="logo-sub">PT PPILN — Jawa Barat</div>
+      <div class="logo-text">Tools NADIA</div>
+      <div class="logo-sub">Wilayah Jawa Barat</div>
     </div>
   </div>
 
@@ -296,10 +368,10 @@
 
   <div class="sidebar-bottom">
     <div class="user-card">
-      <div class="user-avatar">S</div>
+      <div class="user-avatar">N</div>
       <div>
-        <div class="user-name">Staff PPILN</div>
-        <div class="user-role">Area Bandung</div>
+        <div class="user-name">Nadia Ramdiana</div>
+        <div class="user-role">Wilayah Jawa Barat</div>
       </div>
       <button class="btn-logout" onclick="logout()" title="Keluar">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -311,9 +383,12 @@
 <!-- MAIN -->
 <div class="main">
   <div class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <div>
       <div class="topbar-title" id="topbarTitle">Dashboard</div>
-      <div class="topbar-breadcrumb" id="topbarBreadcrumb">PPILN Tools</div>
+      <div class="topbar-breadcrumb" id="topbarBreadcrumb">Tools NADIA</div>
     </div>
     <div class="topbar-right">
       <div class="topbar-date" id="clock"></div>
@@ -404,7 +479,7 @@
 
   // Page navigation
   const pageTitles = {
-    'home': ['Dashboard', 'PPILN Tools'],
+    'home': ['Dashboard', 'Tools NADIA'],
     'slo-nidi': ['SLO & NIDI Extractor', 'Tools'],
   };
 
@@ -413,7 +488,7 @@
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('page-' + id).classList.add('active');
     if (navEl) navEl.classList.add('active');
-    const [title, breadcrumb] = pageTitles[id] || [id, 'PPILN Tools'];
+    const [title, breadcrumb] = pageTitles[id] || [id, 'Tools NADIA'];
     document.getElementById('topbarTitle').textContent = title;
     document.getElementById('topbarBreadcrumb').textContent = breadcrumb;
   }
@@ -424,6 +499,25 @@
       window.location.href = 'login.html';
     }
   }
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('visible');
+  }
+
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('visible');
+  }
+
+  // Close sidebar on nav click (mobile)
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 768) closeSidebar();
+    });
+  });
 </script>
 </body>
 </html>
