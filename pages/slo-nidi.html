@@ -6,6 +6,7 @@
 <title>SLO & NIDI Extractor</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -289,6 +290,16 @@
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 let xlsxFile = null, pdfFiles = [], excelData = [], results = [], unmatched = [];
+let ocrWorker = null;
+
+// Initialize Tesseract worker (lazy — only when needed)
+async function getOcrWorker() {
+  if (ocrWorker) return ocrWorker;
+  ocrWorker = await Tesseract.createWorker('ind+eng', 1, {
+    logger: () => {}
+  });
+  return ocrWorker;
+}
 
 // Drag & drop
 function setupDrop(id, handler) {
@@ -354,8 +365,9 @@ function renderPdfList() {
 function removePdf(i) { pdfFiles.splice(i, 1); renderPdfList(); checkReady(); }
 function checkReady() { document.getElementById('btnProses').disabled = !(xlsxFile && pdfFiles.length && excelData.length); }
 
-// Extraction
-async function extractText(file) {
+// ── TEXT EXTRACTION ──────────────────────────────────────────────
+// Step 1: try digital text from pdf.js
+async function extractTextDigital(file) {
   const ab = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
   let text = '';
@@ -364,9 +376,51 @@ async function extractText(file) {
     const c = await p.getTextContent();
     text += c.items.map(s => s.str).join(' ') + '\n';
   }
-  return text;
+  return { text, pdf, ab };
 }
 
+// Step 2: if digital text is too short, do OCR on each page image
+async function extractTextOCR(pdf, log) {
+  log('  🔍 PDF scan terdeteksi — memulai OCR... (bisa 10–30 detik)', 'lwarn');
+  const worker = await getOcrWorker();
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    log(`  📷 OCR halaman ${i}/${pdf.numPages}...`, 'lwarn');
+    const page = await pdf.getPage(i);
+    // Render page to canvas at 2x scale for better OCR accuracy
+    const scale = 2.5;
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    const imageData = canvas.toDataURL('image/png');
+    const { data: { text } } = await worker.recognize(imageData);
+    fullText += text + '\n';
+  }
+  return fullText;
+}
+
+// Decide whether text is "real" digital text or just noise from a scan
+function isTextEmpty(text) {
+  // A real digital PDF should have meaningful word characters
+  const meaningful = (text.match(/[a-zA-Z0-9]{3,}/g) || []).length;
+  return meaningful < 15; // fewer than 15 real tokens = likely a scan
+}
+
+// Main extractor: digital first, OCR fallback
+async function extractText(file, log) {
+  const { text, pdf } = await extractTextDigital(file);
+  if (!isTextEmpty(text)) {
+    return { text, isOcr: false };
+  }
+  // Fallback to OCR
+  const ocrText = await extractTextOCR(pdf, log);
+  return { text: ocrText, isOcr: true };
+}
+
+// ── FIELD EXTRACTORS ─────────────────────────────────────────────
 function extractSLO(text) {
   const ps = [/Nomor\s+Sertifikat\s*:\s*([\w\d\.\-\/]+)/i, /No\.?\s*SLO\s*:\s*([\w\d\.\-\/]+)/i, /(\d{4}\.\d+\.[A-Z]\.\d+\.\d+\.[\w\d]+)/];
   for (const p of ps) { const m = text.match(p); if (m) return m[1].trim(); }
@@ -393,12 +447,9 @@ function extractOwner(text) {
   for (const p of ps) {
     const m = text.match(p);
     if (!m) continue;
-    // Collapse newlines into spaces so we can search the full name block as one string
     const block = m[1].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
-    // Priority 1: name inside parentheses — e.g. 'PT VGREEN ... (Planet Ban Raya Caringin)'
     const parMatch = block.match(/\(([^)]{4,})\)/);
     if (parMatch) return parMatch[1].trim();
-    // Priority 2: return the whole cleaned block
     return block.replace(/^[^:]+:\s*/, '').trim();
   }
   return null;
@@ -422,6 +473,7 @@ function bestMatch(name, names) {
   return bestScore >= 0.35 ? best : -1;
 }
 
+// ── MAIN PROCESS ─────────────────────────────────────────────────
 async function processAll() {
   const logEl = document.getElementById('logBox');
   logEl.innerHTML = ''; logEl.style.display = 'block';
@@ -438,15 +490,19 @@ async function processAll() {
   log(`Memulai — ${pdfFiles.length} PDF, ${excelData.length} data Excel`, 'lok');
 
   for (let i = 0; i < pdfFiles.length; i++) {
-    const file = pdfFiles[i]; const type = detectType(file.name);
+    const file = pdfFiles[i];
+    const type = detectType(file.name);
     prog(Math.round((i / pdfFiles.length) * 90), `(${i+1}/${pdfFiles.length}) ${file.name}`);
     log(`→ ${file.name}`);
     try {
-      const text = await extractText(file);
+      const { text, isOcr } = await extractText(file, log);
+      if (isOcr) log('  ✓ OCR selesai', 'lok');
+
       const owner = extractOwner(text);
       let number = type === 'SLO' ? extractSLO(text) : type === 'NIDI' ? extractNIDI(text) : null;
+
       if (number) {
-        log(`  Nomor: <span class="lnum">${number}</span>`);
+        log(`  Nomor: <span class="lnum">${number}</span>${isOcr ? ' <span style="color:#FDE68A">[OCR]</span>' : ''}`);
         const idx = bestMatch(owner || file.name, excelNames);
         if (idx >= 0) {
           if (type === 'SLO') results[idx]._SLO = number;
@@ -454,11 +510,12 @@ async function processAll() {
           log(`  ✓ → ${excelNames[idx]}`, 'lok');
         } else {
           log(`  ⚠ Tidak cocok otomatis`, 'lwarn');
-          unmatched.push({ file: file.name, type, number, owner });
+          unmatched.push({ file: file.name, type, number, owner, isOcr });
         }
       } else {
-        log(`  ✗ Nomor tidak terdeteksi`, 'lerr');
-        unmatched.push({ file: file.name, type, number: null, owner });
+        // Number not found even after OCR — push to manual with null number so user can type it in
+        log(`  ✗ Nomor tidak terdeteksi${isOcr ? ' (setelah OCR)' : ''}`, 'lerr');
+        unmatched.push({ file: file.name, type, number: null, owner, isOcr });
       }
     } catch (e) { log(`  ✗ Error: ${e.message}`, 'lerr'); }
   }
@@ -469,14 +526,20 @@ async function processAll() {
   renderResult(excelNames);
 }
 
+// ── RENDER RESULT ────────────────────────────────────────────────
 function renderResult(excelNames) {
   const names = excelNames || excelData.map(r => getNameKey(r));
   const slo = results.filter(r => r._SLO).length, nidi = results.filter(r => r._NIDI).length;
+  const needManual = unmatched.filter(u => u.number);
+  // OCR-failed: no number detected at all, need user to type it
+  const needInput = unmatched.filter(u => !u.number);
+
   document.getElementById('summaryRow').innerHTML = `
     <div class="pill pill-blue">📋 Total: ${results.length}</div>
     <div class="pill pill-green">✓ SLO: ${slo}/${results.length}</div>
     <div class="pill pill-green">✓ NIDI: ${nidi}/${results.length}</div>
-    ${unmatched.filter(u=>u.number).length ? `<div class="pill pill-amber">⚠ Manual: ${unmatched.filter(u=>u.number).length}</div>` : ''}`;
+    ${needManual.length ? `<div class="pill pill-amber">⚠ Perlu cocokkan: ${needManual.length}</div>` : ''}
+    ${needInput.length ? `<div class="pill" style="background:#FEF2F2;color:#DC2626;border:1px solid #FECACA">✏️ Input manual: ${needInput.length}</div>` : ''}`;
 
   document.getElementById('resultBody').innerHTML = results.map((r, i) => {
     const nama = getNameKey(r), no = r['No'] || r['NO'] || r['no'] || (i + 1);
@@ -488,26 +551,51 @@ function renderResult(excelNames) {
     </tr>`;
   }).join('');
 
-  const needManual = unmatched.filter(u => u.number);
   const ub = document.getElementById('unmatchedBox');
+  let unmatchedHTML = '';
+
+  // Section 1: number found but no Excel match — pick from dropdown
   if (needManual.length) {
-    const opts = names.map((n, j) => `<option value="${j}">${n}</option>`).join('');
-    ub.innerHTML = `<div class="unmatched-box">
-      <div class="unmatched-title">⚠️ ${needManual.length} PDF belum tercocokkan — pilih nama yang sesuai:</div>
+    unmatchedHTML += `<div class="unmatched-box">
+      <div class="unmatched-title">⚠️ ${needManual.length} PDF nomor terbaca tapi belum tercocokkan — pilih nama yang sesuai:</div>
       ${needManual.map((u, i) => {
         const suggestIdx = u.owner ? Math.max(0, bestMatch(u.owner, names)) : 0;
         const optsWithSel = names.map((n, j) => `<option value="${j}"${j===suggestIdx?' selected':''}>${n}</option>`).join('');
+        const ocrTag = u.isOcr ? '<span style="font-size:10px;background:#FEF9C3;color:#92400E;padding:1px 6px;border-radius:4px;margin-left:4px">OCR</span>' : '';
         return `<div class="manual-row">
-        <span class="badge ${u.type==='SLO'?'badge-slo':'badge-nidi'}">${u.type}</span>
-        <span class="mnum">${u.number}</span>
-        <span class="mowner-wrap" title="File: ${u.file}">${u.owner ? `<span class="mowner-name">📄 ${u.owner}</span><br><span class="mowner-file">${u.file}</span>` : `<span class="mowner-noname">⚠️ Nama tdk terbaca</span><br><span class="mowner-file">${u.file}</span>`}</span>
-        <select id="ms_${i}">${optsWithSel}</select>
-        <button class="btn btn-sm btn-primary" onclick="applyManual(${i})">Terapkan</button>
-      </div>`;
+          <span class="badge ${u.type==='SLO'?'badge-slo':'badge-nidi'}">${u.type}</span>
+          <span class="mnum">${u.number}${ocrTag}</span>
+          <span class="mowner-wrap" title="File: ${u.file}">${u.owner ? `<span class="mowner-name">📄 ${u.owner}</span><br><span class="mowner-file">${u.file}</span>` : `<span class="mowner-noname">⚠️ Nama tdk terbaca</span><br><span class="mowner-file">${u.file}</span>`}</span>
+          <select id="ms_${i}">${optsWithSel}</select>
+          <button class="btn btn-sm btn-primary" onclick="applyManual(${i})">Terapkan</button>
+        </div>`;
       }).join('')}
     </div>`;
-  } else ub.innerHTML = '';
+  }
 
+  // Section 2: number NOT found (OCR failed or unreadable scan) — user types number + picks name
+  if (needInput.length) {
+    unmatchedHTML += `<div class="unmatched-box" style="margin-top:.75rem;background:#FEF2F2;border-color:#FECACA;">
+      <div class="unmatched-title" style="color:#DC2626;">✏️ ${needInput.length} PDF nomornya tidak terbaca — ketik manual:</div>
+      ${needInput.map((u, i) => {
+        const idx = needManual.length + i;
+        const suggestIdx = u.owner ? Math.max(0, bestMatch(u.owner, names)) : 0;
+        const optsWithSel = names.map((n, j) => `<option value="${j}"${j===suggestIdx?' selected':''}>${n}</option>`).join('');
+        const ocrTag = u.isOcr ? '<span style="font-size:10px;background:#FEE2E2;color:#991B1B;padding:1px 6px;border-radius:4px;margin-left:4px">OCR gagal</span>' : '<span style="font-size:10px;background:#FEE2E2;color:#991B1B;padding:1px 6px;border-radius:4px;margin-left:4px">Scan</span>';
+        return `<div class="manual-row" style="flex-wrap:wrap;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px solid #FECACA">
+          <span class="badge ${u.type==='SLO'?'badge-slo':'badge-nidi'}">${u.type}</span>
+          ${ocrTag}
+          <span class="mowner-wrap" title="File: ${u.file}">${u.owner ? `<span class="mowner-name">📄 ${u.owner}</span><br><span class="mowner-file">${u.file}</span>` : `<span class="mowner-noname">⚠️ Nama tdk terbaca</span><br><span class="mowner-file">${u.file}</span>`}</span>
+          <input id="mi_${idx}" type="text" placeholder="Ketik No. ${u.type} dari sertifikat..."
+            style="flex:1;min-width:180px;padding:7px 10px;border:1.5px solid #FECACA;border-radius:8px;font-size:13px;font-family:monospace;font-weight:600;color:var(--slate-800);background:#fff">
+          <select id="ms_${idx}" style="flex:1;min-width:160px;padding:7px 10px;border:1.5px solid #FECACA;border-radius:8px;background:#fff;font-size:13px;font-family:inherit;color:var(--slate-800)">${optsWithSel}</select>
+          <button class="btn btn-sm btn-primary" onclick="applyManualInput(${i}, ${idx})">Terapkan</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  ub.innerHTML = unmatchedHTML;
   document.getElementById('resultCard').style.display = 'block';
   document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
 }
@@ -519,6 +607,18 @@ function applyManual(ui) {
   if (u.type === 'SLO') results[idx]._SLO = u.number;
   if (u.type === 'NIDI') results[idx]._NIDI = u.number;
   const dataIdx = unmatched.indexOf(u); unmatched[dataIdx].number = null;
+  renderResult();
+}
+
+function applyManualInput(inputIdx, elIdx) {
+  const needInput = unmatched.filter(u => !u.number);
+  const u = needInput[inputIdx];
+  const number = document.getElementById('mi_' + elIdx).value.trim();
+  if (!number) { alert('Nomor tidak boleh kosong!'); return; }
+  const idx = parseInt(document.getElementById('ms_' + elIdx).value);
+  if (u.type === 'SLO') results[idx]._SLO = number;
+  if (u.type === 'NIDI') results[idx]._NIDI = number;
+  const dataIdx = unmatched.indexOf(u); unmatched[dataIdx].number = '(manual)';
   renderResult();
 }
 
