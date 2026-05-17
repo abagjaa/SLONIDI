@@ -303,29 +303,82 @@ function onDrop(e) {
   if (f) loadExcel(f);
 }
 
-// ── HELPER: Cari header row dalam sheet ──────────────────────────
-// Mencari baris pertama yang mengandung kata "SLO" atau "NIDI" di salah satu kolom
-// Mengembalikan { headerRowIdx, sloColIdx, nidiColIdx, nameColIdx } atau null jika tidak ditemukan
+// ── HELPER: Cari semua kandidat header row dalam sheet ───────────
+// Strategi: scan semua baris, kumpulkan kandidat, pilih yang terbaik.
+// "Tabel data pelanggan" cirinya:
+//   1. Ada kolom bernama tepat "SLO" atau "NIDI" (bukan "SLO Terisi", "SLO Kosong", dll)
+//   2. Idealnya juga ada kolom "Nama" atau "No" di baris yang sama
+// Kalau tidak ada yang eksak, fallback ke matching lebih longgar.
 function findHeaderRow(rows) {
-  for (let i = 0; i < Math.min(rows.length, 20); i++) {
-    const row = rows[i].map(c => String(c || ''));
-    const sloIdx  = row.findIndex(h => /\bslo\b/i.test(h));
-    const nidiIdx = row.findIndex(h => /\bnidi\b/i.test(h));
-    // Harus ada minimal salah satu kolom SLO atau NIDI
-    if (sloIdx >= 0 || nidiIdx >= 0) {
+  const candidates = [];
+
+  for (let i = 0; i < Math.min(rows.length, 50); i++) {
+    const row = rows[i].map(c => String(c || '').trim());
+
+    // Cari kolom SLO yang TEPAT (exact match atau sangat singkat)
+    // "SLO" ✓ | "Nomor SLO" ✓ | "No. SLO" ✓
+    // "SLO Terisi" ✗ | "SLO Kosong" ✗ | "% SLO" ✗
+    const sloIdx = row.findIndex(h => {
+      if (!h) return false;
+      // Pastikan tidak mengandung kata setelah SLO yang menunjukkan statistik
+      return /^(no\.?\s*)?slo$|^nomor\s+slo$|^no\.?\s+slo$/i.test(h);
+    });
+
+    const nidiIdx = row.findIndex(h => {
+      if (!h) return false;
+      return /^(no\.?\s*)?nidi$|^nomor\s+nidi$|^no\.?\s+nidi$/i.test(h);
+    });
+
+    if (sloIdx < 0 && nidiIdx < 0) continue;
+
+    const nameIdx = row.findIndex(h => /^nama$/i.test(h));
+    const noIdx   = row.findIndex(h => /^no\.?$|^nomor$/i.test(h));
+
+    // Skor: makin banyak kolom data yang cocok, makin diprioritaskan
+    let score = 0;
+    if (sloIdx  >= 0) score += 2;
+    if (nidiIdx >= 0) score += 2;
+    if (nameIdx >= 0) score += 3; // kolom Nama sangat indikasikan tabel data pelanggan
+    if (noIdx   >= 0) score += 1;
+
+    candidates.push({ headerRowIdx: i, sloColIdx: sloIdx, nidiColIdx: nidiIdx, nameColIdx: nameIdx, score });
+  }
+
+  if (candidates.length === 0) {
+    // Fallback: coba matching lebih longgar (mengandung "slo" atau "nidi" di mana saja)
+    // tapi hindari "% SLO", "SLO Terisi", "SLO Kosong"
+    for (let i = 0; i < Math.min(rows.length, 50); i++) {
+      const row = rows[i].map(c => String(c || '').trim());
+      const sloIdx  = row.findIndex(h => /slo/i.test(h) && !/terisi|kosong|%/i.test(h));
+      const nidiIdx = row.findIndex(h => /nidi/i.test(h) && !/terisi|kosong|%/i.test(h));
+      if (sloIdx < 0 && nidiIdx < 0) continue;
       const nameIdx = row.findIndex(h => /nama/i.test(h));
-      return { headerRowIdx: i, sloColIdx: sloIdx, nidiColIdx: nidiIdx, nameColIdx: nameIdx };
+      candidates.push({ headerRowIdx: i, sloColIdx: sloIdx, nidiColIdx: nidiIdx, nameColIdx: nameIdx, score: 1 });
+      break; // ambil satu saja untuk fallback
     }
   }
-  return null;
+
+  if (candidates.length === 0) return null;
+
+  // Pilih kandidat dengan skor tertinggi; jika seri, ambil yang lebih bawah (tabel data biasanya setelah rekap)
+  candidates.sort((a, b) => b.score - a.score || b.headerRowIdx - a.headerRowIdx);
+  return candidates[0];
 }
 
 // ── HELPER: Cek apakah nilai kemungkinan nomor SLO/NIDI asli ──────
-// Bukan nama kota / rekap header — harus mengandung angka
+// Nomor SLO asli: "9394.0.P.3.501.3204.E26", "A051.0.P.3.501.3204.E26"
+// Nomor NIDI asli: "I.05.2026.SQT4", "I.05.2026.SHH6"
+// Yang BUKAN nomor: "1", "2", "3" (nomor urut), "Tanggal: 18 Mei 2026", nama kota
 function looksLikeId(val) {
   if (!val) return false;
-  // Nomor SLO/NIDI biasanya mengandung angka; nama kota (Bandung, Garut, dll) tidak
-  return /\d/.test(val);
+  const v = val.trim();
+  // Harus mengandung angka
+  if (!/\d/.test(v)) return false;
+  // Jika hanya angka bulat sederhana (1, 2, 11, 100) → kemungkinan nomor urut/data rekap
+  if (/^\d{1,4}$/.test(v)) return false;
+  // Jika mengandung kata-kata umum → bukan ID
+  if (/tanggal|total|area|kota|rekap/i.test(v)) return false;
+  return true;
 }
 
 // ── LOAD EXCEL ────────────────────────────────────────────────────
