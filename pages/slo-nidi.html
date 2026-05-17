@@ -453,8 +453,25 @@ function extractSLO(text) {
 }
 
 function extractNIDI(text) {
-  const ps = [/NOMOR IDENTITAS INSTALASI TENAGA LISTRIK \(NIDI\)\s*([\w\d\.\-\/]+)/i, /\(NIDI\)\s*\n?\s*(I\.\d{2}\.\d{4}\.[\w\d]+)/i, /(I\.\d{2}\.\d{4}\.[\w\d]+)/];
-  for (const p of ps) { const m = text.match(p); if (m) return m[1].trim(); }
+  // OCR sering membaca huruf I sebagai 1 (angka) atau l (huruf L kecil)
+  // Pattern dibuat toleran terhadap variasi karakter dan spasi dari hasil OCR
+  const ps = [
+    // Pattern 1: setelah label "(NIDI)" diikuti titik dua, tangkap nomor I.XX.XXXX.XXX
+    /NIDI\)\s*[:\-]?\s*([I1l]\s*[.,]\s*\d{2}\s*[.,]\s*\d{4}\s*[.,]\s*[\w\d]+)/i,
+    // Pattern 2: pola umum I.XX.XXXX.alphanum tanpa spasi (OCR bersih)
+    /\b([I1l][.,]\d{2}[.,]\d{4}[.,][\w\d]{2,})\b/,
+    // Pattern 3: paling longgar — setelah kata NIDI, toleran spasi di dalam nomor
+    /NIDI[^\n]{0,30}?([I1l][\s.,]\s*\d[\d\s]*[.,][\s\d]{4,6}[.,]\s*[\w\d]{2,})/i,
+  ];
+  for (const p of ps) {
+    const m = text.match(p);
+    if (m) {
+      // Normalisasi: hapus spasi dalam nomor, ganti 1/l di awal dengan I
+      let num = m[1].replace(/\s+/g, '');
+      num = num.replace(/^[1l]/, 'I');
+      return num.trim();
+    }
+  }
   return null;
 }
 
