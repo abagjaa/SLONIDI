@@ -380,15 +380,27 @@ function extractNIDI(text) {
 }
 
 function extractOwner(text) {
+  // Capture a generous block after 'Nama ...:' to handle multi-line names like
+  // 'PT VGREEN ... (Planet Ban Raya Caringin)' where parentheses may span lines
   const ps = [
-    /Nama\s+pemilik\s*:\s*([^\n\r]{5,120}?)(?:\s*Nomor|\s*Alamat|\s*Titik)/i,
-    /Nama\s+Instalasi\s*:\s*([^\n\r]{5,120})/i,
-    /Nama\s+Pemilik\s+Instalasi\s*:\s*([^\n\r]{5,120})/i,
-    /Nama\s+Pelanggan\s*:\s*([^\n\r]{5,120})/i,
-    /Nama\s*:\s*([^\n\r]{5,120})/i,
-    /(?:atas\s+nama|a\.n\.)\s*[:\.]?\s*([^\n\r]{5,120})/i,
+    /Nama\s+[Pp]emilik\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
+    /Nama\s+[Pp]emilik\s+[Ii]nstalasi\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
+    /Nama\s+[Ii]nstalasi\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
+    /Nama\s+[Pp]elanggan\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
+    /Nama\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
+    /(?:atas\s+nama|a\.n\.)\s*[:\.]?\s*([^\n\r]{5,200})/i,
   ];
-  for (const p of ps) { const m = text.match(p); if (m) { let n = m[1].replace(/^[^:]+:\s*/, '').trim(); const par = n.match(/\(([^)]+)\)/); return par ? par[1] : n; } }
+  for (const p of ps) {
+    const m = text.match(p);
+    if (!m) continue;
+    // Collapse newlines into spaces so we can search the full name block as one string
+    const block = m[1].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+    // Priority 1: name inside parentheses — e.g. 'PT VGREEN ... (Planet Ban Raya Caringin)'
+    const parMatch = block.match(/\(([^)]{4,})\)/);
+    if (parMatch) return parMatch[1].trim();
+    // Priority 2: return the whole cleaned block
+    return block.replace(/^[^:]+:\s*/, '').trim();
+  }
   return null;
 }
 
