@@ -168,6 +168,10 @@
   .unmatched-title { font-size: 13px; font-weight: 700; color: var(--amber); margin-bottom: .75rem; }
   .manual-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
   .manual-row .mnum { font-size: 12px; font-family: monospace; font-weight: 600; color: var(--slate-800); min-width: 130px; }
+  .manual-row .mowner-wrap { display: flex; flex-direction: column; gap: 1px; min-width: 140px; max-width: 200px; }
+  .manual-row .mowner-name { font-size: 12px; font-weight: 700; color: #1E293B; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .manual-row .mowner-noname { font-size: 11px; font-weight: 600; color: var(--red); }
+  .manual-row .mowner-file { font-size: 10px; color: var(--slate-400); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .manual-row select {
     flex: 1; min-width: 160px; padding: 7px 10px;
     border: 1.5px solid var(--amber-border); border-radius: 8px;
@@ -376,7 +380,14 @@ function extractNIDI(text) {
 }
 
 function extractOwner(text) {
-  const ps = [/Nama\s+pemilik\s*:\s*([^\n\r]{5,120}?)(?:\s*Nomor|\s*Alamat|\s*Titik)/i, /Nama\s+Instalasi\s*:\s*([^\n\r]{5,120})/i, /Nama\s+Pemilik\s+Instalasi\s*:\s*([^\n\r]{5,120})/i];
+  const ps = [
+    /Nama\s+pemilik\s*:\s*([^\n\r]{5,120}?)(?:\s*Nomor|\s*Alamat|\s*Titik)/i,
+    /Nama\s+Instalasi\s*:\s*([^\n\r]{5,120})/i,
+    /Nama\s+Pemilik\s+Instalasi\s*:\s*([^\n\r]{5,120})/i,
+    /Nama\s+Pelanggan\s*:\s*([^\n\r]{5,120})/i,
+    /Nama\s*:\s*([^\n\r]{5,120})/i,
+    /(?:atas\s+nama|a\.n\.)\s*[:\.]?\s*([^\n\r]{5,120})/i,
+  ];
   for (const p of ps) { const m = text.match(p); if (m) { let n = m[1].replace(/^[^:]+:\s*/, '').trim(); const par = n.match(/\(([^)]+)\)/); return par ? par[1] : n; } }
   return null;
 }
@@ -471,13 +482,17 @@ function renderResult(excelNames) {
     const opts = names.map((n, j) => `<option value="${j}">${n}</option>`).join('');
     ub.innerHTML = `<div class="unmatched-box">
       <div class="unmatched-title">⚠️ ${needManual.length} PDF belum tercocokkan — pilih nama yang sesuai:</div>
-      ${needManual.map((u, i) => `<div class="manual-row">
+      ${needManual.map((u, i) => {
+        const suggestIdx = u.owner ? Math.max(0, bestMatch(u.owner, names)) : 0;
+        const optsWithSel = names.map((n, j) => `<option value="${j}"${j===suggestIdx?' selected':''}>${n}</option>`).join('');
+        return `<div class="manual-row">
         <span class="badge ${u.type==='SLO'?'badge-slo':'badge-nidi'}">${u.type}</span>
         <span class="mnum">${u.number}</span>
-        <span style="font-size:11px;color:var(--slate-400);min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${u.file}">${u.owner||u.file}</span>
-        <select id="ms_${i}">${opts}</select>
+        <span class="mowner-wrap" title="File: ${u.file}">${u.owner ? `<span class="mowner-name">📄 ${u.owner}</span><br><span class="mowner-file">${u.file}</span>` : `<span class="mowner-noname">⚠️ Nama tdk terbaca</span><br><span class="mowner-file">${u.file}</span>`}</span>
+        <select id="ms_${i}">${optsWithSel}</select>
         <button class="btn btn-sm btn-primary" onclick="applyManual(${i})">Terapkan</button>
-      </div>`).join('')}
+      </div>`;
+      }).join('')}
     </div>`;
   } else ub.innerHTML = '';
 
