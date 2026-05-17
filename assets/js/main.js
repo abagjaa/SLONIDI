@@ -61,6 +61,9 @@ const pageTitles = {
   'slo-nidi':     ['SLO & NIDI Extractor', 'Tools'],
   'rename-pdf':   ['Rename PDF', 'Tools'],
   'cek-duplikat': ['Cek Duplikat SLO & NIDI', 'Tools'],
+  'rekap':        ['Rekap & Laporan', 'Tools'],
+  'rapikan':      ['Rapikan Excel', 'Tools'],
+  'cari-data':    ['Cari Data', 'Tools'],
 };
 
 function showPage(id, navEl) {

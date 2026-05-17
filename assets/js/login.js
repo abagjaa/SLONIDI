@@ -3,7 +3,7 @@ const USERS = {
   'akusayangabagja': {
     name: 'Nadia Ramdiana',
     role: 'admin',
-    access: ['home', 'slo-nidi', 'rename-pdf', 'cek-duplikat'], // semua tools
+    access: ['home', 'slo-nidi', 'rename-pdf', 'cek-duplikat', 'rekap', 'rapikan', 'cari-data'], // semua tools
   },
   'mustika123': {
     name: 'Mustika',
