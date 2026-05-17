@@ -117,3 +117,65 @@ document.querySelectorAll('.nav-item').forEach(item => {
     if (window.innerWidth <= 768) closeSidebar();
   });
 });
+
+// ── CATATAN PINTAS ──
+const NOTE_KEY = 'nadia_catatan';
+
+function initNote() {
+  const area = document.getElementById('noteArea');
+  const lenEl = document.getElementById('noteLen');
+  if (!area) return;
+  const saved = localStorage.getItem(NOTE_KEY) || '';
+  area.value = saved;
+  if (lenEl) lenEl.textContent = saved.length + ' karakter';
+}
+
+function saveNote() {
+  const area = document.getElementById('noteArea');
+  const status = document.getElementById('noteStatus');
+  const lenEl = document.getElementById('noteLen');
+  if (!area) return;
+  localStorage.setItem(NOTE_KEY, area.value);
+  if (lenEl) lenEl.textContent = area.value.length + ' karakter';
+  if (status) {
+    status.textContent = '💾 Tersimpan';
+    clearTimeout(status._t);
+    status._t = setTimeout(() => { status.textContent = '💾 Tersimpan otomatis'; }, 1500);
+  }
+}
+
+function copyNote() {
+  const area = document.getElementById('noteArea');
+  const btn = document.getElementById('btnCopyNote');
+  if (!area || !area.value.trim()) { 
+    if (btn) { btn.textContent = '⚠️ Catatan kosong!'; setTimeout(() => { btn.innerHTML = '📋 Copy'; }, 1500); }
+    return; 
+  }
+  navigator.clipboard.writeText(area.value).then(() => {
+    if (btn) {
+      btn.innerHTML = '✅ Tersalin!';
+      btn.style.background = '#F0FDF4';
+      btn.style.borderColor = '#BBF7D0';
+      btn.style.color = '#16A34A';
+      setTimeout(() => {
+        btn.innerHTML = '📋 Copy';
+        btn.style.background = '#EFF6FF';
+        btn.style.borderColor = '#BFDBFE';
+        btn.style.color = '#2563EB';
+      }, 2000);
+    }
+  });
+}
+
+function clearNote() {
+  if (!confirm('Hapus catatan ini?')) return;
+  const area = document.getElementById('noteArea');
+  const lenEl = document.getElementById('noteLen');
+  if (!area) return;
+  area.value = '';
+  localStorage.removeItem(NOTE_KEY);
+  if (lenEl) lenEl.textContent = '0 karakter';
+}
+
+// Init catatan saat halaman load
+document.addEventListener('DOMContentLoaded', initNote);
