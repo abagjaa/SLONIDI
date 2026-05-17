@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tools NADIA</title>
@@ -44,6 +43,21 @@
     <a class="nav-item" data-page="cek-duplikat" onclick="showPage('cek-duplikat', this)">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="11" y1="8" x2="11" y2="14"/></svg>
       Cek Duplikat SLO & NIDI
+      <span class="nav-badge">New</span>
+    </a>
+    <a class="nav-item" data-page="rekap" onclick="showPage('rekap', this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Rekap & Laporan
+      <span class="nav-badge">New</span>
+    </a>
+    <a class="nav-item" data-page="rapikan" onclick="showPage('rapikan', this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Rapikan Excel
+      <span class="nav-badge">New</span>
+    </a>
+    <a class="nav-item" data-page="cari-data" onclick="showPage('cari-data', this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Cari Data
       <span class="nav-badge">New</span>
     </a>
     <!-- TAMBAH MENU BARU DI SINI -->
@@ -91,7 +105,7 @@
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon blue">📄</div>
-          <div class="stat-num" data-tools-count>3</div>
+          <div class="stat-num" data-tools-count>6</div>
           <div class="stat-label">Tools Tersedia</div>
         </div>
         <div class="stat-card">
@@ -130,6 +144,24 @@
           <div class="tool-desc">Upload Excel → deteksi otomatis nomor SLO atau NIDI yang muncul lebih dari sekali, lalu download laporan duplikatnya.</div>
           <div class="tool-arrow">Buka tool →</div>
         </div>
+        <div class="tool-card" data-page="rekap" onclick="showPage('rekap', document.querySelector('[data-page=rekap]'))">
+          <div class="tool-icon">📊</div>
+          <div class="tool-name">Rekap & Laporan</div>
+          <div class="tool-desc">Upload Excel multi-sheet per area → hitung total SLO & NIDI otomatis, tampilkan ringkasan, dan download laporan siap kirim.</div>
+          <div class="tool-arrow">Buka tool →</div>
+        </div>
+        <div class="tool-card" data-page="rapikan" onclick="showPage('rapikan', document.querySelector('[data-page=rapikan]'))">
+          <div class="tool-icon">🧹</div>
+          <div class="tool-name">Rapikan Excel</div>
+          <div class="tool-desc">Upload Excel yang berantakan → sortir dan pisahkan data per area ke masing-masing sheet secara otomatis.</div>
+          <div class="tool-arrow">Buka tool →</div>
+        </div>
+        <div class="tool-card" data-page="cari-data" onclick="showPage('cari-data', document.querySelector('[data-page=cari-data]'))">
+          <div class="tool-icon">🔎</div>
+          <div class="tool-name">Cari Data</div>
+          <div class="tool-desc">Cari nama, nomor SLO, atau NIDI dari semua sheet sekaligus tanpa buka Excel manual.</div>
+          <div class="tool-arrow">Buka tool →</div>
+        </div>
         <!-- TAMBAH TOOL CARD BARU DI SINI -->
       </div>
     </div>
@@ -146,6 +178,36 @@
     </div>
 
     <!-- TAMBAH HALAMAN TOOL BARU DI SINI -->
+    <!-- REKAP PAGE -->
+    <div class="page" id="page-rekap">
+      <div class="section-header">
+        <div class="section-title">Rekap & Laporan</div>
+        <div class="section-sub">Upload Excel per area → rekap otomatis jumlah SLO & NIDI → download laporan</div>
+      </div>
+      <div class="tool-frame">
+        <iframe src="pages/rekap.html" id="rekapFrame"></iframe>
+      </div>
+    </div>
+    <!-- RAPIKAN EXCEL PAGE -->
+    <div class="page" id="page-rapikan">
+      <div class="section-header">
+        <div class="section-title">Rapikan Excel</div>
+        <div class="section-sub">Upload Excel berantakan → sortir & pisahkan per area otomatis → download Excel rapi</div>
+      </div>
+      <div class="tool-frame">
+        <iframe src="pages/rapikan.html" id="rapikanFrame"></iframe>
+      </div>
+    </div>
+    <!-- CARI DATA PAGE -->
+    <div class="page" id="page-cari-data">
+      <div class="section-header">
+        <div class="section-title">Cari Data</div>
+        <div class="section-sub">Cari nama, nomor SLO, atau NIDI dari semua sheet sekaligus</div>
+      </div>
+      <div class="tool-frame">
+        <iframe src="pages/cari-data.html" id="cariFrame"></iframe>
+      </div>
+    </div>
     <!-- CEK DUPLIKAT PAGE -->
     <div class="page" id="page-cek-duplikat">
       <div class="section-header">

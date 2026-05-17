@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rekap & Laporan</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --blue-50:#EFF6FF;--blue-100:#DBEAFE;--blue-200:#BFDBFE;--blue-600:#2563EB;--blue-dark:#1D4ED8;
+    --green:#16A34A;--green-light:#F0FDF4;--green-border:#BBF7D0;
+    --purple:#7C3AED;--purple-light:#F5F3FF;--purple-border:#DDD6FE;
+    --amber:#D97706;--amber-light:#FFFBEB;--amber-border:#FDE68A;
+    --slate-50:#F8FAFC;--slate-100:#F1F5F9;--slate-200:#E2E8F0;
+    --slate-400:#94A3B8;--slate-600:#475569;--slate-800:#1E293B;
+    --radius:16px;--radius-sm:10px;
+  }
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:transparent;color:var(--slate-800);padding:1.5rem;font-size:14px;line-height:1.6;}
+  .card{background:#fff;border:1px solid var(--slate-200);border-radius:var(--radius);overflow:hidden;margin-bottom:1.25rem;box-shadow:0 1px 8px rgba(15,23,42,0.06);}
+  .card-header{padding:.875rem 1.25rem;background:var(--slate-50);border-bottom:1px solid var(--slate-200);display:flex;align-items:center;gap:10px;}
+  .card-title{font-size:14px;font-weight:700;color:var(--slate-800);}
+  .card-body{padding:1.25rem;}
+  .drop-zone{border:2px dashed var(--blue-200);border-radius:var(--radius-sm);padding:2rem 1rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--blue-50);}
+  .drop-zone:hover,.drop-zone.drag{border-color:var(--blue-600);background:var(--blue-100);}
+  .drop-zone-icon{font-size:2rem;margin-bottom:.5rem;}
+  .drop-zone p{font-size:14px;font-weight:600;color:var(--blue-600);margin-bottom:.25rem;}
+  .drop-zone span{font-size:12px;color:var(--slate-400);}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--radius-sm);border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;}
+  .btn-primary{background:linear-gradient(135deg,#6366F1,#4F46E5);color:#fff;box-shadow:0 4px 14px rgba(99,102,241,0.3);}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(99,102,241,0.4);}
+  .btn-green{background:linear-gradient(135deg,#22C55E,#16A34A);color:#fff;box-shadow:0 4px 14px rgba(34,197,94,0.3);}
+  .btn-green:hover{transform:translateY(-1px);}
+  .btn-ghost{background:var(--slate-100);color:var(--slate-600);border:1.5px solid var(--slate-200);}
+  .btn-ghost:hover{background:var(--slate-200);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;}
+  .sheet-info{font-size:12px;color:var(--slate-400);margin-top:.75rem;}
+  .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.875rem;margin-bottom:1.25rem;}
+  .summary-card{padding:1rem;border-radius:var(--radius-sm);text-align:center;}
+  .summary-card.blue{background:var(--blue-50);border:1px solid var(--blue-200);}
+  .summary-card.green{background:var(--green-light);border:1px solid var(--green-border);}
+  .summary-card.purple{background:var(--purple-light);border:1px solid var(--purple-border);}
+  .summary-num{font-size:28px;font-weight:700;margin-bottom:2px;}
+  .summary-num.blue{color:var(--blue-600);}
+  .summary-num.green{color:var(--green);}
+  .summary-num.purple{color:var(--purple);}
+  .summary-label{font-size:11px;color:var(--slate-400);font-weight:500;}
+  .area-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .area-table th{background:var(--slate-50);padding:.625rem .875rem;text-align:left;font-weight:700;color:var(--slate-600);font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid var(--slate-200);}
+  .area-table td{padding:.625rem .875rem;border-bottom:1px solid var(--slate-100);}
+  .area-table tr:last-child td{border-bottom:none;}
+  .area-table tr:hover td{background:var(--slate-50);}
+  .badge-area{display:inline-block;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:600;background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border);}
+  .num-slo{font-weight:700;color:var(--blue-600);}
+  .num-nidi{font-weight:700;color:var(--green);}
+  .num-total{font-weight:700;color:var(--slate-800);}
+  .progress-bar{height:6px;border-radius:99px;background:var(--slate-100);overflow:hidden;margin-top:4px;}
+  .progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#6366F1,#4F46E5);}
+  .action-row{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;}
+  .info-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;font-size:12px;font-weight:600;}
+  .pill-blue{background:var(--blue-50);color:var(--blue-600);border:1px solid var(--blue-200);}
+  .pill-green{background:var(--green-light);color:var(--green);border:1px solid var(--green-border);}
+  .pill-purple{background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border);}
+  #resultCard{display:none;}
+</style>
+</head>
+<body>
+
+<!-- STEP 1: Upload -->
+<div class="card">
+  <div class="card-header">
+    <span style="font-size:18px">📁</span>
+    <span class="card-title">Upload File Excel</span>
+  </div>
+  <div class="card-body">
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileIn').click()"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="event.preventDefault();this.classList.remove('drag');handleFile(event.dataTransfer.files[0])">
+      <div class="drop-zone-icon">📊</div>
+      <p>Klik atau drag file Excel di sini</p>
+      <span>Format .xlsx atau .xls • Multi-sheet per area didukung</span>
+    </div>
+    <input type="file" id="fileIn" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])">
+    <div class="sheet-info" id="sheetInfo"></div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="card" id="resultCard">
+  <div class="card-header">
+    <span style="font-size:18px">📊</span>
+    <span class="card-title">Hasil Rekap</span>
+  </div>
+  <div class="card-body">
+    <!-- Summary pills -->
+    <div id="summaryPills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;"></div>
+
+    <!-- Summary cards -->
+    <div class="summary-grid" id="summaryGrid"></div>
+
+    <!-- Table per area -->
+    <div style="overflow-x:auto;">
+      <table class="area-table">
+        <thead>
+          <tr>
+            <th>Area / Sheet</th>
+            <th>Total Data</th>
+            <th>SLO Terisi</th>
+            <th>NIDI Terisi</th>
+            <th>Kelengkapan</th>
+          </tr>
+        </thead>
+        <tbody id="areaTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Actions -->
+    <div class="action-row" style="margin-top:1.25rem;">
+      <button class="btn btn-green" onclick="downloadLaporan()">⬇️ Download Laporan Excel</button>
+      <button class="btn btn-ghost" onclick="resetAll()">🔄 Upload Ulang</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let workbook = null;
+let areaStats = [];
+
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    workbook = XLSX.read(e.target.result, { type: 'array' });
+    const sheets = workbook.SheetNames;
+    document.getElementById('sheetInfo').innerHTML =
+      `✅ File dimuat: <strong>${file.name}</strong> &nbsp;|&nbsp; ${sheets.length} sheet ditemukan: ${sheets.map(s=>`<strong>${s}</strong>`).join(', ')}`;
+    processAll();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function findCol(headers, keywords) {
+  for (const kw of keywords) {
+    const idx = headers.findIndex(h => h && String(h).toLowerCase().includes(kw.toLowerCase()));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+function processAll() {
+  areaStats = [];
+  let grandTotal = 0, grandSLO = 0, grandNIDI = 0;
+
+  for (const sheetName of workbook.SheetNames) {
+    const ws = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    if (rows.length < 2) continue;
+
+    // Cari header row (baris yang punya kolom nama/slo/nidi)
+    let headerIdx = 0;
+    for (let i = 0; i < Math.min(5, rows.length); i++) {
+      const r = rows[i].map(c => String(c).toLowerCase());
+      if (r.some(c => c.includes('nama') || c.includes('slo') || c.includes('nidi'))) {
+        headerIdx = i; break;
+      }
+    }
+
+    const headers = rows[headerIdx].map(c => String(c));
+    const dataRows = rows.slice(headerIdx + 1).filter(r => r.some(c => c !== ''));
+
+    const sloIdx = findCol(headers, ['slo', 'laik operasi', 'sertifikat']);
+    const nidiIdx = findCol(headers, ['nidi', 'identitas instalasi', 'nomor registrasi']);
+    const namaIdx = findCol(headers, ['nama', 'name', 'pemilik']);
+
+    const total = dataRows.length;
+    const sloTerisi = sloIdx >= 0 ? dataRows.filter(r => r[sloIdx] && String(r[sloIdx]).trim()).length : 0;
+    const nidiTerisi = nidiIdx >= 0 ? dataRows.filter(r => r[nidiIdx] && String(r[nidiIdx]).trim()).length : 0;
+
+    areaStats.push({ area: sheetName, total, sloTerisi, nidiTerisi, sloIdx, nidiIdx, namaIdx, headerIdx });
+    grandTotal += total;
+    grandSLO += sloTerisi;
+    grandNIDI += nidiTerisi;
+  }
+
+  renderResult(grandTotal, grandSLO, grandNIDI);
+}
+
+function renderResult(grandTotal, grandSLO, grandNIDI) {
+  // Summary pills
+  document.getElementById('summaryPills').innerHTML = `
+    <span class="info-pill pill-purple">📋 ${areaStats.length} Area</span>
+    <span class="info-pill pill-blue">👥 ${grandTotal} Total Data</span>
+    <span class="info-pill pill-blue">SLO: ${grandSLO}/${grandTotal}</span>
+    <span class="info-pill pill-green">NIDI: ${grandNIDI}/${grandTotal}</span>`;
+
+  // Summary cards
+  document.getElementById('summaryGrid').innerHTML = `
+    <div class="summary-card purple">
+      <div class="summary-num purple">${areaStats.length}</div>
+      <div class="summary-label">Area / Sheet</div>
+    </div>
+    <div class="summary-card blue">
+      <div class="summary-num blue">${grandTotal}</div>
+      <div class="summary-label">Total Data</div>
+    </div>
+    <div class="summary-card blue">
+      <div class="summary-num blue">${grandSLO}</div>
+      <div class="summary-label">SLO Terisi</div>
+    </div>
+    <div class="summary-card green">
+      <div class="summary-num green">${grandNIDI}</div>
+      <div class="summary-label">NIDI Terisi</div>
+    </div>`;
+
+  // Table rows
+  document.getElementById('areaTableBody').innerHTML = areaStats.map(a => {
+    const pct = a.total > 0 ? Math.round(((a.sloTerisi + a.nidiTerisi) / (a.total * 2)) * 100) : 0;
+    return `<tr>
+      <td><span class="badge-area">${a.area}</span></td>
+      <td class="num-total">${a.total}</td>
+      <td class="num-slo">${a.sloTerisi} <span style="font-weight:400;color:var(--slate-400);font-size:11px">(${a.total>0?Math.round(a.sloTerisi/a.total*100):0}%)</span></td>
+      <td class="num-nidi">${a.nidiTerisi} <span style="font-weight:400;color:var(--slate-400);font-size:11px">(${a.total>0?Math.round(a.nidiTerisi/a.total*100):0}%)</span></td>
+      <td style="min-width:120px">
+        <div style="font-size:12px;font-weight:600;color:var(--slate-600);margin-bottom:3px">${pct}%</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </td>
+    </tr>`;
+  }).join('') + `<tr style="background:var(--slate-50);">
+    <td style="font-weight:700;color:var(--slate-800);">TOTAL KESELURUHAN</td>
+    <td class="num-total">${grandTotal}</td>
+    <td class="num-slo">${grandSLO}</td>
+    <td class="num-nidi">${grandNIDI}</td>
+    <td style="font-weight:700;color:var(--purple)">${grandTotal>0?Math.round(((grandSLO+grandNIDI)/(grandTotal*2))*100):0}%</td>
+  </tr>`;
+
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function downloadLaporan() {
+  const wb = XLSX.utils.book_new();
+  const now = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+
+  // Sheet Rekap
+  const rekapData = [
+    ['REKAP SLO & NIDI - WILAYAH JAWA BARAT'],
+    [`Tanggal: ${now}`],
+    [],
+    ['Area / Sheet', 'Total Data', 'SLO Terisi', 'SLO Kosong', '% SLO', 'NIDI Terisi', 'NIDI Kosong', '% NIDI', 'Kelengkapan']
+  ];
+  let grandTotal=0, grandSLO=0, grandNIDI=0;
+  for (const a of areaStats) {
+    const pctSLO = a.total>0?Math.round(a.sloTerisi/a.total*100):0;
+    const pctNIDI = a.total>0?Math.round(a.nidiTerisi/a.total*100):0;
+    const pctAll = a.total>0?Math.round(((a.sloTerisi+a.nidiTerisi)/(a.total*2))*100):0;
+    rekapData.push([a.area, a.total, a.sloTerisi, a.total-a.sloTerisi, pctSLO+'%', a.nidiTerisi, a.total-a.nidiTerisi, pctNIDI+'%', pctAll+'%']);
+    grandTotal+=a.total; grandSLO+=a.sloTerisi; grandNIDI+=a.nidiTerisi;
+  }
+  rekapData.push([]);
+  rekapData.push(['TOTAL', grandTotal, grandSLO, grandTotal-grandSLO,
+    grandTotal>0?Math.round(grandSLO/grandTotal*100)+'%':'0%',
+    grandNIDI, grandTotal-grandNIDI,
+    grandTotal>0?Math.round(grandNIDI/grandTotal*100)+'%':'0%',
+    grandTotal>0?Math.round(((grandSLO+grandNIDI)/(grandTotal*2))*100)+'%':'0%'
+  ]);
+
+  const wsRekap = XLSX.utils.aoa_to_sheet(rekapData);
+  wsRekap['!cols'] = [20,14,12,12,8,12,12,8,14].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, wsRekap, 'Rekap');
+
+  // Sheet per area (salin dari workbook asli)
+  for (const sheetName of workbook.SheetNames) {
+    const ws = workbook.Sheets[sheetName];
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  }
+
+  const tanggal = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `Laporan_SLO_NIDI_${tanggal}.xlsx`);
+}
+
+function resetAll() {
+  workbook = null; areaStats = [];
+  document.getElementById('fileIn').value = '';
+  document.getElementById('sheetInfo').innerHTML = '';
+  document.getElementById('resultCard').style.display = 'none';
+}
+</script>
+</body>
+</html>
