@@ -29,7 +29,7 @@
   .drop-zone span{font-size:12px;color:var(--slate-400);}
   .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--radius-sm);border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;}
   .btn-primary{background:linear-gradient(135deg,#6366F1,#4F46E5);color:#fff;box-shadow:0 4px 14px rgba(99,102,241,0.3);}
-  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(99,102,241,0.4);}
+  .btn-primary:hover{transform:translateY(-1px);}
   .btn-green{background:linear-gradient(135deg,#22C55E,#16A34A);color:#fff;box-shadow:0 4px 14px rgba(34,197,94,0.3);}
   .btn-green:hover{transform:translateY(-1px);}
   .btn-ghost{background:var(--slate-100);color:var(--slate-600);border:1.5px solid var(--slate-200);}
@@ -52,6 +52,11 @@
   .area-table tr:last-child td{border-bottom:none;}
   .area-table tr:hover td{background:var(--slate-50);}
   .badge-area{display:inline-block;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:600;background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border);}
+  .badge-mode{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;}
+  .badge-mode.kolom{background:var(--blue-50);color:var(--blue-600);border:1px solid var(--blue-200);}
+  .badge-mode.alamat{background:var(--amber-light);color:var(--amber);border:1px solid var(--amber-border);}
+  .badge-mode.scan{background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border);}
+  .badge-mode.sheet{background:var(--green-light);color:var(--green);border:1px solid var(--green-border);}
   .num-slo{font-weight:700;color:var(--blue-600);}
   .num-nidi{font-weight:700;color:var(--green);}
   .num-total{font-weight:700;color:var(--slate-800);}
@@ -62,6 +67,9 @@
   .pill-blue{background:var(--blue-50);color:var(--blue-600);border:1px solid var(--blue-200);}
   .pill-green{background:var(--green-light);color:var(--green);border:1px solid var(--green-border);}
   .pill-purple{background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border);}
+  .detect-status{padding:.875rem 1rem;border-radius:var(--radius-sm);font-size:13px;margin-bottom:1rem;border:1px solid var(--slate-200);background:var(--slate-50);}
+  .detect-row{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;}
+  .detect-label{font-size:11px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:.04em;min-width:80px;}
   #resultCard{display:none;}
 </style>
 </head>
@@ -80,7 +88,7 @@
       ondrop="event.preventDefault();this.classList.remove('drag');handleFile(event.dataTransfer.files[0])">
       <div class="drop-zone-icon">📊</div>
       <p>Klik atau drag file Excel di sini</p>
-      <span>Format .xlsx atau .xls • Multi-sheet per area didukung</span>
+      <span>Format .xlsx atau .xls • 1 sheet besar atau multi-sheet per area</span>
     </div>
     <input type="file" id="fileIn" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])">
     <div class="sheet-info" id="sheetInfo"></div>
@@ -94,6 +102,9 @@
     <span class="card-title">Hasil Rekap</span>
   </div>
   <div class="card-body">
+    <!-- Mode detect info -->
+    <div class="detect-status" id="detectStatus"></div>
+
     <!-- Summary pills -->
     <div id="summaryPills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;"></div>
 
@@ -105,7 +116,7 @@
       <table class="area-table">
         <thead>
           <tr>
-            <th>Area / Sheet</th>
+            <th>Area / Kota</th>
             <th>Total Data</th>
             <th>SLO Terisi</th>
             <th>NIDI Terisi</th>
@@ -125,20 +136,37 @@
 </div>
 
 <script>
-let workbook = null;
-let areaStats = [];
+// ── AREA ENGINE ──────────────────────────────────────────────────────────────
+const AREA_MAP = [
+  { label: 'Bandung Barat',  re: /\bBandung\s+Barat\b|\bKBB\b/i },
+  { label: 'Bandung',        re: /\bBandung\b/i },
+  { label: 'Bekasi',         re: /\bBekasi\b/i },
+  { label: 'Bogor',          re: /\bBogor\b/i },
+  { label: 'Cimahi',         re: /\bCimahi\b/i },
+  { label: 'Cirebon',        re: /\bCirebon\b/i },
+  { label: 'Depok',          re: /\bDepok\b/i },
+  { label: 'Karawang',       re: /\bKarawang\b|\bKRW\b/i },
+  { label: 'Cianjur',        re: /\bCianjur\b/i },
+  { label: 'Sukabumi',       re: /\bSukabumi\b/i },
+  { label: 'Garut',          re: /\bGarut\b/i },
+  { label: 'Tasikmalaya',    re: /\bTasikmalaya\b|\bTasik\b/i },
+  { label: 'Banjar',         re: /\bBanjar\b/i },
+  { label: 'Ciamis',         re: /\bCiamis\b/i },
+  { label: 'Pangandaran',    re: /\bPangandaran\b/i },
+  { label: 'Kuningan',       re: /\bKuningan\b/i },
+  { label: 'Majalengka',     re: /\bMajalengka\b/i },
+  { label: 'Indramayu',      re: /\bIndramayu\b/i },
+  { label: 'Subang',         re: /\bSubang\b/i },
+  { label: 'Purwakarta',     re: /\bPurwakarta\b/i },
+  { label: 'Sumedang',       re: /\bSumedang\b/i },
+];
 
-function handleFile(file) {
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    workbook = XLSX.read(e.target.result, { type: 'array' });
-    const sheets = workbook.SheetNames;
-    document.getElementById('sheetInfo').innerHTML =
-      `✅ File dimuat: <strong>${file.name}</strong> &nbsp;|&nbsp; ${sheets.length} sheet ditemukan: ${sheets.map(s=>`<strong>${s}</strong>`).join(', ')}`;
-    processAll();
-  };
-  reader.readAsArrayBuffer(file);
+function deteksiArea(teks) {
+  const s = String(teks || '');
+  for (const k of AREA_MAP) {
+    if (k.re.test(s)) return k.label;
+  }
+  return null;
 }
 
 function findCol(headers, keywords) {
@@ -149,72 +177,192 @@ function findCol(headers, keywords) {
   return -1;
 }
 
+// ── State ────────────────────────────────────────────────────────────────────
+let workbook = null;
+let areaStats = [];
+let globalMode = ''; // 'sheet' | 'kolom' | 'alamat' | 'scan'
+
+// ── File handler ─────────────────────────────────────────────────────────────
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    workbook = XLSX.read(e.target.result, { type: 'array' });
+    const sheets = workbook.SheetNames;
+    document.getElementById('sheetInfo').innerHTML =
+      `✅ File dimuat: <strong>${file.name}</strong> &nbsp;|&nbsp; ${sheets.length} sheet: ${sheets.map(s=>`<strong>${s}</strong>`).join(', ')}`;
+    processAll();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── Proses semua sheet ────────────────────────────────────────────────────────
 function processAll() {
   areaStats = [];
   let grandTotal = 0, grandSLO = 0, grandNIDI = 0;
 
-  for (const sheetName of workbook.SheetNames) {
-    const ws = workbook.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-    if (rows.length < 2) continue;
+  // Deteksi skenario:
+  // A) Multi-sheet dan nama sheet cocok area → "sheet mode"
+  // B) 1 sheet atau nama sheet tidak mencerminkan area → cek kolom
+  const sheets = workbook.SheetNames;
+  const sheetAreasDetected = sheets.map(s => deteksiArea(s)).filter(Boolean);
+  const useSheetMode = sheets.length > 1 && sheetAreasDetected.length >= Math.ceil(sheets.length * 0.5);
 
-    // Cari header row (baris yang punya kolom nama/slo/nidi)
-    let headerIdx = 0;
-    for (let i = 0; i < Math.min(5, rows.length); i++) {
-      const r = rows[i].map(c => String(c).toLowerCase());
-      if (r.some(c => c.includes('nama') || c.includes('slo') || c.includes('nidi'))) {
-        headerIdx = i; break;
+  if (useSheetMode) {
+    globalMode = 'sheet';
+    // Setiap sheet = 1 area
+    for (const sheetName of sheets) {
+      const result = processSheet(sheetName, deteksiArea(sheetName) || sheetName);
+      if (!result) continue;
+      areaStats.push(result);
+      grandTotal += result.total;
+      grandSLO   += result.sloTerisi;
+      grandNIDI  += result.nidiTerisi;
+    }
+  } else {
+    // Gabungkan semua sheet, lalu kelompokkan per area
+    const allRowsFlat = [];
+    let sharedHeaders = null;
+    let detectedMode = null;
+    let areaColIdx = -1, alamatColIdx = -1;
+    let sloIdx = -1, nidiIdx = -1;
+
+    for (const sheetName of sheets) {
+      const ws = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (rows.length < 2) continue;
+
+      let headerIdx = 0;
+      for (let i = 0; i < Math.min(6, rows.length); i++) {
+        const r = rows[i].map(c => String(c).toLowerCase());
+        if (r.some(c => c.includes('nama') || c.includes('slo') || c.includes('nidi') ||
+                        c.includes('area') || c.includes('alamat') || c.includes('kota'))) {
+          headerIdx = i; break;
+        }
+      }
+
+      const hdrs = rows[headerIdx].map(c => String(c));
+      if (!sharedHeaders) {
+        sharedHeaders = hdrs;
+        areaColIdx   = hdrs.findIndex(h => /\b(area|kota|kabupaten|wilayah|daerah|region)\b/i.test(h));
+        alamatColIdx = hdrs.findIndex(h => /\b(alamat|address|lokasi|tempat)\b/i.test(h));
+        sloIdx  = findCol(hdrs, ['slo','laik operasi','sertifikat']);
+        nidiIdx = findCol(hdrs, ['nidi','identitas instalasi','nomor registrasi']);
+
+        if (areaColIdx >= 0)        detectedMode = 'kolom';
+        else if (alamatColIdx >= 0) detectedMode = 'alamat';
+        else                        detectedMode = 'scan';
+        globalMode = detectedMode;
+      }
+
+      for (const row of rows.slice(headerIdx + 1).filter(r => r.some(c => c !== ''))) {
+        allRowsFlat.push(row);
       }
     }
 
-    const headers = rows[headerIdx].map(c => String(c));
-    const dataRows = rows.slice(headerIdx + 1).filter(r => r.some(c => c !== ''));
+    if (!sharedHeaders) { alert('Tidak ada data yang bisa dibaca.'); return; }
 
-    const sloIdx = findCol(headers, ['slo', 'laik operasi', 'sertifikat']);
-    const nidiIdx = findCol(headers, ['nidi', 'identitas instalasi', 'nomor registrasi']);
-    const namaIdx = findCol(headers, ['nama', 'name', 'pemilik']);
+    // Kelompokkan baris per area
+    const groups = {};
+    for (const row of allRowsFlat) {
+      const area = tentukanAreaRow(row, detectedMode, areaColIdx, alamatColIdx);
+      if (!groups[area]) groups[area] = [];
+      groups[area].push(row);
+    }
 
-    const total = dataRows.length;
-    const sloTerisi = sloIdx >= 0 ? dataRows.filter(r => r[sloIdx] && String(r[sloIdx]).trim()).length : 0;
-    const nidiTerisi = nidiIdx >= 0 ? dataRows.filter(r => r[nidiIdx] && String(r[nidiIdx]).trim()).length : 0;
-
-    areaStats.push({ area: sheetName, total, sloTerisi, nidiTerisi, sloIdx, nidiIdx, namaIdx, headerIdx });
-    grandTotal += total;
-    grandSLO += sloTerisi;
-    grandNIDI += nidiTerisi;
+    // Buat areaStats dari groups
+    for (const [area, rows] of Object.entries(groups)) {
+      const total     = rows.length;
+      const sloTerisi = sloIdx >= 0 ? rows.filter(r => r[sloIdx] && String(r[sloIdx]).trim()).length : 0;
+      const nidiTerisi= nidiIdx >= 0? rows.filter(r => r[nidiIdx] && String(r[nidiIdx]).trim()).length : 0;
+      areaStats.push({ area, total, sloTerisi, nidiTerisi, rows, headers: sharedHeaders, sloIdx, nidiIdx });
+      grandTotal += total; grandSLO += sloTerisi; grandNIDI += nidiTerisi;
+    }
   }
+
+  // Sort: Lainnya ke bawah, sisanya alfabet
+  areaStats.sort((a, b) => {
+    if (a.area === 'Lainnya') return 1;
+    if (b.area === 'Lainnya') return -1;
+    return a.area.localeCompare(b.area, 'id');
+  });
 
   renderResult(grandTotal, grandSLO, grandNIDI);
 }
 
+// ── Proses 1 sheet (mode sheet) ───────────────────────────────────────────────
+function processSheet(sheetName, areaLabel) {
+  const ws = workbook.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  if (rows.length < 2) return null;
+
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(6, rows.length); i++) {
+    const r = rows[i].map(c => String(c).toLowerCase());
+    if (r.some(c => c.includes('nama') || c.includes('slo') || c.includes('nidi'))) {
+      headerIdx = i; break;
+    }
+  }
+
+  const headers  = rows[headerIdx].map(c => String(c));
+  const dataRows = rows.slice(headerIdx + 1).filter(r => r.some(c => c !== ''));
+
+  const sloIdx  = findCol(headers, ['slo','laik operasi','sertifikat']);
+  const nidiIdx = findCol(headers, ['nidi','identitas instalasi','nomor registrasi']);
+
+  return {
+    area: areaLabel,
+    total: dataRows.length,
+    sloTerisi: sloIdx >= 0 ? dataRows.filter(r => r[sloIdx] && String(r[sloIdx]).trim()).length : 0,
+    nidiTerisi: nidiIdx >= 0? dataRows.filter(r => r[nidiIdx] && String(r[nidiIdx]).trim()).length : 0,
+    rows: dataRows, headers, sloIdx, nidiIdx
+  };
+}
+
+// ── Tentukan area sebuah row ──────────────────────────────────────────────────
+function tentukanAreaRow(row, mode, areaColIdx, alamatColIdx) {
+  if (mode === 'kolom' && areaColIdx >= 0) {
+    const val = String(row[areaColIdx] || '').trim();
+    if (val) { const d = deteksiArea(val); return d || val; }
+  }
+  if (mode === 'alamat' && alamatColIdx >= 0) {
+    const d = deteksiArea(row[alamatColIdx]);
+    if (d) return d;
+  }
+  if (mode === 'scan') {
+    for (const cell of row) { const d = deteksiArea(cell); if (d) return d; }
+  }
+  return 'Lainnya';
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
 function renderResult(grandTotal, grandSLO, grandNIDI) {
-  // Summary pills
+  const modeInfo = {
+    sheet:  { icon: '📋', label: 'Dari Nama Sheet',  cls: 'sheet',  desc: 'Setiap sheet dideteksi sebagai area terpisah berdasarkan nama sheet.' },
+    kolom:  { icon: '📋', label: 'Dari Kolom Area',  cls: 'kolom',  desc: 'Kolom area ditemukan — data dikelompokkan dari kolom tersebut.' },
+    alamat: { icon: '📍', label: 'Dari Kolom Alamat',cls: 'alamat', desc: 'Tidak ada kolom area — kota/kabupaten dideteksi otomatis dari teks alamat.' },
+    scan:   { icon: '🔍', label: 'Scan Semua Kolom', cls: 'scan',   desc: 'Tidak ada kolom area/alamat — seluruh teks di setiap baris di-scan.' },
+  }[globalMode] || { icon: '❓', label: 'Otomatis', cls: 'scan', desc: '' };
+
+  document.getElementById('detectStatus').innerHTML = `
+    <div class="detect-row">
+      <span class="detect-label">Mode</span>
+      <span class="badge-mode ${modeInfo.cls}">${modeInfo.icon} ${modeInfo.label}</span>
+      <span style="font-size:13px;color:var(--slate-600)">${modeInfo.desc}</span>
+    </div>`;
+
   document.getElementById('summaryPills').innerHTML = `
     <span class="info-pill pill-purple">📋 ${areaStats.length} Area</span>
-    <span class="info-pill pill-blue">👥 ${grandTotal} Total Data</span>
+    <span class="info-pill pill-blue">👥 ${grandTotal} Total</span>
     <span class="info-pill pill-blue">SLO: ${grandSLO}/${grandTotal}</span>
     <span class="info-pill pill-green">NIDI: ${grandNIDI}/${grandTotal}</span>`;
 
-  // Summary cards
   document.getElementById('summaryGrid').innerHTML = `
-    <div class="summary-card purple">
-      <div class="summary-num purple">${areaStats.length}</div>
-      <div class="summary-label">Area / Sheet</div>
-    </div>
-    <div class="summary-card blue">
-      <div class="summary-num blue">${grandTotal}</div>
-      <div class="summary-label">Total Data</div>
-    </div>
-    <div class="summary-card blue">
-      <div class="summary-num blue">${grandSLO}</div>
-      <div class="summary-label">SLO Terisi</div>
-    </div>
-    <div class="summary-card green">
-      <div class="summary-num green">${grandNIDI}</div>
-      <div class="summary-label">NIDI Terisi</div>
-    </div>`;
+    <div class="summary-card purple"><div class="summary-num purple">${areaStats.length}</div><div class="summary-label">Area</div></div>
+    <div class="summary-card blue"><div class="summary-num blue">${grandTotal}</div><div class="summary-label">Total Data</div></div>
+    <div class="summary-card blue"><div class="summary-num blue">${grandSLO}</div><div class="summary-label">SLO Terisi</div></div>
+    <div class="summary-card green"><div class="summary-num green">${grandNIDI}</div><div class="summary-label">NIDI Terisi</div></div>`;
 
-  // Table rows
   document.getElementById('areaTableBody').innerHTML = areaStats.map(a => {
     const pct = a.total > 0 ? Math.round(((a.sloTerisi + a.nidiTerisi) / (a.total * 2)) * 100) : 0;
     return `<tr>
@@ -239,47 +387,51 @@ function renderResult(grandTotal, grandSLO, grandNIDI) {
   document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
 }
 
+// ── Download ──────────────────────────────────────────────────────────────────
 function downloadLaporan() {
   const wb = XLSX.utils.book_new();
   const now = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  let grandTotal=0, grandSLO=0, grandNIDI=0;
 
-  // Sheet Rekap
   const rekapData = [
     ['REKAP SLO & NIDI - WILAYAH JAWA BARAT'],
     [`Tanggal: ${now}`],
     [],
-    ['Area / Sheet', 'Total Data', 'SLO Terisi', 'SLO Kosong', '% SLO', 'NIDI Terisi', 'NIDI Kosong', '% NIDI', 'Kelengkapan']
+    ['Area / Kota','Total Data','SLO Terisi','SLO Kosong','% SLO','NIDI Terisi','NIDI Kosong','% NIDI','Kelengkapan']
   ];
-  let grandTotal=0, grandSLO=0, grandNIDI=0;
+
   for (const a of areaStats) {
     const pctSLO = a.total>0?Math.round(a.sloTerisi/a.total*100):0;
-    const pctNIDI = a.total>0?Math.round(a.nidiTerisi/a.total*100):0;
+    const pctNIDI= a.total>0?Math.round(a.nidiTerisi/a.total*100):0;
     const pctAll = a.total>0?Math.round(((a.sloTerisi+a.nidiTerisi)/(a.total*2))*100):0;
-    rekapData.push([a.area, a.total, a.sloTerisi, a.total-a.sloTerisi, pctSLO+'%', a.nidiTerisi, a.total-a.nidiTerisi, pctNIDI+'%', pctAll+'%']);
+    rekapData.push([a.area,a.total,a.sloTerisi,a.total-a.sloTerisi,pctSLO+'%',a.nidiTerisi,a.total-a.nidiTerisi,pctNIDI+'%',pctAll+'%']);
     grandTotal+=a.total; grandSLO+=a.sloTerisi; grandNIDI+=a.nidiTerisi;
   }
   rekapData.push([]);
-  rekapData.push(['TOTAL', grandTotal, grandSLO, grandTotal-grandSLO,
+  rekapData.push(['TOTAL',grandTotal,grandSLO,grandTotal-grandSLO,
     grandTotal>0?Math.round(grandSLO/grandTotal*100)+'%':'0%',
-    grandNIDI, grandTotal-grandNIDI,
+    grandNIDI,grandTotal-grandNIDI,
     grandTotal>0?Math.round(grandNIDI/grandTotal*100)+'%':'0%',
-    grandTotal>0?Math.round(((grandSLO+grandNIDI)/(grandTotal*2))*100)+'%':'0%'
-  ]);
+    grandTotal>0?Math.round(((grandSLO+grandNIDI)/(grandTotal*2))*100)+'%':'0%']);
 
   const wsRekap = XLSX.utils.aoa_to_sheet(rekapData);
   wsRekap['!cols'] = [20,14,12,12,8,12,12,8,14].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb, wsRekap, 'Rekap');
 
-  // Sheet per area (salin dari workbook asli)
-  for (const sheetName of workbook.SheetNames) {
-    const ws = workbook.Sheets[sheetName];
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  // Sheet per area
+  for (const a of areaStats) {
+    if (!a.rows || !a.headers) continue;
+    const data = [a.headers, ...a.rows.map(row => a.headers.map((_,i) => row[i] ?? ''))];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = a.headers.map(() => ({wch: 22}));
+    const safeName = a.area.substring(0,28).replace(/[\\\/\?\*\[\]]/g,'');
+    XLSX.utils.book_append_sheet(wb, ws, safeName || 'Lainnya');
   }
 
-  const tanggal = new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, `Laporan_SLO_NIDI_${tanggal}.xlsx`);
+  XLSX.writeFile(wb, `Laporan_SLO_NIDI_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
+// ── Reset ──────────────────────────────────────────────────────────────────────
 function resetAll() {
   workbook = null; areaStats = [];
   document.getElementById('fileIn').value = '';

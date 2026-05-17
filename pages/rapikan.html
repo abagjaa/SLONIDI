@@ -45,18 +45,22 @@
   .preview-table td{padding:.5rem .75rem;border-bottom:1px solid var(--slate-100);}
   .preview-table tr:hover td{background:var(--slate-50);}
   .badge-area{display:inline-block;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:600;background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border);}
-  .badge-warn{display:inline-block;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:600;background:var(--amber-light);color:var(--amber);border:1px solid var(--amber-border);}
+  .badge-mode{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;}
+  .badge-mode.kolom{background:var(--blue-50);color:var(--blue-600);border:1px solid var(--blue-200);}
+  .badge-mode.alamat{background:var(--amber-light);color:var(--amber);border:1px solid var(--amber-border);}
+  .badge-mode.scan{background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border);}
   .info-box{padding:.875rem 1rem;border-radius:var(--radius-sm);font-size:13px;margin-bottom:1rem;}
   .info-box.blue{background:var(--blue-50);border:1px solid var(--blue-200);color:var(--blue-dark);}
   .info-box.green{background:var(--green-light);border:1px solid var(--green-border);color:var(--green);}
+  .info-box.amber{background:var(--amber-light);border:1px solid var(--amber-border);color:var(--amber);}
   .area-count-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.875rem;}
   .pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:600;}
   .pill-purple{background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border);}
   .pill-blue{background:var(--blue-50);color:var(--blue-600);border:1px solid var(--blue-200);}
-  #configCard,#previewCard,#resultCard{display:none;}
-  .btn-mode{background:var(--slate-100);color:var(--slate-600);border:1.5px solid var(--slate-200);border-radius:var(--radius-sm);padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;}
-  .btn-mode.active{background:linear-gradient(135deg,#6366F1,#4F46E5);color:#fff;border-color:transparent;box-shadow:0 3px 10px rgba(99,102,241,0.3);}
-  .btn-mode:hover:not(.active){background:var(--slate-200);}
+  .detect-status{padding:.875rem 1rem;border-radius:var(--radius-sm);font-size:13px;margin-bottom:1rem;border:1px solid var(--slate-200);background:var(--slate-50);}
+  .detect-row{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;}
+  .detect-label{font-size:11px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:.04em;min-width:80px;}
+  #configCard,#previewCard{display:none;}
 </style>
 </head>
 <body>
@@ -81,62 +85,28 @@
   </div>
 </div>
 
-<!-- STEP 2: Konfigurasi kolom -->
+<!-- STEP 2: Config -->
 <div class="card" id="configCard">
   <div class="card-header">
     <span style="font-size:18px">⚙️</span>
-    <span class="card-title">Tentukan Kolom Area & Sortir</span>
+    <span class="card-title">Konfigurasi</span>
   </div>
   <div class="card-body">
-    <!-- Mode Toggle -->
-    <div style="display:flex;gap:.5rem;margin-bottom:1rem;">
-      <button class="btn btn-mode active" id="modeKolom" onclick="setMode('kolom')">📋 Dari Kolom Area</button>
-      <button class="btn btn-mode" id="modeAlamat" onclick="setMode('alamat')">🔍 Deteksi dari Alamat</button>
-    </div>
 
-    <!-- Mode: Kolom Area (default) -->
-    <div id="panelKolom">
-      <div class="info-box blue">💡 Pilih kolom yang berisi <strong>nama area/kota</strong> — data akan dipisahkan per area ke sheet masing-masing.</div>
-      <div class="col-config">
-        <div class="col-select-group">
-          <div id="areaColWrap">
-            <label>Kolom Area / Kota</label>
-            <select id="areaCol"></select>
-          </div>
-        </div>
-        <div class="col-select-group">
-          <label>Sheet Sumber (jika multi-sheet)</label>
-          <select id="sheetSel" onchange="changeSheet()"></select>
-        </div>
-        <div class="col-select-group">
-          <label>Sortir Berdasarkan</label>
-          <select id="sortCol">
-            <option value="">— Tidak disortir —</option>
-          </select>
-        </div>
-      </div>
-    </div>
+    <!-- Auto-detect status -->
+    <div class="detect-status" id="detectStatus"></div>
 
-    <!-- Mode: Deteksi dari Alamat -->
-    <div id="panelAlamat" style="display:none;">
-      <div class="info-box blue">🔍 Sistem akan <strong>scan teks alamat</strong> dan mencocokkan nama kota/kabupaten se-Jawa Barat secara otomatis. Tidak perlu kolom area terpisah.</div>
-      <div class="col-config">
-        <div class="col-select-group">
-          <label>Kolom Alamat</label>
-          <select id="alamatCol"></select>
-        </div>
-        <div class="col-select-group">
-          <label>Sheet Sumber (jika multi-sheet)</label>
-          <select id="sheetSel2" onchange="changeSheet()"></select>
-        </div>
-        <div class="col-select-group">
-          <label>Sortir Berdasarkan</label>
-          <select id="sortCol2">
-            <option value="">— Tidak disortir —</option>
-          </select>
-        </div>
+    <div class="col-config">
+      <div class="col-select-group">
+        <label>Sheet Sumber</label>
+        <select id="sheetSel" onchange="changeSheet()"></select>
       </div>
-      <div id="deteksiInfo" style="display:none;" class="info-box green"></div>
+      <div class="col-select-group">
+        <label>Sortir Berdasarkan</label>
+        <select id="sortCol">
+          <option value="">— Tidak disortir —</option>
+        </select>
+      </div>
     </div>
 
     <button class="btn btn-primary" onclick="doPreview()">👁 Preview Hasil</button>
@@ -165,78 +135,50 @@
 </div>
 
 <script>
-let workbook = null;
-let activeSheet = null;
-let allRows = [];
-let headers = [];
-let areaGroups = {};
-let currentMode = 'kolom'; // 'kolom' | 'alamat'
-
-// ── Daftar kota/kabupaten se-Jawa Barat (lengkap) ──────────────────────────
-const KOTA_JABAR = [
-  // Kota
-  'Kota Bandung','Kota Bekasi','Kota Bogor','Kota Cimahi','Kota Cirebon',
-  'Kota Depok','Kota Sukabumi','Kota Tasikmalaya','Kota Banjar',
-  // Kabupaten
-  'Kabupaten Bandung','Kabupaten Bandung Barat','Kabupaten Bekasi',
-  'Kabupaten Bogor','Kabupaten Ciamis','Kabupaten Cianjur',
-  'Kabupaten Cirebon','Kabupaten Garut','Kabupaten Indramayu',
-  'Kabupaten Karawang','Kabupaten Kuningan','Kabupaten Majalengka',
-  'Kabupaten Pangandaran','Kabupaten Purwakarta','Kabupaten Subang',
-  'Kabupaten Sukabumi','Kabupaten Sumedang','Kabupaten Tasikmalaya',
+// ── AREA ENGINE ──────────────────────────────────────────────────────────────
+// Urut: PALING SPESIFIK dulu, baru umum
+// "Bandung Barat" dicek sebelum "Bandung"
+// "Kota Bandung" dan "Bandung" (biasa) → keduanya → label "Bandung"
+const AREA_MAP = [
+  { label: 'Bandung Barat',  re: /\bBandung\s+Barat\b|\bKBB\b/i },
+  { label: 'Bandung',        re: /\bBandung\b/i },          // mencakup "Kota Bandung" juga
+  { label: 'Bekasi',         re: /\bBekasi\b/i },
+  { label: 'Bogor',          re: /\bBogor\b/i },
+  { label: 'Cimahi',         re: /\bCimahi\b/i },
+  { label: 'Cirebon',        re: /\bCirebon\b/i },
+  { label: 'Depok',          re: /\bDepok\b/i },
+  { label: 'Karawang',       re: /\bKarawang\b|\bKRW\b/i },
+  { label: 'Cianjur',        re: /\bCianjur\b/i },
+  { label: 'Sukabumi',       re: /\bSukabumi\b/i },
+  { label: 'Garut',          re: /\bGarut\b/i },
+  { label: 'Tasikmalaya',    re: /\bTasikmalaya\b|\bTasik\b/i },
+  { label: 'Banjar',         re: /\bBanjar\b/i },
+  { label: 'Ciamis',         re: /\bCiamis\b/i },
+  { label: 'Pangandaran',    re: /\bPangandaran\b/i },
+  { label: 'Kuningan',       re: /\bKuningan\b/i },
+  { label: 'Majalengka',     re: /\bMajalengka\b/i },
+  { label: 'Indramayu',      re: /\bIndramayu\b/i },
+  { label: 'Subang',         re: /\bSubang\b/i },
+  { label: 'Purwakarta',     re: /\bPurwakarta\b/i },
+  { label: 'Sumedang',       re: /\bSumedang\b/i },
 ];
 
-// Kata kunci pendek untuk deteksi (urutan panjang → pendek agar "Bandung Barat" ditest sebelum "Bandung")
-const KOTA_KEYWORDS = [
-  // Multi-kata dulu
-  { label: 'Bandung Barat',   re: /\bBandung\s+Barat\b/i },
-  { label: 'Bandung Barat',   re: /\bKBB\b/i },
-  { label: 'Kota Bandung',    re: /\bKota\s+Bandung\b/i },
-  { label: 'Kota Bekasi',     re: /\bKota\s+Bekasi\b/i },
-  { label: 'Kota Bogor',      re: /\bKota\s+Bogor\b/i },
-  { label: 'Kota Cimahi',     re: /\bCimahi\b/i },
-  { label: 'Kota Cirebon',    re: /\bKota\s+Cirebon\b/i },
-  { label: 'Kota Depok',      re: /\bDepok\b/i },
-  { label: 'Kota Sukabumi',   re: /\bKota\s+Sukabumi\b/i },
-  { label: 'Kota Tasikmalaya',re: /\bKota\s+Tasikmalaya\b/i },
-  { label: 'Kota Banjar',     re: /\bKota\s+Banjar\b/i },
-  // Single kata
-  { label: 'Bandung',         re: /\bBandung\b/i },
-  { label: 'Bekasi',          re: /\bBekasi\b/i },
-  { label: 'Bogor',           re: /\bBogor\b/i },
-  { label: 'Ciamis',          re: /\bCiamis\b/i },
-  { label: 'Cianjur',         re: /\bCianjur\b/i },
-  { label: 'Cirebon',         re: /\bCirebon\b/i },
-  { label: 'Garut',           re: /\bGarut\b/i },
-  { label: 'Indramayu',       re: /\bIndramayu\b/i },
-  { label: 'Karawang',        re: /\bKarawang\b/i },
-  { label: 'Kuningan',        re: /\bKuningan\b/i },
-  { label: 'Majalengka',      re: /\bMajalengka\b/i },
-  { label: 'Pangandaran',     re: /\bPangandaran\b/i },
-  { label: 'Purwakarta',      re: /\bPurwakarta\b/i },
-  { label: 'Subang',          re: /\bSubang\b/i },
-  { label: 'Sukabumi',        re: /\bSukabumi\b/i },
-  { label: 'Sumedang',        re: /\bSumedang\b/i },
-  { label: 'Tasikmalaya',     re: /\bTasikmalaya\b/i },
-  { label: 'Banjar',          re: /\bBanjar\b/i },
-];
-
-function deteksiKotaDariAlamat(alamat) {
-  const teks = String(alamat || '');
-  for (const k of KOTA_KEYWORDS) {
-    if (k.re.test(teks)) return k.label;
+function deteksiArea(teks) {
+  const s = String(teks || '');
+  for (const k of AREA_MAP) {
+    if (k.re.test(s)) return k.label;
   }
-  return 'Lainnya / Tidak Dikenali';
+  return null; // tidak cocok
 }
 
-// ── Mode toggle ─────────────────────────────────────────────────────────────
-function setMode(mode) {
-  currentMode = mode;
-  document.getElementById('modeKolom').classList.toggle('active', mode === 'kolom');
-  document.getElementById('modeAlamat').classList.toggle('active', mode === 'alamat');
-  document.getElementById('panelKolom').style.display = mode === 'kolom' ? '' : 'none';
-  document.getElementById('panelAlamat').style.display = mode === 'alamat' ? '' : 'none';
-}
+// ── State ────────────────────────────────────────────────────────────────────
+let workbook = null;
+let headers = [];
+let allRows = [];
+let areaGroups = {};
+let detectedMode = ''; // 'kolom' | 'alamat' | 'scan'
+let areaColIdx = -1;
+let alamatColIdx = -1;
 
 // ── File handler ─────────────────────────────────────────────────────────────
 function handleFile(file) {
@@ -246,10 +188,8 @@ function handleFile(file) {
     workbook = XLSX.read(e.target.result, { type: 'array' });
     document.getElementById('fileInfo').innerHTML =
       `✅ <strong>${file.name}</strong> — ${workbook.SheetNames.length} sheet: ${workbook.SheetNames.join(', ')}`;
-
-    const sheetOpts = workbook.SheetNames.map(s => `<option value="${s}">${s}</option>`).join('');
-    document.getElementById('sheetSel').innerHTML = sheetOpts;
-    document.getElementById('sheetSel2').innerHTML = sheetOpts;
+    document.getElementById('sheetSel').innerHTML =
+      workbook.SheetNames.map(s => `<option value="${s}">${s}</option>`).join('');
     changeSheet();
     document.getElementById('configCard').style.display = 'block';
   };
@@ -257,95 +197,126 @@ function handleFile(file) {
 }
 
 function changeSheet() {
-  // Ambil dari mana pun yang aktif
-  const selId = currentMode === 'alamat' ? 'sheetSel2' : 'sheetSel';
-  const sheetName = document.getElementById(selId).value ||
-                    document.getElementById('sheetSel').value;
-
-  const ws = workbook.Sheets[sheetName];
+  const ws = workbook.Sheets[document.getElementById('sheetSel').value];
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
-  // Cari header row
+  // Temukan baris header
   let headerIdx = 0;
-  for (let i = 0; i < Math.min(5, rows.length); i++) {
+  for (let i = 0; i < Math.min(6, rows.length); i++) {
     const r = rows[i].map(c => String(c).toLowerCase());
-    if (r.some(c => c.includes('nama') || c.includes('area') || c.includes('kota') ||
-                    c.includes('slo') || c.includes('nidi') || c.includes('alamat'))) {
+    if (r.some(c => c.includes('nama') || c.includes('slo') || c.includes('nidi') ||
+                    c.includes('area') || c.includes('alamat') || c.includes('kota'))) {
       headerIdx = i; break;
     }
   }
 
-  headers = rows[headerIdx].map(c => String(c)).filter(h => h.trim());
-  allRows = rows.slice(headerIdx + 1).filter(r => r.some(c => c !== ''));
-  activeSheet = sheetName;
+  headers  = rows[headerIdx].map(c => String(c));
+  allRows  = rows.slice(headerIdx + 1).filter(r => r.some(c => c !== ''));
 
+  // ── AUTO-DETECT kolom area & alamat ──
+  areaColIdx   = headers.findIndex(h => /\b(area|kota|kabupaten|wilayah|daerah|region)\b/i.test(h));
+  alamatColIdx = headers.findIndex(h => /\b(alamat|address|lokasi|tempat)\b/i.test(h));
+
+  // Tentukan mode deteksi
+  if (areaColIdx >= 0) {
+    detectedMode = 'kolom';
+  } else if (alamatColIdx >= 0) {
+    detectedMode = 'alamat';
+  } else {
+    detectedMode = 'scan';
+  }
+
+  // Tampilkan status
+  renderDetectStatus();
+
+  // Populate sort col
   const opts = headers.map((h,i) => `<option value="${i}">${h}</option>`).join('');
-  document.getElementById('areaCol').innerHTML = opts;
-  document.getElementById('alamatCol').innerHTML = opts;
-  document.getElementById('sortCol').innerHTML  = '<option value="">— Tidak disortir —</option>' + opts;
-  document.getElementById('sortCol2').innerHTML = '<option value="">— Tidak disortir —</option>' + opts;
-
-  // Auto-select area column (mode kolom)
-  const areaIdx = headers.findIndex(h => /area|kota|kabupaten|wilayah|daerah|lokasi/i.test(h));
-  if (areaIdx >= 0) document.getElementById('areaCol').value = areaIdx;
-
-  // Auto-select alamat column (mode alamat)
-  const alamatIdx = headers.findIndex(h => /alamat|address|lokasi/i.test(h));
-  if (alamatIdx >= 0) document.getElementById('alamatCol').value = alamatIdx;
+  document.getElementById('sortCol').innerHTML = '<option value="">— Tidak disortir —</option>' + opts;
 }
 
-// ── Preview & grouping ───────────────────────────────────────────────────────
-function doPreview() {
-  let sortIdx = -1;
-  areaGroups = {};
+function renderDetectStatus() {
+  const modeLabel = {
+    kolom:  { icon: '📋', text: `Kolom area ditemukan: <strong>"${headers[areaColIdx]}"</strong> — data akan dikelompokkan dari kolom ini.`, cls: 'kolom' },
+    alamat: { icon: '📍', text: `Kolom area tidak ditemukan. Kolom alamat <strong>"${headers[alamatColIdx]}"</strong> akan di-scan otomatis untuk mendeteksi kota/kabupaten.`, cls: 'alamat' },
+    scan:   { icon: '🔍', text: `Kolom area & alamat tidak ditemukan. Seluruh teks di setiap baris akan di-scan untuk mendeteksi nama kota/kabupaten Jawa Barat.`, cls: 'scan' },
+  }[detectedMode];
 
-  if (currentMode === 'kolom') {
-    const areaIdx = parseInt(document.getElementById('areaCol').value);
-    sortIdx = document.getElementById('sortCol').value !== '' ? parseInt(document.getElementById('sortCol').value) : -1;
-    for (const row of allRows) {
-      const area = String(row[areaIdx] || 'Lainnya').trim() || 'Lainnya';
-      if (!areaGroups[area]) areaGroups[area] = [];
-      areaGroups[area].push(row);
+  document.getElementById('detectStatus').innerHTML = `
+    <div class="detect-row">
+      <span class="detect-label">Mode</span>
+      <span class="badge-mode ${modeLabel.cls}">${modeLabel.icon} ${detectedMode === 'kolom' ? 'Dari Kolom' : detectedMode === 'alamat' ? 'Dari Alamat' : 'Scan Semua'}</span>
+      <span style="font-size:13px;color:var(--slate-600)">${modeLabel.text}</span>
+    </div>`;
+}
+
+// ── Tentukan area sebuah row (OTOMATIS) ─────────────────────────────────────
+function tentukanAreaRow(row) {
+  if (detectedMode === 'kolom') {
+    const val = String(row[areaColIdx] || '').trim();
+    if (val) {
+      // Nilai kolom area bisa sudah teks area, atau teks panjang → scan dulu
+      const d = deteksiArea(val);
+      return d || val; // kalau tidak cocok AREA_MAP, gunakan nilai aslinya
     }
-  } else {
-    // Mode deteksi dari alamat
-    const alamatIdx = parseInt(document.getElementById('alamatCol').value);
-    sortIdx = document.getElementById('sortCol2').value !== '' ? parseInt(document.getElementById('sortCol2').value) : -1;
-    let deteksi = { cocok: 0, tidakCocok: 0 };
-    for (const row of allRows) {
-      const area = deteksiKotaDariAlamat(row[alamatIdx]);
-      if (area === 'Lainnya / Tidak Dikenali') deteksi.tidakCocok++;
-      else deteksi.cocok++;
-      if (!areaGroups[area]) areaGroups[area] = [];
-      areaGroups[area].push(row);
-    }
-    const infoEl = document.getElementById('deteksiInfo');
-    infoEl.style.display = '';
-    infoEl.innerHTML = `✅ Berhasil mendeteksi <strong>${deteksi.cocok}</strong> data — <strong>${Object.keys(areaGroups).filter(k=>k!=='Lainnya / Tidak Dikenali').length} kota/kabupaten</strong> ditemukan.`
-      + (deteksi.tidakCocok > 0 ? ` ⚠️ <strong>${deteksi.tidakCocok}</strong> data tidak teridentifikasi (masuk sheet "Lainnya").` : '');
   }
 
-  // Sort within each group
+  if (detectedMode === 'alamat' || detectedMode === 'scan') {
+    const startIdx = detectedMode === 'alamat' ? alamatColIdx : 0;
+    const endIdx   = detectedMode === 'alamat' ? alamatColIdx : row.length - 1;
+
+    if (detectedMode === 'alamat') {
+      const d = deteksiArea(row[alamatColIdx]);
+      if (d) return d;
+    } else {
+      // scan semua kolom
+      for (const cell of row) {
+        const d = deteksiArea(cell);
+        if (d) return d;
+      }
+    }
+  }
+
+  return 'Lainnya';
+}
+
+// ── Preview ──────────────────────────────────────────────────────────────────
+function doPreview() {
+  const sortIdx = document.getElementById('sortCol').value !== ''
+    ? parseInt(document.getElementById('sortCol').value) : -1;
+
+  areaGroups = {};
+  for (const row of allRows) {
+    const area = tentukanAreaRow(row);
+    if (!areaGroups[area]) areaGroups[area] = [];
+    areaGroups[area].push(row);
+  }
+
   if (sortIdx >= 0) {
     for (const area of Object.keys(areaGroups)) {
-      areaGroups[area].sort((a, b) => String(a[sortIdx]).localeCompare(String(b[sortIdx]), 'id'));
+      areaGroups[area].sort((a, b) =>
+        String(a[sortIdx]).localeCompare(String(b[sortIdx]), 'id'));
     }
   }
 
-  // Area pills
-  document.getElementById('areaCountRow').innerHTML =
-    Object.entries(areaGroups)
-      .sort((a,b) => b[1].length - a[1].length)
-      .map(([a, rows]) => `<span class="pill pill-purple">📍 ${a}: ${rows.length}</span>`)
-      .join('');
+  // Sort areas: Lainnya paling bawah, sisanya alfabet
+  const sortedAreas = Object.keys(areaGroups).sort((a, b) => {
+    if (a === 'Lainnya') return 1;
+    if (b === 'Lainnya') return -1;
+    return a.localeCompare(b, 'id');
+  });
 
-  // Preview table
+  document.getElementById('areaCountRow').innerHTML =
+    sortedAreas.map(a =>
+      `<span class="pill pill-purple">📍 ${a}: ${areaGroups[a].length}</span>`
+    ).join('');
+
   document.getElementById('previewHead').innerHTML =
     `<tr><th>Area Terdeteksi</th>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>`;
 
   let previewRows = [];
-  for (const [area, rows] of Object.entries(areaGroups)) {
-    for (const row of rows.slice(0, Math.max(2, Math.floor(50/Object.keys(areaGroups).length)))) {
+  const max = Math.max(2, Math.floor(50 / sortedAreas.length));
+  for (const area of sortedAreas) {
+    for (const row of areaGroups[area].slice(0, max)) {
       previewRows.push({ area, row });
     }
   }
@@ -362,36 +333,40 @@ function doPreview() {
 function downloadRapikan() {
   const wb = XLSX.utils.book_new();
 
-  // Sheet Semua (gabungan, sudah disortir)
+  const sortedAreas = Object.keys(areaGroups).sort((a, b) => {
+    if (a === 'Lainnya') return 1;
+    if (b === 'Lainnya') return -1;
+    return a.localeCompare(b, 'id');
+  });
+
+  // Sheet Semua Data
   const allData = [headers];
-  for (const rows of Object.values(areaGroups)) {
-    for (const row of rows) allData.push(headers.map((_,i) => row[i] ?? ''));
-  }
+  for (const area of sortedAreas)
+    for (const row of areaGroups[area])
+      allData.push(headers.map((_,i) => row[i] ?? ''));
   const wsAll = XLSX.utils.aoa_to_sheet(allData);
-  wsAll['!cols'] = headers.map(() => ({wch: 20}));
+  wsAll['!cols'] = headers.map(() => ({wch: 22}));
   XLSX.utils.book_append_sheet(wb, wsAll, 'Semua Data');
 
   // Sheet per area
-  for (const [area, rows] of Object.entries(areaGroups)) {
-    const data = [headers, ...rows.map(row => headers.map((_,i) => row[i] ?? ''))];
+  for (const area of sortedAreas) {
+    const data = [headers, ...areaGroups[area].map(row => headers.map((_,i) => row[i] ?? ''))];
     const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = headers.map(() => ({wch: 20}));
+    ws['!cols'] = headers.map(() => ({wch: 22}));
     const safeName = area.substring(0, 28).replace(/[\\\/\?\*\[\]]/g, '');
     XLSX.utils.book_append_sheet(wb, ws, safeName || 'Lainnya');
   }
 
-  const tanggal = new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, `Excel_Rapi_${tanggal}.xlsx`);
+  XLSX.writeFile(wb, `Excel_Rapi_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
-// ── Reset ─────────────────────────────────────────────────────────────────────
+// ── Reset ────────────────────────────────────────────────────────────────────
 function resetAll() {
-  workbook = null; allRows = []; headers = []; areaGroups = {};
+  workbook = null; headers = []; allRows = []; areaGroups = {};
   document.getElementById('fileIn').value = '';
   document.getElementById('fileInfo').innerHTML = '';
   document.getElementById('configCard').style.display = 'none';
   document.getElementById('previewCard').style.display = 'none';
-  document.getElementById('deteksiInfo').style.display = 'none';
 }
 </script>
 </body>
