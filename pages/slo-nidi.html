@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SLO & NIDI Extractor</title>
@@ -219,13 +220,13 @@
   <div class="card">
     <div class="card-header">
       <div class="step-dot" id="dot2">2</div>
-      <span class="card-title">Upload Semua PDF SLO</span>
+      <span class="card-title">Upload Semua PDF SLO & NIDI</span>
     </div>
     <div class="card-body">
       <div class="drop-zone" id="pdfDrop" onclick="document.getElementById('pdfIn').click()">
         <div class="drop-zone-icon">📁</div>
-        <p>Klik atau drag <strong>semua PDF SLO</strong> sekaligus</p>
-        <span>Setiap sertifikat SLO sudah mengandung nomor NIDI di dalamnya</span>
+        <p>Klik atau drag <strong>semua PDF</strong> sekaligus</p>
+        <span>Nama file mengandung "SLO" → SLO &nbsp;|&nbsp; mengandung "NIDI" → NIDI</span>
       </div>
       <input type="file" id="pdfIn" accept=".pdf" multiple>
       <div class="pdf-list" id="pdfList"></div>
@@ -344,15 +345,19 @@ function clearPdfs() {
   document.getElementById('pdfIn').value = ''; checkReady();
 }
 
-// Semua PDF adalah SLO yang mengandung nomor NIDI di dalamnya
 function detectType(name) {
-  return 'SLO';
+  const u = name.toUpperCase();
+  if (u.includes('NIDI')) return 'NIDI';
+  if (u.includes('SLO')) return 'SLO';
+  return 'UNKNOWN';
 }
 
 function renderPdfList() {
   const el = document.getElementById('pdfList');
   el.innerHTML = pdfFiles.map((f, i) => {
-    return `<div class="pdf-item"><span class="badge badge-slo">SLO</span><span class="name" title="${f.name}">${f.name}</span>
+    const t = detectType(f.name);
+    const bc = t === 'SLO' ? 'badge-slo' : t === 'NIDI' ? 'badge-nidi' : 'badge-unk';
+    return `<div class="pdf-item"><span class="badge ${bc}">${t}</span><span class="name" title="${f.name}">${f.name}</span>
       <button class="btn btn-sm btn-ghost" style="padding:2px 8px" onclick="removePdf(${i})">✕</button></div>`;
   }).join('');
   const act = document.getElementById('pdfActions');
@@ -453,25 +458,8 @@ function extractSLO(text) {
 }
 
 function extractNIDI(text) {
-  // OCR sering membaca huruf I sebagai 1 (angka) atau l (huruf L kecil)
-  // Pattern dibuat toleran terhadap variasi karakter dan spasi dari hasil OCR
-  const ps = [
-    // Pattern 1: setelah label "(NIDI)" diikuti titik dua, tangkap nomor I.XX.XXXX.XXX
-    /NIDI\)\s*[:\-]?\s*([I1l]\s*[.,]\s*\d{2}\s*[.,]\s*\d{4}\s*[.,]\s*[\w\d]+)/i,
-    // Pattern 2: pola umum I.XX.XXXX.alphanum tanpa spasi (OCR bersih)
-    /\b([I1l][.,]\d{2}[.,]\d{4}[.,][\w\d]{2,})\b/,
-    // Pattern 3: paling longgar — setelah kata NIDI, toleran spasi di dalam nomor
-    /NIDI[^\n]{0,30}?([I1l][\s.,]\s*\d[\d\s]*[.,][\s\d]{4,6}[.,]\s*[\w\d]{2,})/i,
-  ];
-  for (const p of ps) {
-    const m = text.match(p);
-    if (m) {
-      // Normalisasi: hapus spasi dalam nomor, ganti 1/l di awal dengan I
-      let num = m[1].replace(/\s+/g, '');
-      num = num.replace(/^[1l]/, 'I');
-      return num.trim();
-    }
-  }
+  const ps = [/NOMOR IDENTITAS INSTALASI TENAGA LISTRIK \(NIDI\)\s*([\w\d\.\-\/]+)/i, /\(NIDI\)\s*\n?\s*(I\.\d{2}\.\d{4}\.[\w\d]+)/i, /(I\.\d{2}\.\d{4}\.[\w\d]+)/];
+  for (const p of ps) { const m = text.match(p); if (m) return m[1].trim(); }
   return null;
 }
 
@@ -540,35 +528,28 @@ async function processAll() {
 
   for (let i = 0; i < toProcess.length; i++) {
     const file = toProcess[i];
+    const type = detectType(file.name);
     prog(Math.round((i / toProcess.length) * 90), `(${i+1}/${toProcess.length}) ${file.name}`);
     log(`→ ${file.name}`);
     try {
       const { text, isOcr } = await extractText(file, log);
       if (isOcr) log('  ✓ OCR selesai', 'lok');
       const owner = extractOwner(text);
-      const sloNumber = extractSLO(text);
-      const nidiNumber = extractNIDI(text);
-
-      if (sloNumber) log(`  No. SLO: <span class="lnum">${sloNumber}</span>${isOcr ? ' <span style="color:#FDE68A">[OCR]</span>' : ''}`);
-      else log('  ✗ No. SLO tidak terdeteksi', 'lerr');
-
-      if (nidiNumber) log(`  No. NIDI: <span class="lnum">${nidiNumber}</span>${isOcr ? ' <span style="color:#FDE68A">[OCR]</span>' : ''}`);
-      else log('  ✗ No. NIDI tidak terdeteksi', 'lerr');
-
-      if (sloNumber || nidiNumber) {
+      let number = type === 'SLO' ? extractSLO(text) : type === 'NIDI' ? extractNIDI(text) : null;
+      if (number) {
+        log(`  Nomor: <span class="lnum">${number}</span>${isOcr ? ' <span style="color:#FDE68A">[OCR]</span>' : ''}`);
         const idx = bestMatch(owner || file.name, excelNames);
         if (idx >= 0) {
-          if (sloNumber) results[idx]._SLO = sloNumber;
-          if (nidiNumber) results[idx]._NIDI = nidiNumber;
+          if (type === 'SLO') results[idx]._SLO = number;
+          if (type === 'NIDI') results[idx]._NIDI = number;
           log(`  ✓ → ${excelNames[idx]}`, 'lok');
         } else {
           log('  ⚠ Tidak cocok otomatis', 'lwarn');
-          // Masukkan ke unmatched dengan kedua nomor yang ditemukan
-          unmatched.push({ file: file.name, type: 'SLO', number: sloNumber, nidiNumber: nidiNumber, owner, isOcr });
+          unmatched.push({ file: file.name, type, number, owner, isOcr });
         }
       } else {
-        log(`  ✗ Kedua nomor tidak terdeteksi${isOcr ? ' (setelah OCR)' : ''}`, 'lerr');
-        unmatched.push({ file: file.name, type: 'SLO', number: null, nidiNumber: null, owner, isOcr });
+        log(`  ✗ Nomor tidak terdeteksi${isOcr ? ' (setelah OCR)' : ''}`, 'lerr');
+        unmatched.push({ file: file.name, type, number: null, owner, isOcr });
       }
       processedFiles.add(file.name);
     } catch (e) { log(`  ✗ Error: ${e.message}`, 'lerr'); }
@@ -582,11 +563,13 @@ async function processAll() {
   renderResult(excelNames);
 }
 
+// ── RENDER RESULT ────────────────────────────────────────────────
 function renderResult(excelNames) {
   const names = excelNames || excelData.map(r => getNameKey(r));
   const slo = results.filter(r => r._SLO).length, nidi = results.filter(r => r._NIDI).length;
-  const needManual = unmatched.filter(u => u.number || u.nidiNumber);
-  const needInput = unmatched.filter(u => !u.number && !u.nidiNumber);
+  const needManual = unmatched.filter(u => u.number);
+  // OCR-failed: no number detected at all, need user to type it
+  const needInput = unmatched.filter(u => !u.number);
 
   document.getElementById('summaryRow').innerHTML = `
     <div class="pill pill-blue">📋 Total: ${results.length}</div>
@@ -608,18 +591,17 @@ function renderResult(excelNames) {
   const ub = document.getElementById('unmatchedBox');
   let unmatchedHTML = '';
 
-  // Section 1: nomor (SLO dan/atau NIDI) terbaca tapi tidak cocok otomatis
+  // Section 1: number found but no Excel match — pick from dropdown
   if (needManual.length) {
     unmatchedHTML += `<div class="unmatched-box">
-      <div class="unmatched-title">⚠️ ${needManual.length} PDF nomornya terbaca tapi belum tercocokkan — pilih nama yang sesuai:</div>
+      <div class="unmatched-title">⚠️ ${needManual.length} PDF nomor terbaca tapi belum tercocokkan — pilih nama yang sesuai:</div>
       ${needManual.map((u, i) => {
         const suggestIdx = u.owner ? Math.max(0, bestMatch(u.owner, names)) : 0;
         const optsWithSel = names.map((n, j) => `<option value="${j}"${j===suggestIdx?' selected':''}>${n}</option>`).join('');
         const ocrTag = u.isOcr ? '<span style="font-size:10px;background:#FEF9C3;color:#92400E;padding:1px 6px;border-radius:4px;margin-left:4px">OCR</span>' : '';
-        const sloInfo = u.number ? `<span class="badge badge-slo" style="margin-right:4px">SLO</span><span class="mnum">${u.number}${ocrTag}</span>` : '';
-        const nidiInfo = u.nidiNumber ? `<span class="badge badge-nidi" style="margin-right:4px">NIDI</span><span class="mnum">${u.nidiNumber}${ocrTag}</span>` : '';
         return `<div class="manual-row">
-          <div style="display:flex;flex-direction:column;gap:4px;min-width:220px">${sloInfo}${nidiInfo}</div>
+          <span class="badge ${u.type==='SLO'?'badge-slo':'badge-nidi'}">${u.type}</span>
+          <span class="mnum">${u.number}${ocrTag}</span>
           <span class="mowner-wrap" title="File: ${u.file}">${u.owner ? `<span class="mowner-name">📄 ${u.owner}</span><br><span class="mowner-file">${u.file}</span>` : `<span class="mowner-noname">⚠️ Nama tdk terbaca</span><br><span class="mowner-file">${u.file}</span>`}</span>
           <select id="ms_${i}">${optsWithSel}</select>
           <button class="btn btn-sm btn-primary" onclick="applyManual(${i})">Terapkan</button>
@@ -628,7 +610,7 @@ function renderResult(excelNames) {
     </div>`;
   }
 
-  // Section 2: kedua nomor tidak terbaca sama sekali — user input manual
+  // Section 2: number NOT found (OCR failed or unreadable scan) — user types number + picks name
   if (needInput.length) {
     unmatchedHTML += `<div class="unmatched-box" style="margin-top:.75rem;background:#FEF2F2;border-color:#FECACA;">
       <div class="unmatched-title" style="color:#DC2626;">✏️ ${needInput.length} PDF nomornya tidak terbaca — ketik manual:</div>
@@ -638,12 +620,11 @@ function renderResult(excelNames) {
         const optsWithSel = names.map((n, j) => `<option value="${j}"${j===suggestIdx?' selected':''}>${n}</option>`).join('');
         const ocrTag = u.isOcr ? '<span style="font-size:10px;background:#FEE2E2;color:#991B1B;padding:1px 6px;border-radius:4px;margin-left:4px">OCR gagal</span>' : '<span style="font-size:10px;background:#FEE2E2;color:#991B1B;padding:1px 6px;border-radius:4px;margin-left:4px">Scan</span>';
         return `<div class="manual-row" style="flex-wrap:wrap;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px solid #FECACA">
+          <span class="badge ${u.type==='SLO'?'badge-slo':'badge-nidi'}">${u.type}</span>
           ${ocrTag}
           <span class="mowner-wrap" title="File: ${u.file}">${u.owner ? `<span class="mowner-name">📄 ${u.owner}</span><br><span class="mowner-file">${u.file}</span>` : `<span class="mowner-noname">⚠️ Nama tdk terbaca</span><br><span class="mowner-file">${u.file}</span>`}</span>
-          <input id="mi_slo_${idx}" type="text" placeholder="Ketik No. SLO..."
-            style="flex:1;min-width:180px;padding:7px 10px;border:1.5px solid #BFDBFE;border-radius:8px;font-size:13px;font-family:monospace;font-weight:600;color:var(--slate-800);background:#fff">
-          <input id="mi_nidi_${idx}" type="text" placeholder="Ketik No. NIDI..."
-            style="flex:1;min-width:180px;padding:7px 10px;border:1.5px solid #BBF7D0;border-radius:8px;font-size:13px;font-family:monospace;font-weight:600;color:var(--slate-800);background:#fff">
+          <input id="mi_${idx}" type="text" placeholder="Ketik No. ${u.type} dari sertifikat..."
+            style="flex:1;min-width:180px;padding:7px 10px;border:1.5px solid #FECACA;border-radius:8px;font-size:13px;font-family:monospace;font-weight:600;color:var(--slate-800);background:#fff">
           <select id="ms_${idx}" style="flex:1;min-width:160px;padding:7px 10px;border:1.5px solid #FECACA;border-radius:8px;background:#fff;font-size:13px;font-family:inherit;color:var(--slate-800)">${optsWithSel}</select>
           <button class="btn btn-sm btn-primary" onclick="applyManualInput(${i}, ${idx})">Terapkan</button>
         </div>`;
@@ -657,25 +638,24 @@ function renderResult(excelNames) {
 }
 
 function applyManual(ui) {
-  const needManual = unmatched.filter(u => u.number || u.nidiNumber);
+  const needManual = unmatched.filter(u => u.number);
   const u = needManual[ui];
   const idx = parseInt(document.getElementById('ms_' + ui).value);
-  if (u.number) results[idx]._SLO = u.number;
-  if (u.nidiNumber) results[idx]._NIDI = u.nidiNumber;
-  const dataIdx = unmatched.indexOf(u); unmatched[dataIdx].number = null; unmatched[dataIdx].nidiNumber = null;
+  if (u.type === 'SLO') results[idx]._SLO = u.number;
+  if (u.type === 'NIDI') results[idx]._NIDI = u.number;
+  const dataIdx = unmatched.indexOf(u); unmatched[dataIdx].number = null;
   renderResult();
 }
 
 function applyManualInput(inputIdx, elIdx) {
-  const needInput = unmatched.filter(u => !u.number && !u.nidiNumber);
+  const needInput = unmatched.filter(u => !u.number);
   const u = needInput[inputIdx];
-  const sloVal = document.getElementById('mi_slo_' + elIdx) ? document.getElementById('mi_slo_' + elIdx).value.trim() : '';
-  const nidiVal = document.getElementById('mi_nidi_' + elIdx) ? document.getElementById('mi_nidi_' + elIdx).value.trim() : '';
-  if (!sloVal && !nidiVal) { showToast('Masukkan minimal satu nomor!', 'warn'); return; }
+  const number = document.getElementById('mi_' + elIdx).value.trim();
+  if (!number) { showToast('Nomor tidak boleh kosong!', 'warn'); return; }
   const idx = parseInt(document.getElementById('ms_' + elIdx).value);
-  if (sloVal) results[idx]._SLO = sloVal;
-  if (nidiVal) results[idx]._NIDI = nidiVal;
-  const dataIdx = unmatched.indexOf(u); unmatched[dataIdx].number = sloVal || '(manual)'; unmatched[dataIdx].nidiNumber = nidiVal || '(manual)';
+  if (u.type === 'SLO') results[idx]._SLO = number;
+  if (u.type === 'NIDI') results[idx]._NIDI = number;
+  const dataIdx = unmatched.indexOf(u); unmatched[dataIdx].number = '(manual)';
   renderResult();
 }
 

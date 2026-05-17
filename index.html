@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tools NADIA</title>
@@ -130,70 +131,6 @@
           <div class="tool-arrow">Buka tool →</div>
         </div>
         <!-- TAMBAH TOOL CARD BARU DI SINI -->
-      </div>
-
-      <!-- CATATAN PINTAS -->
-      <div style="margin-top:2rem">
-        <div class="section-header" style="margin-bottom:.75rem">
-          <div class="section-title">📌 Catatan Pintas</div>
-          <div class="section-sub">Klik teks untuk edit &bull; Tersimpan otomatis di browser</div>
-        </div>
-        <div style="
-          background:#fff;
-          border:1px solid rgba(147,197,253,0.3);
-          border-radius:16px;
-          box-shadow:0 2px 12px rgba(96,165,250,0.07);
-          overflow:hidden;
-        ">
-          <div style="
-            display:flex; align-items:center; justify-content:space-between;
-            padding:.75rem 1.25rem;
-            background:linear-gradient(135deg,#F8FBFF,#F5F3FF);
-            border-bottom:1px solid rgba(147,197,253,0.15);
-          ">
-            <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#475569">
-              <span>📝</span> Catatan
-            </div>
-            <div style="display:flex;gap:6px">
-              <button id="btnCopyNote" onclick="copyNote()" style="
-                display:inline-flex;align-items:center;gap:5px;
-                padding:5px 14px;border-radius:8px;
-                border:1.5px solid #BFDBFE;background:#EFF6FF;
-                font-size:12px;font-weight:600;color:#2563EB;
-                cursor:pointer;font-family:inherit;transition:all .15s;
-              " onmouseover="this.style.background='#DBEAFE'" onmouseout="this.style.background='#EFF6FF'">
-                📋 Copy
-              </button>
-              <button onclick="clearNote()" style="
-                display:inline-flex;align-items:center;gap:5px;
-                padding:5px 14px;border-radius:8px;
-                border:1.5px solid #FECACA;background:#FEF2F2;
-                font-size:12px;font-weight:600;color:#DC2626;
-                cursor:pointer;font-family:inherit;transition:all .15s;
-              " onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='#FEF2F2'">
-                🗑 Hapus
-              </button>
-            </div>
-          </div>
-          <textarea id="noteArea" placeholder="Tulis catatan di sini... (contoh: 327300000000)" oninput="saveNote()" style="
-            width:100%; min-height:120px;
-            padding:1.25rem;
-            border:none; outline:none; resize:vertical;
-            font-family:'Plus Jakarta Sans',sans-serif;
-            font-size:14px; line-height:1.8; color:#1E293B;
-            background:#fff;
-          "></textarea>
-          <div style="
-            padding:.5rem 1.25rem;
-            background:#F8FAFC;
-            border-top:1px solid #F1F5F9;
-            font-size:11px; color:#94A3B8;
-            display:flex; justify-content:space-between; align-items:center;
-          ">
-            <span id="noteStatus">💾 Tersimpan otomatis</span>
-            <span id="noteLen">0 karakter</span>
-          </div>
-        </div>
       </div>
     </div>
 
