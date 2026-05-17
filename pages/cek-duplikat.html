@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cek Duplikat SLO & NIDI</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue-50: #EFF6FF; --blue-100: #DBEAFE; --blue-200: #BFDBFE;
+    --blue-300: #93C5FD; --blue-400: #60A5FA; --blue-600: #2563EB; --blue-dark: #1D4ED8;
+    --green: #16A34A; --green-light: #F0FDF4; --green-border: #BBF7D0;
+    --amber: #D97706; --amber-light: #FFFBEB; --amber-border: #FDE68A;
+    --red: #DC2626; --red-light: #FEF2F2; --red-border: #FECACA;
+    --slate-50: #F8FAFC; --slate-100: #F1F5F9; --slate-200: #E2E8F0;
+    --slate-400: #94A3B8; --slate-600: #475569; --slate-800: #1E293B;
+    --radius: 16px; --radius-sm: 10px;
+  }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: transparent;
+    color: var(--slate-800);
+    padding: 1.5rem;
+    font-size: 14px; line-height: 1.6;
+  }
+
+  .info-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--blue-50); border: 1px solid var(--blue-200);
+    color: var(--blue-600); border-radius: 20px;
+    padding: 6px 14px; font-size: 12px; font-weight: 500;
+    margin-bottom: 1.5rem;
+  }
+
+  .steps { display: flex; flex-direction: column; gap: 1rem; }
+
+  .card {
+    background: #fff;
+    border: 1px solid rgba(147,197,253,0.25);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(96,165,250,0.06);
+  }
+  .card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, #F8FBFF, #F5F3FF);
+    border-bottom: 1px solid rgba(147,197,253,0.15);
+  }
+  .step-dot {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: linear-gradient(135deg, #60A5FA, #A78BFA);
+    color: #fff; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; box-shadow: 0 2px 8px rgba(96,165,250,0.3);
+  }
+  .step-dot.done { background: linear-gradient(135deg, #34D399, #10B981); box-shadow: 0 2px 8px rgba(52,211,153,0.3); }
+  .card-title { font-weight: 600; font-size: 14px; color: var(--slate-800); }
+  .card-body { padding: 1.25rem; }
+
+  .drop-zone {
+    border: 2px dashed var(--blue-200);
+    border-radius: var(--radius-sm);
+    padding: 2rem 1.5rem;
+    text-align: center; cursor: pointer;
+    transition: all .2s;
+    background: var(--blue-50);
+  }
+  .drop-zone:hover, .drop-zone.drag {
+    border-color: var(--blue-400);
+    background: #EFF6FF;
+    transform: scale(1.01);
+  }
+  .drop-zone-icon { font-size: 32px; margin-bottom: .5rem; }
+  .drop-zone p { font-size: 14px; color: var(--slate-600); font-weight: 500; }
+  .drop-zone span { font-size: 12px; color: var(--slate-400); }
+  input[type=file] { display: none; }
+
+  .file-ready {
+    display: flex; align-items: center; gap: 10px;
+    padding: .875rem 1rem;
+    background: var(--green-light); border: 1px solid var(--green-border);
+    border-radius: var(--radius-sm);
+    color: var(--green); font-size: 13px; font-weight: 500;
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 20px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--slate-200);
+    background: #fff; font-size: 13px; font-weight: 600;
+    cursor: pointer; color: var(--slate-800); font-family: inherit;
+    transition: all .15s;
+  }
+  .btn:hover { background: var(--slate-50); border-color: var(--blue-300); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-primary {
+    background: linear-gradient(135deg, #60A5FA, #818CF8);
+    border-color: transparent; color: #fff;
+    box-shadow: 0 4px 14px rgba(96,165,250,0.3);
+  }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(96,165,250,0.4); }
+  .btn-success {
+    background: linear-gradient(135deg, #34D399, #10B981);
+    border-color: transparent; color: #fff;
+    box-shadow: 0 4px 14px rgba(52,211,153,0.3);
+  }
+  .btn-success:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(52,211,153,0.4); }
+  .btn-danger {
+    background: linear-gradient(135deg, #F87171, #EF4444);
+    border-color: transparent; color: #fff;
+    box-shadow: 0 4px 14px rgba(239,68,68,0.3);
+  }
+  .btn-danger:hover:not(:disabled) { transform: translateY(-1px); }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem; }
+
+  /* Column detection badges */
+  .col-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: .75rem; }
+  .col-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  }
+  .col-pill-blue { background: var(--blue-100); color: var(--blue-dark); }
+  .col-pill-green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .col-pill-gray { background: var(--slate-100); color: var(--slate-600); }
+
+  /* Summary cards */
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;
+    margin-bottom: 1rem;
+  }
+  .summary-card {
+    padding: .875rem 1rem; border-radius: var(--radius-sm);
+    text-align: center; border: 1.5px solid;
+  }
+  .summary-card.ok { background: var(--green-light); border-color: var(--green-border); color: var(--green); }
+  .summary-card.warn { background: var(--red-light); border-color: var(--red-border); color: var(--red); }
+  .summary-card.info { background: var(--blue-50); border-color: var(--blue-200); color: var(--blue-dark); }
+  .summary-card .sc-num { font-size: 28px; font-weight: 700; line-height: 1.1; }
+  .summary-card .sc-label { font-size: 11px; font-weight: 600; margin-top: 2px; opacity: .8; }
+
+  /* Filter tabs */
+  .filter-tabs { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    border: 1.5px solid var(--slate-200); background: #fff; cursor: pointer;
+    color: var(--slate-600); font-family: inherit; transition: all .15s;
+  }
+  .tab-btn.active { background: linear-gradient(135deg, #60A5FA, #818CF8); border-color: transparent; color: #fff; }
+  .tab-btn:hover:not(.active) { border-color: var(--blue-300); }
+
+  /* Search */
+  .search-wrap { position: relative; margin-bottom: 1rem; }
+  .search-wrap input {
+    width: 100%; padding: 9px 14px 9px 36px;
+    border: 1.5px solid var(--slate-200); border-radius: var(--radius-sm);
+    font-size: 13px; font-family: inherit; background: var(--slate-50);
+    color: var(--slate-800); outline: none;
+    transition: border-color .15s;
+  }
+  .search-wrap input:focus { border-color: var(--blue-300); background: #fff; }
+  .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--slate-400); pointer-events: none; }
+
+  /* Table */
+  .table-scroll { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--slate-100); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 700; color: var(--slate-400); background: var(--slate-50); border-bottom: 1px solid var(--slate-100); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--slate-50); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #F8FBFF; }
+  tr.dup-row td { background: #FFF5F5; }
+  tr.dup-row:hover td { background: #FEE2E2; }
+
+  .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-slo { background: var(--blue-100); color: var(--blue-dark); }
+  .badge-nidi { background: var(--green-light); color: var(--green); }
+  .badge-dup { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
+  .badge-ok { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+
+  .mono { font-family: 'Consolas', monospace; font-size: 12px; font-weight: 600; }
+  .td-row { color: var(--slate-400); font-size: 11px; }
+  .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--slate-400); }
+  .empty-state .es-icon { font-size: 36px; margin-bottom: .5rem; }
+
+  .alert {
+    padding: .875rem 1.1rem; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
+    margin-bottom: 1rem; display: flex; align-items: flex-start; gap: 8px;
+  }
+  .alert-green { background: var(--green-light); border: 1px solid var(--green-border); color: var(--green); }
+  .alert-red { background: var(--red-light); border: 1px solid var(--red-border); color: var(--red); }
+
+  .divider { height: 1px; background: var(--slate-100); margin: 1.25rem 0; }
+  .hint { font-size: 11px; color: var(--slate-400); margin-top: 6px; }
+
+  /* highlight */
+  mark { background: #FEF08A; padding: 0 2px; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="info-pill">
+  🔍 Semua data diproses di browser — tidak ada yang dikirim ke server
+</div>
+
+<div class="steps">
+
+  <!-- STEP 1: Upload -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-dot" id="dot1">1</div>
+      <span class="card-title">Upload File Excel</span>
+    </div>
+    <div class="card-body">
+      <div class="drop-zone" id="xlsxDrop" onclick="document.getElementById('xlsxIn').click()"
+        ondragover="onDragOver(event,'xlsxDrop')" ondragleave="onDragLeave('xlsxDrop')" ondrop="onDrop(event)">
+        <div class="drop-zone-icon">📊</div>
+        <p>Klik atau seret file Excel ke sini</p>
+        <span>Format: .xlsx, .xls — file dari Pak Lontung / rekap SLO & NIDI</span>
+      </div>
+      <div class="file-ready" id="xlsxReady" style="display:none">
+        <span>✅</span><span id="xlsxName">—</span>
+        <button class="btn btn-sm" style="margin-left:auto" onclick="resetAll()">Ganti</button>
+      </div>
+      <input type="file" id="xlsxIn" accept=".xlsx,.xls" onchange="loadExcel(this.files[0])">
+
+      <div id="colDetect" style="display:none; margin-top:.75rem;">
+        <div style="font-size:12px; color:var(--slate-600); font-weight:600; margin-bottom:4px;">Kolom terdeteksi:</div>
+        <div class="col-pills" id="colPills"></div>
+        <p class="hint" id="colHint"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Result -->
+  <div class="card" id="resultCard" style="display:none">
+    <div class="card-header">
+      <div class="step-dot done" id="dot2">✓</div>
+      <span class="card-title">Hasil Pemeriksaan Duplikat</span>
+    </div>
+    <div class="card-body">
+
+      <div class="summary-grid" id="summaryGrid"></div>
+
+      <div id="alertBox"></div>
+
+      <div class="filter-tabs" id="filterTabs">
+        <button class="tab-btn active" onclick="setFilter('all', this)">Semua</button>
+        <button class="tab-btn" onclick="setFilter('dup', this)">⚠️ Duplikat</button>
+        <button class="tab-btn" onclick="setFilter('ok', this)">✅ Unik</button>
+        <button class="tab-btn" onclick="setFilter('slo', this)">SLO saja</button>
+        <button class="tab-btn" onclick="setFilter('nidi', this)">NIDI saja</button>
+      </div>
+
+      <div class="search-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="Cari nama, nomor SLO atau NIDI..." oninput="renderTable()">
+      </div>
+
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Baris</th>
+              <th id="th-name" style="display:none">Nama</th>
+              <th>Nomor SLO</th>
+              <th>Nomor NIDI</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <p class="hint" id="tableHint" style="margin-top:6px;"></p>
+
+      <div class="divider"></div>
+      <div class="actions">
+        <button class="btn btn-success" id="btnDownload" onclick="downloadReport()">⬇️ Download Laporan Duplikat</button>
+        <button class="btn" onclick="resetAll()">🔄 Mulai Ulang</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────
+let allRows = [];      // { rowNum, name, slo, nidi, dupSlo, dupNidi }
+let currentFilter = 'all';
+let sloColIdx = -1, nidiColIdx = -1, nameColIdx = -1;
+let xlsxFile = null;
+
+// ── DRAG & DROP ───────────────────────────────────────────────────
+function onDragOver(e, id) { e.preventDefault(); document.getElementById(id).classList.add('drag'); }
+function onDragLeave(id) { document.getElementById(id).classList.remove('drag'); }
+function onDrop(e) {
+  e.preventDefault(); onDragLeave('xlsxDrop');
+  const f = e.dataTransfer.files[0];
+  if (f) loadExcel(f);
+}
+
+// ── LOAD EXCEL ────────────────────────────────────────────────────
+function loadExcel(file) {
+  if (!file) return;
+  xlsxFile = file;
+  const r = new FileReader();
+  r.onload = e => {
+    const wb = XLSX.read(e.target.result, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+    if (rows.length < 2) { alert('File Excel kosong atau tidak ada data.'); return; }
+
+    const header = rows[0].map(h => String(h || ''));
+    sloColIdx  = header.findIndex(h => /slo/i.test(h));
+    nidiColIdx = header.findIndex(h => /nidi/i.test(h));
+    nameColIdx = header.findIndex(h => /nama/i.test(h));
+
+    // Show detected columns
+    const pills = document.getElementById('colPills');
+    pills.innerHTML = header.map((h, i) => {
+      let cls = 'col-pill-gray';
+      if (i === sloColIdx)  cls = 'col-pill-blue';
+      if (i === nidiColIdx) cls = 'col-pill-green';
+      if (i === nameColIdx) cls = 'col-pill-blue';
+      return `<span class="col-pill ${cls}">${h || '(kosong)'}</span>`;
+    }).join('');
+
+    let hint = '';
+    if (sloColIdx === -1 && nidiColIdx === -1) hint = '⚠️ Kolom SLO dan NIDI tidak ditemukan. Pastikan header kolom mengandung kata "SLO" atau "NIDI".';
+    else if (sloColIdx === -1) hint = '⚠️ Kolom SLO tidak ditemukan.';
+    else if (nidiColIdx === -1) hint = '⚠️ Kolom NIDI tidak ditemukan.';
+    document.getElementById('colHint').textContent = hint;
+    document.getElementById('colDetect').style.display = '';
+
+    // Parse data rows
+    allRows = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const slo  = sloColIdx  >= 0 ? String(row[sloColIdx]  || '').trim() : '';
+      const nidi = nidiColIdx >= 0 ? String(row[nidiColIdx] || '').trim() : '';
+      const name = nameColIdx >= 0 ? String(row[nameColIdx] || '').trim() : '';
+      if (!slo && !nidi) continue; // skip completely empty rows
+      allRows.push({ rowNum: i + 1, name, slo, nidi, dupSlo: false, dupNidi: false });
+    }
+
+    // Detect duplicates
+    const sloMap = {}, nidiMap = {};
+    allRows.forEach((r, idx) => {
+      if (r.slo) { if (!sloMap[r.slo]) sloMap[r.slo] = []; sloMap[r.slo].push(idx); }
+      if (r.nidi) { if (!nidiMap[r.nidi]) nidiMap[r.nidi] = []; nidiMap[r.nidi].push(idx); }
+    });
+    Object.values(sloMap).forEach(idxs  => { if (idxs.length > 1) idxs.forEach(i => allRows[i].dupSlo  = true); });
+    Object.values(nidiMap).forEach(idxs => { if (idxs.length > 1) idxs.forEach(i => allRows[i].dupNidi = true); });
+
+    // Update UI
+    document.getElementById('xlsxDrop').style.display = 'none';
+    document.getElementById('xlsxReady').style.display = '';
+    document.getElementById('xlsxName').textContent = file.name;
+    document.getElementById('dot1').className = 'step-dot done';
+    document.getElementById('dot1').textContent = '✓';
+    document.getElementById('th-name').style.display = nameColIdx >= 0 ? '' : 'none';
+
+    renderSummary();
+    renderTable();
+    document.getElementById('resultCard').style.display = '';
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+  };
+  r.readAsArrayBuffer(file);
+}
+
+// ── SUMMARY ───────────────────────────────────────────────────────
+function renderSummary() {
+  const dupRows = allRows.filter(r => r.dupSlo || r.dupNidi);
+  const dupSloCount  = allRows.filter(r => r.dupSlo).length;
+  const dupNidiCount = allRows.filter(r => r.dupNidi).length;
+  const okRows = allRows.filter(r => !r.dupSlo && !r.dupNidi);
+
+  document.getElementById('summaryGrid').innerHTML = `
+    <div class="summary-card info">
+      <div class="sc-num">${allRows.length}</div>
+      <div class="sc-label">Total Data</div>
+    </div>
+    <div class="summary-card ${dupRows.length > 0 ? 'warn' : 'ok'}">
+      <div class="sc-num">${dupRows.length}</div>
+      <div class="sc-label">Baris Duplikat</div>
+    </div>
+    <div class="summary-card ${dupSloCount > 0 ? 'warn' : 'ok'}">
+      <div class="sc-num">${dupSloCount}</div>
+      <div class="sc-label">Nomor SLO Duplikat</div>
+    </div>
+    <div class="summary-card ${dupNidiCount > 0 ? 'warn' : 'ok'}">
+      <div class="sc-num">${dupNidiCount}</div>
+      <div class="sc-label">Nomor NIDI Duplikat</div>
+    </div>
+    <div class="summary-card ok">
+      <div class="sc-num">${okRows.length}</div>
+      <div class="sc-label">Data Aman</div>
+    </div>
+  `;
+
+  const alertBox = document.getElementById('alertBox');
+  if (dupRows.length === 0) {
+    alertBox.innerHTML = `<div class="alert alert-green">✅ Tidak ditemukan duplikat! Semua nomor SLO & NIDI unik.</div>`;
+  } else {
+    alertBox.innerHTML = `<div class="alert alert-red">⚠️ Ditemukan <strong>${dupRows.length} baris</strong> dengan nomor duplikat — cek tabel di bawah ini dan perbaiki di file Excel asli.</div>`;
+  }
+}
+
+// ── FILTER ────────────────────────────────────────────────────────
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+// ── RENDER TABLE ──────────────────────────────────────────────────
+function renderTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  const showName = nameColIdx >= 0;
+
+  let filtered = allRows.filter(r => {
+    if (currentFilter === 'dup')  return r.dupSlo || r.dupNidi;
+    if (currentFilter === 'ok')   return !r.dupSlo && !r.dupNidi;
+    if (currentFilter === 'slo')  return !!r.slo;
+    if (currentFilter === 'nidi') return !!r.nidi;
+    return true;
+  });
+
+  if (q) {
+    filtered = filtered.filter(r =>
+      r.slo.toLowerCase().includes(q) ||
+      r.nidi.toLowerCase().includes(q) ||
+      r.name.toLowerCase().includes(q)
+    );
+  }
+
+  const hl = txt => {
+    if (!q || !txt) return txt || '<span class="td-empty">—</span>';
+    const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+    return txt.replace(re, '<mark>$1</mark>') || '<span class="td-empty">—</span>';
+  };
+
+  const tbody = document.getElementById('tableBody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="${showName ? 5 : 4}">
+      <div class="empty-state"><div class="es-icon">🔍</div>Tidak ada data yang cocok</div>
+    </td></tr>`;
+    document.getElementById('tableHint').textContent = '';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(r => {
+    const isDup = r.dupSlo || r.dupNidi;
+    const statusBadge = isDup
+      ? `<span class="badge badge-dup">⚠️ Duplikat${r.dupSlo && r.dupNidi ? ' SLO+NIDI' : r.dupSlo ? ' SLO' : ' NIDI'}</span>`
+      : `<span class="badge badge-ok">✅ Aman</span>`;
+    return `<tr class="${isDup ? 'dup-row' : ''}">
+      <td class="td-row">${r.rowNum}</td>
+      ${showName ? `<td>${hl(r.name) || '<span class="td-empty">—</span>'}</td>` : ''}
+      <td class="mono" style="color:var(--blue-dark)">${r.slo ? hl(r.slo) : '<span class="td-empty">—</span>'}</td>
+      <td class="mono" style="color:var(--green)">${r.nidi ? hl(r.nidi) : '<span class="td-empty">—</span>'}</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tableHint').textContent =
+    `Menampilkan ${filtered.length} dari ${allRows.length} baris`;
+}
+
+// ── DOWNLOAD LAPORAN ──────────────────────────────────────────────
+async function downloadReport() {
+  const dupRows = allRows.filter(r => r.dupSlo || r.dupNidi);
+  if (dupRows.length === 0) { alert('Tidak ada duplikat yang ditemukan!'); return; }
+
+  const showName = nameColIdx >= 0;
+  const header = showName
+    ? ['Baris di Excel', 'Nama', 'Nomor SLO', 'Nomor NIDI', 'Status']
+    : ['Baris di Excel', 'Nomor SLO', 'Nomor NIDI', 'Status'];
+
+  const dataRows = dupRows.map(r => {
+    const status = r.dupSlo && r.dupNidi ? 'Duplikat SLO & NIDI' : r.dupSlo ? 'Duplikat SLO' : 'Duplikat NIDI';
+    return showName
+      ? [r.rowNum, r.name, r.slo, r.nidi, status]
+      : [r.rowNum, r.slo, r.nidi, status];
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet([header, ...dataRows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Duplikat');
+
+  const fileName = `Laporan_Duplikat_${new Date().toISOString().slice(0,10)}.xlsx`;
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+  if ('showSaveFilePicker' in window) {
+    try {
+      const fh = await window.showSaveFilePicker({
+        suggestedName: fileName, startIn: 'downloads',
+        types: [{ description: 'Excel File', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }]
+      });
+      const writable = await fh.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fileName; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── RESET ─────────────────────────────────────────────────────────
+function resetAll() {
+  allRows = []; sloColIdx = -1; nidiColIdx = -1; nameColIdx = -1; xlsxFile = null;
+  currentFilter = 'all';
+  document.getElementById('xlsxDrop').style.display = '';
+  document.getElementById('xlsxReady').style.display = 'none';
+  document.getElementById('xlsxIn').value = '';
+  document.getElementById('colDetect').style.display = 'none';
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('dot1').className = 'step-dot';
+  document.getElementById('dot1').textContent = '1';
+  document.getElementById('searchInput').value = '';
+  document.querySelectorAll('.tab-btn').forEach((b, i) => { b.classList.toggle('active', i === 0); });
+}
+</script>
+</body>
+</html>
