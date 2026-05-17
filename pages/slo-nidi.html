@@ -660,7 +660,7 @@ function applyManualInput(inputIdx, elIdx) {
 
 function downloadExcel() {
   const r = new FileReader();
-  r.onload = e => {
+  r.onload = async e => {
     const wb = XLSX.read(e.target.result, { type: 'array' });
     const wsName = wb.SheetNames[0];
     const ws = wb.Sheets[wsName];
@@ -681,7 +681,34 @@ function downloadExcel() {
     const newWs = XLSX.utils.aoa_to_sheet(rows);
     const newWb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(newWb, newWs, wsName);
-    XLSX.writeFile(newWb, `Order_SLO_NIDI_${new Date().toISOString().slice(0,10)}.xlsx`);
+
+    const fileName = `Order_SLO_NIDI_${new Date().toISOString().slice(0,10)}.xlsx`;
+    const wbout = XLSX.write(newWb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+    // Coba File System Access API (pilih lokasi simpan)
+    if ('showSaveFilePicker' in window) {
+      try {
+        const fh = await window.showSaveFilePicker({
+          suggestedName: fileName,
+          startIn: 'downloads',
+          types: [{ description: 'Excel File', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }]
+        });
+        const writable = await fh.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return; // user cancel
+        // Fallback jika browser tidak support atau error
+      }
+    }
+
+    // Fallback: auto-download
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName; a.click();
+    URL.revokeObjectURL(url);
   };
   r.readAsArrayBuffer(xlsxFile);
 }

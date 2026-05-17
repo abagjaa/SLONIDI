@@ -104,6 +104,12 @@
     box-shadow: 0 4px 14px rgba(52,211,153,0.3);
   }
   .btn-success:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(52,211,153,0.4); }
+  .btn-files {
+    background: linear-gradient(135deg, #60A5FA, #3B82F6);
+    border-color: transparent; color: #fff;
+    box-shadow: 0 4px 14px rgba(59,130,246,0.3);
+  }
+  .btn-files:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59,130,246,0.4); }
   .btn-sm { padding: 5px 12px; font-size: 12px; }
   .btn-ghost { background: none; border-color: transparent; color: var(--red); }
   .btn-ghost:hover { background: var(--red-light); }
@@ -264,7 +270,8 @@
       <p class="hint">💡 Klik pada nama file baru untuk mengedit jika ada yang kurang tepat</p>
       <div class="divider"></div>
       <div class="actions">
-        <button class="btn btn-success" onclick="downloadAll()">⬇️ Download Semua sebagai ZIP</button>
+        <button class="btn btn-success" id="btnDownloadZip" onclick="downloadAll()">⬇️ Download sebagai ZIP</button>
+        <button class="btn btn-files" id="btnDownloadFiles" onclick="downloadFiles()">📁 Download File Satu per Satu</button>
         <button class="btn" onclick="resetAll()">🔄 Mulai Ulang</button>
       </div>
     </div>
@@ -548,22 +555,30 @@ function renderResult() {
   document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
 }
 
+// ── HELPER: pilih lokasi simpan folder (File System Access API) ─────
+async function pickSaveFolder(label) {
+  if (!('showDirectoryPicker' in window)) return null; // fallback ke auto-download
+  try {
+    const dir = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'downloads' });
+    return dir;
+  } catch (e) {
+    // user cancel
+    return undefined; // undefined = cancelled
+  }
+}
+
 // ── DOWNLOAD ALL AS ZIP ───────────────────────────────────────────
 async function downloadAll() {
-  const btn = document.querySelector('.btn-success');
+  const btn = document.getElementById('btnDownloadZip');
   btn.disabled = true;
   btn.textContent = '⏳ Menyiapkan ZIP...';
 
   try {
     const zip = new JSZip();
-    // Track duplicate names → append (2), (3) etc.
     const nameCount = {};
 
     for (const item of items) {
-      // Read the actual PDF file bytes
       const ab = await item.file.arrayBuffer();
-
-      // Resolve duplicate file names
       let finalName = item.newName;
       if (!finalName.toLowerCase().endsWith('.pdf')) finalName += '.pdf';
       if (nameCount[finalName.toLowerCase()] === undefined) {
@@ -572,15 +587,37 @@ async function downloadAll() {
         nameCount[finalName.toLowerCase()]++;
         finalName = finalName.replace(/\.pdf$/i, ` (${nameCount[finalName.toLowerCase()]}).pdf`);
       }
-
       zip.file(finalName, ab);
     }
 
     const blob = await zip.generateAsync({ type: 'blob' });
+    const zipName = `PDF_Renamed_${new Date().toISOString().slice(0,10)}.zip`;
+
+    // Coba File System Access API dulu
+    if ('showSaveFilePicker' in window) {
+      try {
+        const fh = await window.showSaveFilePicker({
+          suggestedName: zipName,
+          startIn: 'downloads',
+          types: [{ description: 'ZIP File', accept: { 'application/zip': ['.zip'] } }]
+        });
+        const writable = await fh.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        btn.innerHTML = '⬇️ Download sebagai ZIP';
+        btn.disabled = false;
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') { btn.innerHTML = '⬇️ Download sebagai ZIP'; btn.disabled = false; return; }
+        // Fallback ke auto-download jika error lain
+      }
+    }
+
+    // Fallback: auto-download
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `PDF_Renamed_${new Date().toISOString().slice(0,10)}.zip`;
+    a.download = zipName;
     a.click();
     URL.revokeObjectURL(url);
   } catch (e) {
@@ -588,7 +625,78 @@ async function downloadAll() {
   }
 
   btn.disabled = false;
-  btn.innerHTML = '⬇️ Download Semua sebagai ZIP';
+  btn.innerHTML = '⬇️ Download sebagai ZIP';
+}
+
+// ── DOWNLOAD FILE SATU PER SATU (pilih folder) ────────────────────
+async function downloadFiles() {
+  const btn = document.getElementById('btnDownloadFiles');
+
+  // File System Access API — pilih folder
+  if ('showDirectoryPicker' in window) {
+    let dirHandle;
+    try {
+      dirHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'downloads' });
+    } catch (e) {
+      return; // user cancel
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Menyimpan file...';
+
+    try {
+      const nameCount = {};
+      let saved = 0;
+      for (const item of items) {
+        const ab = await item.file.arrayBuffer();
+        let finalName = item.newName;
+        if (!finalName.toLowerCase().endsWith('.pdf')) finalName += '.pdf';
+        if (nameCount[finalName.toLowerCase()] === undefined) {
+          nameCount[finalName.toLowerCase()] = 1;
+        } else {
+          nameCount[finalName.toLowerCase()]++;
+          finalName = finalName.replace(/\.pdf$/i, ` (${nameCount[finalName.toLowerCase()]}).pdf`);
+        }
+        const fh = await dirHandle.getFileHandle(finalName, { create: true });
+        const writable = await fh.createWritable();
+        await writable.write(ab);
+        await writable.close();
+        saved++;
+        btn.textContent = `⏳ Menyimpan ${saved}/${items.length}...`;
+      }
+      alert(`✅ ${saved} file berhasil disimpan ke folder yang dipilih!`);
+    } catch (e) {
+      alert('Gagal menyimpan file: ' + e.message);
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '📁 Download File Satu per Satu';
+
+  } else {
+    // Fallback browser lama: download satu per satu otomatis
+    btn.disabled = true;
+    btn.textContent = '⏳ Mengunduh...';
+    const nameCount = {};
+    for (const item of items) {
+      const ab = await item.file.arrayBuffer();
+      let finalName = item.newName;
+      if (!finalName.toLowerCase().endsWith('.pdf')) finalName += '.pdf';
+      if (nameCount[finalName.toLowerCase()] === undefined) {
+        nameCount[finalName.toLowerCase()] = 1;
+      } else {
+        nameCount[finalName.toLowerCase()]++;
+        finalName = finalName.replace(/\.pdf$/i, ` (${nameCount[finalName.toLowerCase()]}).pdf`);
+      }
+      const blob = new Blob([ab], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = finalName; a.click();
+      URL.revokeObjectURL(url);
+      await new Promise(r => setTimeout(r, 300));
+    }
+    btn.disabled = false;
+    btn.innerHTML = '📁 Download File Satu per Satu';
+  }
 }
 
 // ── RESET ─────────────────────────────────────────────────────────
