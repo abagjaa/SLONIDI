@@ -246,6 +246,7 @@
       <button class="btn btn-primary" id="btnProses" disabled onclick="processAll()">
         ✨ Ekstrak & Cocokkan Otomatis
       </button>
+      <p class="hint" id="newPdfHint" style="display:none;margin-top:.5rem">📎 Ada PDF baru — klik proses untuk melanjutkan tanpa mengulang dari awal.</p>
       <div id="progressWrap" style="display:none" class="progress-wrap">
         <div class="progress-label" id="progressLabel">Memproses...</div>
         <div class="progress-bg"><div class="progress-bar" id="progressBar"></div></div>
@@ -291,6 +292,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 
 let xlsxFile = null, pdfFiles = [], excelData = [], results = [], unmatched = [];
 let ocrWorker = null;
+let processedFiles = new Set(); // PDFs already processed
+let hasProcessedOnce = false;   // whether we have results already
 
 // Initialize Tesseract worker (lazy — only when needed)
 async function getOcrWorker() {
@@ -333,7 +336,7 @@ function handleXlsx(file) {
 
 function addPdfs(files) {
   files.forEach(f => { if (!pdfFiles.find(p => p.name === f.name)) pdfFiles.push(f); });
-  renderPdfList(); checkReady();
+  renderPdfList(); checkReady(); updateProcessBtn();
 }
 
 function clearPdfs() {
@@ -364,6 +367,32 @@ function renderPdfList() {
 
 function removePdf(i) { pdfFiles.splice(i, 1); renderPdfList(); checkReady(); }
 function checkReady() { document.getElementById('btnProses').disabled = !(xlsxFile && pdfFiles.length && excelData.length); }
+
+function updateProcessBtn() {
+  const newPdfs = pdfFiles.filter(f => !processedFiles.has(f.name));
+  const btn = document.getElementById('btnProses');
+  const hint = document.getElementById('newPdfHint');
+  if (!btn.disabled && hasProcessedOnce && newPdfs.length > 0) {
+    btn.innerHTML = `➕ Proses ${newPdfs.length} PDF Baru`;
+    if (hint) hint.style.display = 'block';
+  } else {
+    btn.innerHTML = '✨ Ekstrak & Cocokkan Otomatis';
+    if (hint) hint.style.display = 'none';
+  }
+}
+
+function updateProcessBtn() {
+  const newPdfs = pdfFiles.filter(f => !processedFiles.has(f.name));
+  const btn = document.getElementById('btnProses');
+  const hint = document.getElementById('newPdfHint');
+  if (hasProcessedOnce && newPdfs.length > 0) {
+    btn.textContent = `➕ Proses ${newPdfs.length} PDF Baru`;
+    if (hint) hint.style.display = 'block';
+  } else {
+    btn.textContent = '✨ Ekstrak & Cocokkan Otomatis';
+    if (hint) hint.style.display = 'none';
+  }
+}
 
 // ── TEXT EXTRACTION ──────────────────────────────────────────────
 // Step 1: try digital text from pdf.js
@@ -475,32 +504,37 @@ function bestMatch(name, names) {
 
 // ── MAIN PROCESS ─────────────────────────────────────────────────
 async function processAll() {
+  // Only process PDFs not yet processed — preserves existing results
+  const toProcess = pdfFiles.filter(f => !processedFiles.has(f.name));
+  if (toProcess.length === 0) { alert('Semua PDF sudah diproses!'); return; }
+
   const logEl = document.getElementById('logBox');
-  logEl.innerHTML = ''; logEl.style.display = 'block';
-  document.getElementById('resultCard').style.display = 'none';
+  if (hasProcessedOnce) {
+    logEl.innerHTML += '<span class="lwarn">── Proses lanjutan ──</span><br>';
+  } else {
+    logEl.innerHTML = '';
+    results = excelData.map(r => ({ ...r, _SLO: '', _NIDI: '' }));
+    unmatched = [];
+  }
+  logEl.style.display = 'block';
   document.getElementById('progressWrap').style.display = 'block';
 
   const log = (msg, cls = '') => { logEl.innerHTML += `<span class="${cls}">${msg}</span><br>`; logEl.scrollTop = logEl.scrollHeight; };
   const prog = (p, lbl) => { document.getElementById('progressBar').style.width = p + '%'; document.getElementById('progressLabel').textContent = lbl; };
-
   const excelNames = excelData.map(r => getNameKey(r));
-  results = excelData.map(r => ({ ...r, _SLO: '', _NIDI: '' }));
-  unmatched = [];
 
-  log(`Memulai — ${pdfFiles.length} PDF, ${excelData.length} data Excel`, 'lok');
+  log(`Memproses ${toProcess.length} PDF baru dari total ${pdfFiles.length}...`, 'lok');
 
-  for (let i = 0; i < pdfFiles.length; i++) {
-    const file = pdfFiles[i];
+  for (let i = 0; i < toProcess.length; i++) {
+    const file = toProcess[i];
     const type = detectType(file.name);
-    prog(Math.round((i / pdfFiles.length) * 90), `(${i+1}/${pdfFiles.length}) ${file.name}`);
+    prog(Math.round((i / toProcess.length) * 90), `(${i+1}/${toProcess.length}) ${file.name}`);
     log(`→ ${file.name}`);
     try {
       const { text, isOcr } = await extractText(file, log);
       if (isOcr) log('  ✓ OCR selesai', 'lok');
-
       const owner = extractOwner(text);
       let number = type === 'SLO' ? extractSLO(text) : type === 'NIDI' ? extractNIDI(text) : null;
-
       if (number) {
         log(`  Nomor: <span class="lnum">${number}</span>${isOcr ? ' <span style="color:#FDE68A">[OCR]</span>' : ''}`);
         const idx = bestMatch(owner || file.name, excelNames);
@@ -509,20 +543,22 @@ async function processAll() {
           if (type === 'NIDI') results[idx]._NIDI = number;
           log(`  ✓ → ${excelNames[idx]}`, 'lok');
         } else {
-          log(`  ⚠ Tidak cocok otomatis`, 'lwarn');
+          log('  ⚠ Tidak cocok otomatis', 'lwarn');
           unmatched.push({ file: file.name, type, number, owner, isOcr });
         }
       } else {
-        // Number not found even after OCR — push to manual with null number so user can type it in
         log(`  ✗ Nomor tidak terdeteksi${isOcr ? ' (setelah OCR)' : ''}`, 'lerr');
         unmatched.push({ file: file.name, type, number: null, owner, isOcr });
       }
+      processedFiles.add(file.name);
     } catch (e) { log(`  ✗ Error: ${e.message}`, 'lerr'); }
   }
 
+  hasProcessedOnce = true;
   prog(100, '✓ Selesai!');
   log('', '');
-  log(`Selesai! ${results.filter(r=>r._SLO).length} SLO & ${results.filter(r=>r._NIDI).length} NIDI terisi.`, 'lok');
+  log(`Total: ${results.filter(r=>r._SLO).length} SLO & ${results.filter(r=>r._NIDI).length} NIDI terisi.`, 'lok');
+  updateProcessBtn();
   renderResult(excelNames);
 }
 
@@ -651,7 +687,7 @@ function downloadExcel() {
 }
 
 function resetAll() {
-  xlsxFile = null; pdfFiles = []; excelData = []; results = []; unmatched = [];
+  xlsxFile = null; pdfFiles = []; excelData = []; results = []; unmatched = []; processedFiles = new Set(); hasProcessedOnce = false;
   document.getElementById('xlsxDrop').style.display = '';
   document.getElementById('xlsxReady').style.display = 'none';
   document.getElementById('pdfList').innerHTML = '';
