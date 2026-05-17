@@ -1,11 +1,24 @@
-// ── LOGIN ──
-// Ganti password di sini
-const PASSWORD = 'akusayangabagja';
+// ── USERS & AKSES ──────────────────────────────────────────────
+const USERS = {
+  'akusayangabagja': {
+    name: 'Nadia Ramdiana',
+    role: 'admin',
+    access: ['home', 'slo-nidi', 'rename-pdf', 'cek-duplikat'], // semua tools
+  },
+  'mustika123': {
+    name: 'Mustika',
+    role: 'terbatas',
+    access: ['home', 'rename-pdf'], // hanya rename pdf
+  },
+};
 
 function tryLogin() {
-  const val = document.getElementById('passInput').value;
-  if (val === PASSWORD) {
+  const pass = document.getElementById('passInput').value.trim();
+  const user = USERS[pass];
+
+  if (user) {
     sessionStorage.setItem('ppiln_auth', 'true');
+    sessionStorage.setItem('ppiln_user', JSON.stringify(user));
     window.location.href = 'index.html';
   } else {
     const err = document.getElementById('errorMsg');
