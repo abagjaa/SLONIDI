@@ -27,8 +27,9 @@ document.getElementById('greetingText').textContent = greet;
 // ── PAGE NAVIGATION ──
 // Daftarkan setiap halaman di sini: 'page-id': ['Judul Topbar', 'Breadcrumb']
 const pageTitles = {
-  'home':     ['Dashboard', 'Tools NADIA'],
-  'slo-nidi': ['SLO & NIDI Extractor', 'Tools'],
+  'home':       ['Dashboard', 'Tools NADIA'],
+  'slo-nidi':   ['SLO & NIDI Extractor', 'Tools'],
+  'rename-pdf': ['Rename PDF', 'Tools'],
   // Tambah halaman baru di sini...
 };
 

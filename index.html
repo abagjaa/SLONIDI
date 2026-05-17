@@ -34,6 +34,10 @@
     <a class="nav-item" onclick="showPage('slo-nidi', this)">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       SLO & NIDI Extractor
+    </a>
+    <a class="nav-item" onclick="showPage('rename-pdf', this)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Rename PDF
       <span class="nav-badge">New</span>
     </a>
     <!-- TAMBAH MENU BARU DI SINI -->
@@ -81,7 +85,7 @@
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-icon blue">📄</div>
-          <div class="stat-num">1</div>
+          <div class="stat-num">2</div>
           <div class="stat-label">Tools Tersedia</div>
         </div>
         <div class="stat-card">
@@ -108,6 +112,12 @@
           <div class="tool-desc">Upload PDF SLO & NIDI, ekstrak nomor otomatis, dan isi file Excel dari Pak Lontung.</div>
           <div class="tool-arrow">Buka tool →</div>
         </div>
+        <div class="tool-card" onclick="showPage('rename-pdf', document.querySelector('[onclick*=rename-pdf]'))">
+          <div class="tool-icon">✏️</div>
+          <div class="tool-name">Rename PDF</div>
+          <div class="tool-desc">Upload PDF SLO & NIDI, rename otomatis sesuai nama pemilik di dalam sertifikat, lalu download sebagai ZIP.</div>
+          <div class="tool-arrow">Buka tool →</div>
+        </div>
         <!-- TAMBAH TOOL CARD BARU DI SINI -->
       </div>
     </div>
@@ -124,6 +134,16 @@
     </div>
 
     <!-- TAMBAH HALAMAN TOOL BARU DI SINI -->
+    <!-- RENAME PDF PAGE -->
+    <div class="page" id="page-rename-pdf">
+      <div class="section-header">
+        <div class="section-title">Rename PDF</div>
+        <div class="section-sub">Rename otomatis berdasarkan nama pemilik di dalam sertifikat SLO & NIDI</div>
+      </div>
+      <div class="tool-frame">
+        <iframe src="pages/rename-pdf.html" id="renameFrame"></iframe>
+      </div>
+    </div>
 
   </div>
 </div>
