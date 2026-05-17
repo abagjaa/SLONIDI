@@ -80,12 +80,24 @@ function showPage(id, navEl) {
 
 // ── LOGOUT ──
 function logout() {
-  if (confirm('Yakin mau keluar?')) {
-    sessionStorage.removeItem('ppiln_auth');
-    sessionStorage.removeItem('ppiln_user');
-    window.location.href = 'login.html';
-  }
+  const modal = document.getElementById('logoutModal');
+  modal.style.display = 'flex';
 }
+
+function closeLogoutModal() {
+  document.getElementById('logoutModal').style.display = 'none';
+}
+
+function confirmLogout() {
+  sessionStorage.removeItem('ppiln_auth');
+  sessionStorage.removeItem('ppiln_user');
+  window.location.href = 'login.html';
+}
+
+// Tutup modal kalau klik background
+document.getElementById('logoutModal')?.addEventListener('click', function(e) {
+  if (e.target === this) closeLogoutModal();
+});
 
 // ── SIDEBAR MOBILE ──
 function toggleSidebar() {
