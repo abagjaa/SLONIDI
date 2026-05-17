@@ -394,11 +394,13 @@
   updateClock(); setInterval(updateClock, 60000);
 
   // Greeting
+  const hour = new Date().getHours();
   const greet = hour < 11 ? 'Selamat pagi, Ayang! ☀️ semangat terus ya~' 
   : hour < 15 ? 'Selamat siang, Ayang! 🌤️ Jangan lupa makan siang ya!' 
   : hour < 18 ? 'Selamat sore, Ayang! 🌇 Udah mau sore nih, semangat terus~' 
   : 'Selamat malam, Ayang! 🌙 Jangan begadang teuing ya!';
-document.getElementById('greetingText').textContent = greet;
+  document.getElementById('greetingText').textContent = greet;
+
 
   // Page navigation
   const pageTitles = {
