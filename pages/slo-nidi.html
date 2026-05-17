@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SLO & NIDI Extractor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue-50: #EFF6FF; --blue-100: #DBEAFE; --blue-200: #BFDBFE;
+    --blue-300: #93C5FD; --blue-400: #60A5FA; --blue-600: #2563EB; --blue-dark: #1D4ED8;
+    --green: #16A34A; --green-light: #F0FDF4; --green-border: #BBF7D0;
+    --amber: #D97706; --amber-light: #FFFBEB; --amber-border: #FDE68A;
+    --red: #DC2626; --red-light: #FEF2F2;
+    --slate-50: #F8FAFC; --slate-100: #F1F5F9; --slate-200: #E2E8F0;
+    --slate-400: #94A3B8; --slate-600: #475569; --slate-800: #1E293B;
+    --radius: 16px; --radius-sm: 10px;
+  }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: transparent;
+    color: var(--slate-800);
+    padding: 1.5rem;
+    font-size: 14px; line-height: 1.6;
+  }
+
+  .info-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--blue-50); border: 1px solid var(--blue-200);
+    color: var(--blue-600); border-radius: 20px;
+    padding: 6px 14px; font-size: 12px; font-weight: 500;
+    margin-bottom: 1.5rem;
+  }
+
+  .steps { display: flex; flex-direction: column; gap: 1rem; }
+
+  .card {
+    background: #fff;
+    border: 1px solid rgba(147,197,253,0.25);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(96,165,250,0.06);
+  }
+  .card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, #F8FBFF, #F5F3FF);
+    border-bottom: 1px solid rgba(147,197,253,0.15);
+  }
+  .step-dot {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: linear-gradient(135deg, #60A5FA, #A78BFA);
+    color: #fff; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; box-shadow: 0 2px 8px rgba(96,165,250,0.3);
+  }
+  .step-dot.done { background: linear-gradient(135deg, #34D399, #10B981); box-shadow: 0 2px 8px rgba(52,211,153,0.3); }
+  .card-title { font-weight: 600; font-size: 14px; color: var(--slate-800); }
+  .card-body { padding: 1.25rem; }
+
+  .drop-zone {
+    border: 2px dashed var(--blue-200);
+    border-radius: var(--radius-sm);
+    padding: 2rem 1.5rem;
+    text-align: center; cursor: pointer;
+    transition: all .2s;
+    background: var(--blue-50);
+  }
+  .drop-zone:hover, .drop-zone.drag {
+    border-color: var(--blue-400);
+    background: #EFF6FF;
+    transform: scale(1.01);
+  }
+  .drop-zone-icon { font-size: 32px; margin-bottom: .5rem; }
+  .drop-zone p { font-size: 14px; color: var(--slate-600); font-weight: 500; }
+  .drop-zone span { font-size: 12px; color: var(--slate-400); }
+  input[type=file] { display: none; }
+
+  .file-ready {
+    display: flex; align-items: center; gap: 10px;
+    padding: .875rem 1rem;
+    background: var(--green-light); border: 1px solid var(--green-border);
+    border-radius: var(--radius-sm);
+    color: var(--green); font-size: 13px; font-weight: 500;
+  }
+
+  .pdf-list { display: flex; flex-direction: column; gap: 5px; margin-top: .75rem; }
+  .pdf-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    background: var(--slate-50); border: 1px solid var(--slate-100);
+    border-radius: var(--radius-sm); font-size: 13px;
+  }
+  .pdf-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--slate-600); }
+  .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+  .badge-slo { background: var(--blue-100); color: var(--blue-dark); }
+  .badge-nidi { background: #F0FDF4; color: var(--green); }
+  .badge-unk { background: var(--slate-100); color: var(--slate-600); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 20px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--slate-200);
+    background: #fff; font-size: 13px; font-weight: 600;
+    cursor: pointer; color: var(--slate-800); font-family: inherit;
+    transition: all .15s;
+  }
+  .btn:hover { background: var(--slate-50); border-color: var(--blue-300); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-primary {
+    background: linear-gradient(135deg, #60A5FA, #818CF8);
+    border-color: transparent; color: #fff;
+    box-shadow: 0 4px 14px rgba(96,165,250,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(96,165,250,0.4); background: linear-gradient(135deg, #60A5FA, #818CF8); }
+  .btn-success {
+    background: linear-gradient(135deg, #34D399, #10B981);
+    border-color: transparent; color: #fff;
+    box-shadow: 0 4px 14px rgba(52,211,153,0.3);
+  }
+  .btn-success:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(52,211,153,0.4); background: linear-gradient(135deg, #34D399, #10B981); }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+  .btn-ghost { background: none; border-color: transparent; color: var(--red); }
+  .btn-ghost:hover { background: var(--red-light); }
+
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem; }
+
+  .progress-wrap { margin-top: .75rem; }
+  .progress-label { font-size: 12px; color: var(--slate-400); margin-bottom: 5px; }
+  .progress-bg { height: 6px; background: var(--blue-100); border-radius: 3px; overflow: hidden; }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, #60A5FA, #A78BFA); border-radius: 3px; transition: width .3s; width: 0; }
+
+  .log-box {
+    margin-top: .75rem; padding: .875rem 1rem;
+    background: #0F172A; border-radius: var(--radius-sm);
+    font-size: 12px; font-family: 'Consolas', monospace; color: #94A3B8;
+    max-height: 150px; overflow-y: auto; line-height: 1.8; display: none;
+  }
+  .lok { color: #86EFAC; } .lwarn { color: #FDE68A; } .lerr { color: #FCA5A5; } .lnum { color: #67E8F9; }
+
+  .summary-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .pill {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .pill-blue { background: var(--blue-100); color: var(--blue-dark); }
+  .pill-green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+  .pill-amber { background: var(--amber-light); color: var(--amber); border: 1px solid var(--amber-border); }
+
+  .table-scroll { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--slate-100); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 700; color: var(--slate-400); background: var(--slate-50); border-bottom: 1px solid var(--slate-100); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--slate-50); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #F8FBFF; }
+  .td-slo { color: var(--blue-dark); font-weight: 600; font-family: 'Consolas', monospace; font-size: 12px; }
+  .td-nidi { color: var(--green); font-weight: 600; font-family: 'Consolas', monospace; font-size: 12px; }
+  .td-empty { color: var(--slate-400); }
+
+  .unmatched-box {
+    margin-top: 1rem; padding: 1rem 1.25rem;
+    background: var(--amber-light); border: 1px solid var(--amber-border);
+    border-radius: var(--radius-sm);
+  }
+  .unmatched-title { font-size: 13px; font-weight: 700; color: var(--amber); margin-bottom: .75rem; }
+  .manual-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .manual-row .mnum { font-size: 12px; font-family: monospace; font-weight: 600; color: var(--slate-800); min-width: 130px; }
+  .manual-row select {
+    flex: 1; min-width: 160px; padding: 7px 10px;
+    border: 1.5px solid var(--amber-border); border-radius: 8px;
+    background: #fff; font-size: 13px; font-family: inherit; color: var(--slate-800);
+  }
+
+  .inline-edit {
+    border: none; background: transparent; font-family: 'Consolas', monospace;
+    font-size: 12px; font-weight: 600; width: 100%; min-width: 120px;
+    padding: 3px 6px; border-radius: 6px; color: inherit; cursor: text;
+  }
+  .inline-edit:focus { outline: 2px solid var(--blue-300); background: #fff; border-radius: 6px; }
+
+  .divider { height: 1px; background: var(--slate-100); margin: 1.25rem 0; }
+  .hint { font-size: 11px; color: var(--slate-400); margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<div class="info-pill">
+  💡 Semua data diproses di browser — tidak ada yang dikirim ke server
+</div>
+
+<div class="steps">
+
+  <!-- STEP 1 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-dot" id="dot1">1</div>
+      <span class="card-title">Upload File Excel dari Pak Lontung</span>
+    </div>
+    <div class="card-body">
+      <div class="drop-zone" id="xlsxDrop" onclick="document.getElementById('xlsxIn').click()">
+        <div class="drop-zone-icon">📊</div>
+        <p>Klik atau drag file <strong>.xlsx</strong> di sini</p>
+        <span>Kolom: No, Nama, Alamat, Titik Koordinate, Daya</span>
+      </div>
+      <input type="file" id="xlsxIn" accept=".xlsx,.xls">
+      <div id="xlsxReady" style="display:none;margin-top:.75rem"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-dot" id="dot2">2</div>
+      <span class="card-title">Upload Semua PDF SLO & NIDI</span>
+    </div>
+    <div class="card-body">
+      <div class="drop-zone" id="pdfDrop" onclick="document.getElementById('pdfIn').click()">
+        <div class="drop-zone-icon">📁</div>
+        <p>Klik atau drag <strong>semua PDF</strong> sekaligus</p>
+        <span>Nama file mengandung "SLO" → SLO &nbsp;|&nbsp; mengandung "NIDI" → NIDI</span>
+      </div>
+      <input type="file" id="pdfIn" accept=".pdf" multiple>
+      <div class="pdf-list" id="pdfList"></div>
+      <div id="pdfActions" style="display:none;margin-top:.75rem;display:none">
+        <button class="btn btn-sm" onclick="document.getElementById('pdfIn').click()">+ Tambah PDF</button>
+        <button class="btn btn-sm btn-ghost" onclick="clearPdfs()">Hapus semua</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-dot" id="dot3">3</div>
+      <span class="card-title">Proses Ekstraksi Otomatis</span>
+    </div>
+    <div class="card-body">
+      <button class="btn btn-primary" id="btnProses" disabled onclick="processAll()">
+        ✨ Ekstrak & Cocokkan Otomatis
+      </button>
+      <div id="progressWrap" style="display:none" class="progress-wrap">
+        <div class="progress-label" id="progressLabel">Memproses...</div>
+        <div class="progress-bg"><div class="progress-bar" id="progressBar"></div></div>
+      </div>
+      <div class="log-box" id="logBox"></div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="card" id="resultCard" style="display:none">
+    <div class="card-header">
+      <div class="step-dot done">✓</div>
+      <span class="card-title">Hasil Ekstraksi</span>
+    </div>
+    <div class="card-body">
+      <div class="summary-row" id="summaryRow"></div>
+      <div id="unmatchedBox"></div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40px">No</th>
+              <th>Nama</th>
+              <th style="width:26%">No. SLO</th>
+              <th style="width:26%">No. NIDI</th>
+            </tr>
+          </thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+      <p class="hint">💡 Klik angka nomor SLO/NIDI untuk edit manual jika perlu</p>
+      <div class="divider"></div>
+      <div class="actions">
+        <button class="btn btn-success" onclick="downloadExcel()">⬇️ Download Excel Lengkap</button>
+        <button class="btn" onclick="resetAll()">🔄 Mulai Ulang</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let xlsxFile = null, pdfFiles = [], excelData = [], results = [], unmatched = [];
+
+// Drag & drop
+function setupDrop(id, handler) {
+  const el = document.getElementById(id);
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag'); });
+  el.addEventListener('dragleave', () => el.classList.remove('drag'));
+  el.addEventListener('drop', e => { e.preventDefault(); el.classList.remove('drag'); handler(Array.from(e.dataTransfer.files)); });
+}
+setupDrop('xlsxDrop', files => { const f = files.find(f => /\.xlsx?$/i.test(f.name)); if (f) handleXlsx(f); });
+setupDrop('pdfDrop', files => { addPdfs(files.filter(f => /\.pdf$/i.test(f.name))); });
+
+document.getElementById('xlsxIn').onchange = e => { if (e.target.files[0]) handleXlsx(e.target.files[0]); };
+document.getElementById('pdfIn').onchange = e => addPdfs(Array.from(e.target.files));
+
+function handleXlsx(file) {
+  xlsxFile = file;
+  const r = new FileReader();
+  r.onload = e => {
+    const wb = XLSX.read(e.target.result, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    excelData = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    document.getElementById('xlsxDrop').style.display = 'none';
+    document.getElementById('xlsxReady').style.display = 'block';
+    document.getElementById('xlsxReady').innerHTML = `<div class="file-ready">✅ <strong>${file.name}</strong> — ${excelData.length} data pelanggan dimuat</div>`;
+    document.getElementById('dot1').classList.add('done');
+    document.getElementById('dot1').textContent = '✓';
+    checkReady();
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function addPdfs(files) {
+  files.forEach(f => { if (!pdfFiles.find(p => p.name === f.name)) pdfFiles.push(f); });
+  renderPdfList(); checkReady();
+}
+
+function clearPdfs() {
+  pdfFiles = []; renderPdfList();
+  document.getElementById('pdfIn').value = ''; checkReady();
+}
+
+function detectType(name) {
+  const u = name.toUpperCase();
+  if (u.includes('NIDI')) return 'NIDI';
+  if (u.includes('SLO')) return 'SLO';
+  return 'UNKNOWN';
+}
+
+function renderPdfList() {
+  const el = document.getElementById('pdfList');
+  el.innerHTML = pdfFiles.map((f, i) => {
+    const t = detectType(f.name);
+    const bc = t === 'SLO' ? 'badge-slo' : t === 'NIDI' ? 'badge-nidi' : 'badge-unk';
+    return `<div class="pdf-item"><span class="badge ${bc}">${t}</span><span class="name" title="${f.name}">${f.name}</span>
+      <button class="btn btn-sm btn-ghost" style="padding:2px 8px" onclick="removePdf(${i})">✕</button></div>`;
+  }).join('');
+  const act = document.getElementById('pdfActions');
+  act.style.display = pdfFiles.length ? 'flex' : 'none';
+  act.style.gap = '6px';
+  if (pdfFiles.length) { document.getElementById('dot2').classList.add('done'); document.getElementById('dot2').textContent = '✓'; }
+}
+
+function removePdf(i) { pdfFiles.splice(i, 1); renderPdfList(); checkReady(); }
+function checkReady() { document.getElementById('btnProses').disabled = !(xlsxFile && pdfFiles.length && excelData.length); }
+
+// Extraction
+async function extractText(file) {
+  const ab = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const p = await pdf.getPage(i);
+    const c = await p.getTextContent();
+    text += c.items.map(s => s.str).join(' ') + '\n';
+  }
+  return text;
+}
+
+function extractSLO(text) {
+  const ps = [/Nomor\s+Sertifikat\s*:\s*([\w\d\.\-\/]+)/i, /No\.?\s*SLO\s*:\s*([\w\d\.\-\/]+)/i, /(\d{4}\.\d+\.[A-Z]\.\d+\.\d+\.[\w\d]+)/];
+  for (const p of ps) { const m = text.match(p); if (m) return m[1].trim(); }
+  return null;
+}
+
+function extractNIDI(text) {
+  const ps = [/NOMOR IDENTITAS INSTALASI TENAGA LISTRIK \(NIDI\)\s*([\w\d\.\-\/]+)/i, /\(NIDI\)\s*\n?\s*(I\.\d{2}\.\d{4}\.[\w\d]+)/i, /(I\.\d{2}\.\d{4}\.[\w\d]+)/];
+  for (const p of ps) { const m = text.match(p); if (m) return m[1].trim(); }
+  return null;
+}
+
+function extractOwner(text) {
+  const ps = [/Nama\s+pemilik\s*:\s*([^\n\r]{5,120}?)(?:\s*Nomor|\s*Alamat|\s*Titik)/i, /Nama\s+Instalasi\s*:\s*([^\n\r]{5,120})/i, /Nama\s+Pemilik\s+Instalasi\s*:\s*([^\n\r]{5,120})/i];
+  for (const p of ps) { const m = text.match(p); if (m) { let n = m[1].replace(/^[^:]+:\s*/, '').trim(); const par = n.match(/\(([^)]+)\)/); return par ? par[1] : n; } }
+  return null;
+}
+
+function getNameKey(row) { for (const k of Object.keys(row)) { if (/nama/i.test(k)) return row[k]; } return ''; }
+
+function norm(s) { return (s || '').toLowerCase().replace(/planet ban/gi, '').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim(); }
+
+function fuzzy(a, b) {
+  const aw = norm(a).split(' ').filter(w => w.length > 2);
+  const bw = norm(b).split(' ').filter(w => w.length > 2);
+  if (!aw.length || !bw.length) return 0;
+  const matched = aw.filter(w => bw.some(bx => bx.includes(w) || w.includes(bx)));
+  return matched.length / Math.max(aw.length, bw.length);
+}
+
+function bestMatch(name, names) {
+  let best = -1, bestScore = 0;
+  names.forEach((n, i) => { const s = fuzzy(name, n); if (s > bestScore) { bestScore = s; best = i; } });
+  return bestScore >= 0.35 ? best : -1;
+}
+
+async function processAll() {
+  const logEl = document.getElementById('logBox');
+  logEl.innerHTML = ''; logEl.style.display = 'block';
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('progressWrap').style.display = 'block';
+
+  const log = (msg, cls = '') => { logEl.innerHTML += `<span class="${cls}">${msg}</span><br>`; logEl.scrollTop = logEl.scrollHeight; };
+  const prog = (p, lbl) => { document.getElementById('progressBar').style.width = p + '%'; document.getElementById('progressLabel').textContent = lbl; };
+
+  const excelNames = excelData.map(r => getNameKey(r));
+  results = excelData.map(r => ({ ...r, _SLO: '', _NIDI: '' }));
+  unmatched = [];
+
+  log(`Memulai — ${pdfFiles.length} PDF, ${excelData.length} data Excel`, 'lok');
+
+  for (let i = 0; i < pdfFiles.length; i++) {
+    const file = pdfFiles[i]; const type = detectType(file.name);
+    prog(Math.round((i / pdfFiles.length) * 90), `(${i+1}/${pdfFiles.length}) ${file.name}`);
+    log(`→ ${file.name}`);
+    try {
+      const text = await extractText(file);
+      const owner = extractOwner(text);
+      let number = type === 'SLO' ? extractSLO(text) : type === 'NIDI' ? extractNIDI(text) : null;
+      if (number) {
+        log(`  Nomor: <span class="lnum">${number}</span>`);
+        const idx = bestMatch(owner || file.name, excelNames);
+        if (idx >= 0) {
+          if (type === 'SLO') results[idx]._SLO = number;
+          if (type === 'NIDI') results[idx]._NIDI = number;
+          log(`  ✓ → ${excelNames[idx]}`, 'lok');
+        } else {
+          log(`  ⚠ Tidak cocok otomatis`, 'lwarn');
+          unmatched.push({ file: file.name, type, number, owner });
+        }
+      } else {
+        log(`  ✗ Nomor tidak terdeteksi`, 'lerr');
+        unmatched.push({ file: file.name, type, number: null, owner });
+      }
+    } catch (e) { log(`  ✗ Error: ${e.message}`, 'lerr'); }
+  }
+
+  prog(100, '✓ Selesai!');
+  log('', '');
+  log(`Selesai! ${results.filter(r=>r._SLO).length} SLO & ${results.filter(r=>r._NIDI).length} NIDI terisi.`, 'lok');
+  renderResult(excelNames);
+}
+
+function renderResult(excelNames) {
+  const names = excelNames || excelData.map(r => getNameKey(r));
+  const slo = results.filter(r => r._SLO).length, nidi = results.filter(r => r._NIDI).length;
+  document.getElementById('summaryRow').innerHTML = `
+    <div class="pill pill-blue">📋 Total: ${results.length}</div>
+    <div class="pill pill-green">✓ SLO: ${slo}/${results.length}</div>
+    <div class="pill pill-green">✓ NIDI: ${nidi}/${results.length}</div>
+    ${unmatched.filter(u=>u.number).length ? `<div class="pill pill-amber">⚠ Manual: ${unmatched.filter(u=>u.number).length}</div>` : ''}`;
+
+  document.getElementById('resultBody').innerHTML = results.map((r, i) => {
+    const nama = getNameKey(r), no = r['No'] || r['NO'] || r['no'] || (i + 1);
+    return `<tr>
+      <td>${no}</td>
+      <td style="font-size:13px">${nama}</td>
+      <td class="${r._SLO ? 'td-slo' : 'td-empty'}"><input class="inline-edit" value="${r._SLO || ''}" placeholder="—" oninput="results[${i}]._SLO=this.value" style="color:${r._SLO?'var(--blue-dark)':'var(--slate-400)'}"></td>
+      <td class="${r._NIDI ? 'td-nidi' : 'td-empty'}"><input class="inline-edit" value="${r._NIDI || ''}" placeholder="—" oninput="results[${i}]._NIDI=this.value" style="color:${r._NIDI?'var(--green)':'var(--slate-400)'}"></td>
+    </tr>`;
+  }).join('');
+
+  const needManual = unmatched.filter(u => u.number);
+  const ub = document.getElementById('unmatchedBox');
+  if (needManual.length) {
+    const opts = names.map((n, j) => `<option value="${j}">${n}</option>`).join('');
+    ub.innerHTML = `<div class="unmatched-box">
+      <div class="unmatched-title">⚠️ ${needManual.length} PDF belum tercocokkan — pilih nama yang sesuai:</div>
+      ${needManual.map((u, i) => `<div class="manual-row">
+        <span class="badge ${u.type==='SLO'?'badge-slo':'badge-nidi'}">${u.type}</span>
+        <span class="mnum">${u.number}</span>
+        <span style="font-size:11px;color:var(--slate-400);min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${u.file}">${u.owner||u.file}</span>
+        <select id="ms_${i}">${opts}</select>
+        <button class="btn btn-sm btn-primary" onclick="applyManual(${i})">Terapkan</button>
+      </div>`).join('')}
+    </div>`;
+  } else ub.innerHTML = '';
+
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function applyManual(ui) {
+  const needManual = unmatched.filter(u => u.number);
+  const u = needManual[ui];
+  const idx = parseInt(document.getElementById('ms_' + ui).value);
+  if (u.type === 'SLO') results[idx]._SLO = u.number;
+  if (u.type === 'NIDI') results[idx]._NIDI = u.number;
+  const dataIdx = unmatched.indexOf(u); unmatched[dataIdx].number = null;
+  renderResult();
+}
+
+function downloadExcel() {
+  const r = new FileReader();
+  r.onload = e => {
+    const wb = XLSX.read(e.target.result, { type: 'array' });
+    const wsName = wb.SheetNames[0];
+    const ws = wb.Sheets[wsName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+    const header = rows[0] || [];
+    let sloC = header.findIndex(h => /slo/i.test(String(h)));
+    let nidiC = header.findIndex(h => /nidi/i.test(String(h)));
+    if (sloC === -1) { header.push('SLO'); sloC = header.length - 1; }
+    if (nidiC === -1) { header.push('NIDI'); nidiC = header.length - 1; }
+    rows[0] = header;
+    results.forEach((res, i) => {
+      const ri = i + 1;
+      if (!rows[ri]) rows[ri] = [];
+      while (rows[ri].length <= Math.max(sloC, nidiC)) rows[ri].push('');
+      if (res._SLO) rows[ri][sloC] = res._SLO;
+      if (res._NIDI) rows[ri][nidiC] = res._NIDI;
+    });
+    const newWs = XLSX.utils.aoa_to_sheet(rows);
+    const newWb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(newWb, newWs, wsName);
+    XLSX.writeFile(newWb, `Order_SLO_NIDI_${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
+  r.readAsArrayBuffer(xlsxFile);
+}
+
+function resetAll() {
+  xlsxFile = null; pdfFiles = []; excelData = []; results = []; unmatched = [];
+  document.getElementById('xlsxDrop').style.display = '';
+  document.getElementById('xlsxReady').style.display = 'none';
+  document.getElementById('pdfList').innerHTML = '';
+  document.getElementById('logBox').style.display = 'none';
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('xlsxIn').value = '';
+  document.getElementById('pdfIn').value = '';
+  ['dot1','dot2'].forEach(id => { const d = document.getElementById(id); d.className = 'step-dot'; d.textContent = id.slice(-1); });
+  checkReady();
+}
+</script>
+</body>
+</html>
