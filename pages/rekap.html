@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rekap & Laporan</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -72,6 +72,25 @@
   .detect-row{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;}
   .detect-label{font-size:11px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:.04em;min-width:80px;}
   #resultCard{display:none;}
+  /* ── Modal Ambiguitas ─────────────────────────────────────────────────────── */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:999;align-items:center;justify-content:center;padding:1rem;}
+  .modal-overlay.open{display:flex;}
+  .modal-box{background:#fff;border-radius:var(--radius);width:100%;max-width:680px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(15,23,42,.25);}
+  .modal-head{padding:1rem 1.25rem;border-bottom:1px solid var(--slate-200);display:flex;align-items:center;gap:10px;background:var(--amber-light);}
+  .modal-head-title{font-size:14px;font-weight:700;color:var(--amber);flex:1;}
+  .modal-body{padding:1.25rem;overflow-y:auto;flex:1;}
+  .modal-foot{padding:.875rem 1.25rem;border-top:1px solid var(--slate-200);display:flex;gap:.75rem;justify-content:flex-end;background:var(--slate-50);}
+  .ambigu-item{border:1px solid var(--amber-border);border-radius:var(--radius-sm);padding:.875rem 1rem;margin-bottom:.875rem;background:var(--amber-light);}
+  .ambigu-item:last-child{margin-bottom:0;}
+  .ambigu-alamat{font-size:12px;color:var(--slate-600);margin-bottom:.625rem;line-height:1.5;border-left:3px solid var(--amber);padding-left:.625rem;}
+  .ambigu-label{font-size:11px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem;}
+  .ambigu-detected{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;background:var(--amber-light);color:var(--amber);border:1px solid var(--amber-border);margin-right:4px;}
+  .area-btn-group{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem;}
+  .area-choice-btn{padding:5px 14px;border-radius:99px;border:1.5px solid var(--slate-200);background:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--slate-600);transition:all .15s;}
+  .area-choice-btn:hover{border-color:var(--blue-600);color:var(--blue-600);background:var(--blue-50);}
+  .area-choice-btn.selected{border-color:var(--blue-600);background:var(--blue-600);color:#fff;}
+  .ambigu-count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:99px;font-size:11px;font-weight:700;background:var(--amber);color:#fff;margin-left:6px;}
+
 </style>
 </head>
 <body>
@@ -130,7 +149,7 @@
 
     <!-- Actions -->
     <div class="action-row" style="margin-top:1.25rem;">
-      <button class="btn btn-green" onclick="downloadLaporan()">⬇️ Download Laporan Excel</button>
+      <button class="btn btn-green" onclick="cekAmbiguSebelumDownload()">⬇️ Download Laporan Excel</button>
       <button class="btn btn-ghost" onclick="resetAll()">🔄 Upload Ulang</button>
     </div>
   </div>
@@ -162,12 +181,32 @@ const AREA_MAP = [
   { label: 'Sumedang',       re: /\bSumedang\b/i },
 ];
 
+// deteksiArea: prioritaskan bagian akhir alamat (format standar: ..., Kota, Provinsi)
 function deteksiArea(teks) {
-  const s = String(teks || '');
+  const s = String(teks || '').trim();
+  if (!s) return null;
+  const bagian = s.split(/[,;]/).map(b => b.trim()).filter(Boolean);
+  for (let i = bagian.length - 1; i >= 0; i--) {
+    for (const k of AREA_MAP) {
+      if (k.re.test(bagian[i])) return k.label;
+    }
+  }
   for (const k of AREA_MAP) {
     if (k.re.test(s)) return k.label;
   }
   return null;
+}
+
+// deteksiSemuaArea: temukan semua area dalam teks (untuk ambiguitas)
+function deteksiSemuaArea(teks) {
+  const s = String(teks || '').trim();
+  if (!s) return [];
+  const found = new Set();
+  for (const k of AREA_MAP) {
+    if (k.re.test(s)) found.add(k.label);
+  }
+  if (found.has('Bandung Barat') && found.has('Bandung')) found.delete('Bandung');
+  return [...found];
 }
 
 function findCol(headers, keywords) {
@@ -182,6 +221,9 @@ function findCol(headers, keywords) {
 let workbook = null;
 let areaStats = [];
 let globalMode = ''; // 'sheet' | 'kolom' | 'alamat' | 'scan'
+let ambiguData = [];
+let sharedHeadersGlobal = null;
+let alamatColIdxGlobal = -1;
 
 // ── File handler ─────────────────────────────────────────────────────────────
 function handleFile(file) {
@@ -263,10 +305,21 @@ function processAll() {
 
     if (!sharedHeaders) { alert('Tidak ada data yang bisa dibaca.'); return; }
 
-    // Kelompokkan baris per area
+    sharedHeadersGlobal = sharedHeaders;
+    alamatColIdxGlobal  = alamatColIdx;
+
+    // Kelompokkan baris per area — deteksi ambiguitas
+    ambiguData = [];
     const groups = {};
     for (const row of allRowsFlat) {
       const area = tentukanAreaRow(row, detectedMode, areaColIdx, alamatColIdx);
+      // Cek ambiguitas: ada >1 area dalam teks alamat?
+      if ((detectedMode === 'alamat' || detectedMode === 'scan') && alamatColIdx >= 0) {
+        const allAreas = deteksiSemuaArea(row[alamatColIdx]);
+        if (allAreas.length > 1) {
+          ambiguData.push({ row, alamat: String(row[alamatColIdx]||''), detectedArea: area, allAreas });
+        }
+      }
       if (!groups[area]) groups[area] = [];
       groups[area].push(row);
     }
@@ -388,57 +441,336 @@ function renderResult(grandTotal, grandSLO, grandNIDI) {
   document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
 }
 
+
+// ── Konfirmasi Ambiguitas ─────────────────────────────────────────────────────
+function cekAmbiguSebelumDownload() {
+  if (ambiguData.length === 0) { downloadLaporan(); return; }
+
+  // Render daftar ambigu
+  document.getElementById('ambiguCount').textContent = ambiguData.length;
+  const hdrs = sharedHeadersGlobal || [];
+  const namaColIdx = hdrs.findIndex(h => /(nama|name)/i.test(String(h)));
+
+  const list = ambiguData.map((item, idx) => {
+    const nama = namaColIdx >= 0 ? String(item.row[namaColIdx] || '') : '';
+    const otherAreas = item.allAreas.filter(a => a !== item.detectedArea);
+    const allBtnAreas = [item.detectedArea, ...otherAreas];
+    const buttons = allBtnAreas.map(a =>
+      `<button class="area-choice-btn${a === item.detectedArea ? ' selected' : ''}" 
+        onclick="pilihArea(${idx}, '${a}', this)">${a}</button>`
+    ).join('');
+    return `<div class="ambigu-item">
+      ${nama ? `<div style="font-size:12px;font-weight:700;color:var(--slate-800);margin-bottom:4px">👤 ${nama}</div>` : ''}
+      <div class="ambigu-alamat">${item.alamat}</div>
+      <div class="ambigu-label">Saat ini masuk ke: <span class="ambigu-detected">${item.detectedArea}</span></div>
+      <div class="ambigu-label" style="margin-top:.5rem">Pilih area yang benar:</div>
+      <div class="area-btn-group">${buttons}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('ambiguList').innerHTML = list;
+  document.getElementById('ambiguModal').classList.add('open');
+}
+
+function pilihArea(idx, area, btn) {
+  ambiguData[idx].detectedArea = area;
+  // Update tombol selected di grup tersebut
+  const group = btn.closest('.area-btn-group');
+  group.querySelectorAll('.area-choice-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  // Update baris di areaStats
+  applyPilihanArea();
+}
+
+function applyPilihanArea() {
+  // Recalculate areaStats berdasarkan pilihan terkonfirmasi
+  if (!sharedHeadersGlobal) return;
+  const hdrs = sharedHeadersGlobal;
+  const sloIdx  = findCol(hdrs, ['slo','laik operasi','sertifikat']);
+  const nidiIdx = findCol(hdrs, ['nidi','identitas instalasi','nomor registrasi']);
+
+  // Build lookup: row object → area terpilih
+  const overrideMap = new Map();
+  for (const item of ambiguData) {
+    overrideMap.set(item.row, item.detectedArea);
+  }
+
+  // Rebuild groups dari semua rows di areaStats yang ada
+  const groups = {};
+  for (const a of areaStats) {
+    for (const row of (a.rows || [])) {
+      const finalArea = overrideMap.has(row) ? overrideMap.get(row) : a.area;
+      if (!groups[finalArea]) groups[finalArea] = [];
+      groups[finalArea].push(row);
+    }
+  }
+
+  areaStats = [];
+  for (const [area, rows] of Object.entries(groups)) {
+    const total     = rows.length;
+    const sloTerisi = sloIdx >= 0 ? rows.filter(r => r[sloIdx] && String(r[sloIdx]).trim()).length : 0;
+    const nidiTerisi= nidiIdx >= 0? rows.filter(r => r[nidiIdx] && String(r[nidiIdx]).trim()).length : 0;
+    areaStats.push({ area, total, sloTerisi, nidiTerisi, rows, headers: hdrs, sloIdx, nidiIdx });
+  }
+  areaStats.sort((a, b) => {
+    if (a.area === 'Lainnya') return 1;
+    if (b.area === 'Lainnya') return -1;
+    return a.area.localeCompare(b.area, 'id');
+  });
+}
+
+function closeAmbiguModal() {
+  document.getElementById('ambiguModal').classList.remove('open');
+}
+
+function konfirmasiDanDownload() {
+  applyPilihanArea();
+  closeAmbiguModal();
+  // Re-render tabel rekap di UI juga
+  let gt=0,gs=0,gn=0;
+  for(const a of areaStats){gt+=a.total;gs+=a.sloTerisi;gn+=a.nidiTerisi;}
+  renderResult(gt,gs,gn);
+  downloadLaporan();
+}
+
+// ── Styling helpers ───────────────────────────────────────────────────────────
+function applyStyle(ws, cellRef, style) {
+  if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+  ws[cellRef].s = style;
+}
+
+function styleRange(ws, r1, c1, r2, c2, style) {
+  for (let r = r1; r <= r2; r++)
+    for (let c = c1; c <= c2; c++)
+      applyStyle(ws, XLSX.utils.encode_cell({r, c}), style);
+}
+
+const S = {
+  titleFill:   { patternType:'solid', fgColor:{rgb:'1E3A5F'} },
+  headerFill:  { patternType:'solid', fgColor:{rgb:'2563EB'} },
+  totalFill:   { patternType:'solid', fgColor:{rgb:'1E40AF'} },
+  altFill:     { patternType:'solid', fgColor:{rgb:'EFF6FF'} },
+  areaHdrFill: { patternType:'solid', fgColor:{rgb:'7C3AED'} },
+  areaAltFill: { patternType:'solid', fgColor:{rgb:'F5F3FF'} },
+  titleFont:   { name:'Arial', bold:true, sz:14, color:{rgb:'FFFFFF'} },
+  subFont:     { name:'Arial', sz:10, color:{rgb:'BFDBFE'} },
+  headerFont:  { name:'Arial', bold:true, sz:10, color:{rgb:'FFFFFF'} },
+  totalFont:   { name:'Arial', bold:true, sz:10, color:{rgb:'FFFFFF'} },
+  dataFont:    { name:'Arial', sz:10, color:{rgb:'1E293B'} },
+  numFont:     { name:'Arial', bold:true, sz:10, color:{rgb:'1D4ED8'} },
+  pctFont:     { name:'Arial', bold:true, sz:10, color:{rgb:'16A34A'} },
+  areaFont:    { name:'Arial', bold:true, sz:10, color:{rgb:'FFFFFF'} },
+  center:      { horizontal:'center', vertical:'center' },
+  centerWrap:  { horizontal:'center', vertical:'center', wrapText:true },
+  left:        { horizontal:'left', vertical:'center' },
+  thinBorder:  { top:{style:'thin',color:{rgb:'CBD5E1'}}, bottom:{style:'thin',color:{rgb:'CBD5E1'}}, left:{style:'thin',color:{rgb:'CBD5E1'}}, right:{style:'thin',color:{rgb:'CBD5E1'}} },
+  medBorder:   { top:{style:'medium',color:{rgb:'2563EB'}}, bottom:{style:'medium',color:{rgb:'2563EB'}}, left:{style:'medium',color:{rgb:'2563EB'}}, right:{style:'medium',color:{rgb:'2563EB'}} },
+};
+
+function makeCell(val, font, fill, align, border, numFmt) {
+  const t = typeof val === 'number' ? 'n' : 's';
+  const cell = { v: val, t, s: { font: font||S.dataFont, fill: fill||{patternType:'none'}, alignment: align||S.left, border: border||S.thinBorder } };
+  if (numFmt) cell.z = numFmt;
+  return cell;
+}
+
 // ── Download ──────────────────────────────────────────────────────────────────
 function downloadLaporan() {
   const wb = XLSX.utils.book_new();
   const now = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
   let grandTotal=0, grandSLO=0, grandNIDI=0;
 
-  const rekapData = [
-    ['REKAP SLO & NIDI - WILAYAH JAWA BARAT'],
-    [`Tanggal: ${now}`],
-    [],
-    ['Area / Kota','Total Data','SLO Terisi','SLO Kosong','% SLO','NIDI Terisi','NIDI Kosong','% NIDI','Kelengkapan']
-  ];
+  // ═══ SHEET 1: REKAP (Area, Total Data, Kelengkapan) ═══
+  const wsRekap = {};
+  const merges = [];
 
+  // Title row (row 0)
+  wsRekap['A1'] = { v:'REKAP SLO & NIDI — WILAYAH JAWA BARAT', t:'s',
+    s:{ font:S.titleFont, fill:S.titleFill, alignment:{horizontal:'center',vertical:'center'}, border:S.thinBorder } };
+  merges.push({ s:{r:0,c:0}, e:{r:0,c:2} });
+
+  // Subtitle row (row 1)
+  wsRekap['A2'] = { v:`Tanggal: ${now}`, t:'s',
+    s:{ font:S.subFont, fill:S.titleFill, alignment:{horizontal:'center',vertical:'center'} } };
+  merges.push({ s:{r:1,c:0}, e:{r:1,c:2} });
+
+  // Empty row (row 2)
+  wsRekap['A3'] = { v:'', t:'s', s:{ fill:{patternType:'solid',fgColor:{rgb:'E2E8F0'}} } };
+  merges.push({ s:{r:2,c:0}, e:{r:2,c:2} });
+
+  // Header row (row 3)
+  const rekapHeaders = ['Area / Kota', 'Total Data', 'Kelengkapan'];
+  rekapHeaders.forEach((h, i) => {
+    const ref = XLSX.utils.encode_cell({r:3, c:i});
+    wsRekap[ref] = { v:h, t:'s', s:{ font:S.headerFont, fill:S.headerFill, alignment:S.center, border:S.thinBorder } };
+  });
+
+  let rowIdx = 4;
   for (const a of areaStats) {
-    const pctSLO = a.total>0?Math.round(a.sloTerisi/a.total*100):0;
-    const pctNIDI= a.total>0?Math.round(a.nidiTerisi/a.total*100):0;
-    const pctAll = a.total>0?Math.round(((a.sloTerisi+a.nidiTerisi)/(a.total*2))*100):0;
-    rekapData.push([a.area,a.total,a.sloTerisi,a.total-a.sloTerisi,pctSLO+'%',a.nidiTerisi,a.total-a.nidiTerisi,pctNIDI+'%',pctAll+'%']);
-    grandTotal+=a.total; grandSLO+=a.sloTerisi; grandNIDI+=a.nidiTerisi;
-  }
-  rekapData.push([]);
-  rekapData.push(['TOTAL',grandTotal,grandSLO,grandTotal-grandSLO,
-    grandTotal>0?Math.round(grandSLO/grandTotal*100)+'%':'0%',
-    grandNIDI,grandTotal-grandNIDI,
-    grandTotal>0?Math.round(grandNIDI/grandTotal*100)+'%':'0%',
-    grandTotal>0?Math.round(((grandSLO+grandNIDI)/(grandTotal*2))*100)+'%':'0%']);
+    const pctAll = a.total > 0 ? Math.round(((a.sloTerisi+a.nidiTerisi)/(a.total*2))*100) : 0;
+    const isAlt = (rowIdx - 4) % 2 === 1;
+    const rowFill = isAlt ? S.altFill : { patternType:'none' };
 
-  const wsRekap = XLSX.utils.aoa_to_sheet(rekapData);
-  wsRekap['!cols'] = [20,14,12,12,8,12,12,8,14].map(w=>({wch:w}));
+    wsRekap[XLSX.utils.encode_cell({r:rowIdx,c:0})] = { v:a.area, t:'s', s:{ font:S.dataFont, fill:rowFill, alignment:S.left, border:S.thinBorder } };
+    wsRekap[XLSX.utils.encode_cell({r:rowIdx,c:1})] = { v:a.total, t:'n', s:{ font:S.numFont, fill:rowFill, alignment:S.center, border:S.thinBorder } };
+    wsRekap[XLSX.utils.encode_cell({r:rowIdx,c:2})] = { v:pctAll+'%', t:'s', s:{ font:S.pctFont, fill:rowFill, alignment:S.center, border:S.thinBorder } };
+
+    grandTotal += a.total; grandSLO += a.sloTerisi; grandNIDI += a.nidiTerisi;
+    rowIdx++;
+  }
+
+  // Empty separator
+  wsRekap[XLSX.utils.encode_cell({r:rowIdx,c:0})] = { v:'', t:'s', s:{ fill:{patternType:'solid',fgColor:{rgb:'CBD5E1'}} } };
+  merges.push({ s:{r:rowIdx,c:0}, e:{r:rowIdx,c:2} });
+  rowIdx++;
+
+  // Total row
+  const grandPct = grandTotal > 0 ? Math.round(((grandSLO+grandNIDI)/(grandTotal*2))*100) : 0;
+  wsRekap[XLSX.utils.encode_cell({r:rowIdx,c:0})] = { v:'TOTAL KESELURUHAN', t:'s', s:{ font:S.totalFont, fill:S.totalFill, alignment:S.left, border:S.thinBorder } };
+  wsRekap[XLSX.utils.encode_cell({r:rowIdx,c:1})] = { v:grandTotal, t:'n', s:{ font:S.totalFont, fill:S.totalFill, alignment:S.center, border:S.thinBorder } };
+  wsRekap[XLSX.utils.encode_cell({r:rowIdx,c:2})] = { v:grandPct+'%', t:'s', s:{ font:S.totalFont, fill:S.totalFill, alignment:S.center, border:S.thinBorder } };
+
+  wsRekap['!ref'] = XLSX.utils.encode_range({r:0, c:0}, {r:rowIdx, c:2});
+  wsRekap['!cols'] = [{ wch:28 }, { wch:14 }, { wch:16 }];
+  wsRekap['!rows'] = [{ hpt:28 }, { hpt:18 }, { hpt:8 }];
+  wsRekap['!merges'] = merges;
   XLSX.utils.book_append_sheet(wb, wsRekap, 'Rekap');
 
-  // Sheet per area
+  // ═══ SHEET 2: SEMUA DATA (semua baris + kolom Area disisipkan) ═══
+  // Tentukan kolom alamat untuk menyisipkan Area setelahnya
+  const firstArea = areaStats.find(a => a.headers);
+  if (firstArea) {
+    const hdrs = firstArea.headers;
+    const alamatColIdx = hdrs.findIndex(h => /\b(alamat|address|lokasi|tempat)\b/i.test(h));
+    const insertAfter = alamatColIdx >= 0 ? alamatColIdx : hdrs.length - 1;
+
+    // Buat header baru dengan kolom Area disisipkan
+    const newHeaders = [
+      ...hdrs.slice(0, insertAfter + 1),
+      'Area',
+      ...hdrs.slice(insertAfter + 1)
+    ];
+
+    const wsSemua = {};
+    const semuaMerges = [];
+
+    // Title
+    wsSemua['A1'] = { v:'SEMUA DATA — SLO & NIDI WILAYAH JAWA BARAT', t:'s',
+      s:{ font:S.titleFont, fill:S.titleFill, alignment:{horizontal:'center',vertical:'center'} } };
+    semuaMerges.push({ s:{r:0,c:0}, e:{r:0,c:newHeaders.length-1} });
+    wsSemua['A2'] = { v:`Tanggal: ${now}  |  Total: ${grandTotal} data dari ${areaStats.length} area`, t:'s',
+      s:{ font:S.subFont, fill:S.titleFill, alignment:{horizontal:'center',vertical:'center'} } };
+    semuaMerges.push({ s:{r:1,c:0}, e:{r:1,c:newHeaders.length-1} });
+
+    // Header kolom
+    newHeaders.forEach((h, ci) => {
+      const ref = XLSX.utils.encode_cell({r:2, c:ci});
+      const isArea = h === 'Area';
+      wsSemua[ref] = { v:h, t:'s', s:{ font:S.headerFont, fill: isArea ? S.areaHdrFill : S.headerFill, alignment:S.centerWrap, border:S.thinBorder } };
+    });
+
+    let sRow = 3;
+    for (const a of areaStats) {
+      if (!a.rows || !a.headers) continue;
+      for (const row of a.rows) {
+        const isAlt = (sRow - 3) % 2 === 1;
+        const rowFill = isAlt ? S.areaAltFill : { patternType:'none' };
+        const newRow = [
+          ...hdrs.slice(0, insertAfter + 1).map((_,i) => row[i] ?? ''),
+          a.area,
+          ...hdrs.slice(insertAfter + 1).map((_,i) => row[insertAfter + 1 + i] ?? '')
+        ];
+        newRow.forEach((val, ci) => {
+          const ref = XLSX.utils.encode_cell({r:sRow, c:ci});
+          const isAreaCol = ci === insertAfter + 1;
+          const font = isAreaCol ? {...S.dataFont, color:{rgb:'7C3AED'}, bold:true} : S.dataFont;
+          const fill = isAreaCol ? S.areaAltFill : rowFill;
+          wsSemua[ref] = { v: val === null || val === undefined ? '' : val, t: typeof val === 'number' ? 'n' : 's', s:{ font, fill, alignment:S.left, border:S.thinBorder } };
+        });
+        sRow++;
+      }
+    }
+
+    wsSemua['!ref'] = XLSX.utils.encode_range({r:0, c:0}, {r:sRow-1, c:newHeaders.length-1});
+    wsSemua['!cols'] = newHeaders.map((h) => ({ wch: h === 'Area' ? 18 : 22 }));
+    wsSemua['!rows'] = [{ hpt:26 }, { hpt:16 }];
+    wsSemua['!merges'] = semuaMerges;
+    XLSX.utils.book_append_sheet(wb, wsSemua, 'Semua Data');
+  }
+
+  // ═══ SHEET PER AREA (dengan dekorasi) ═══
   for (const a of areaStats) {
     if (!a.rows || !a.headers) continue;
-    const data = [a.headers, ...a.rows.map(row => a.headers.map((_,i) => row[i] ?? ''))];
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    ws['!cols'] = a.headers.map(() => ({wch: 22}));
+    const ws = {};
+    const mrgList = [];
+
+    // Title area
+    ws['A1'] = { v:`DATA ${a.area.toUpperCase()} — SLO & NIDI`, t:'s',
+      s:{ font:S.areaFont, fill:S.areaHdrFill, alignment:{horizontal:'center',vertical:'center'} } };
+    mrgList.push({ s:{r:0,c:0}, e:{r:0,c:a.headers.length-1} });
+
+    // Info row
+    const pctArea = a.total > 0 ? Math.round(((a.sloTerisi+a.nidiTerisi)/(a.total*2))*100) : 0;
+    ws['A2'] = { v:`Total: ${a.total}  |  SLO: ${a.sloTerisi}  |  NIDI: ${a.nidiTerisi}  |  Kelengkapan: ${pctArea}%  |  ${now}`, t:'s',
+      s:{ font:{name:'Arial',sz:9,color:{rgb:'EDE9FE'}}, fill:S.areaHdrFill, alignment:{horizontal:'center',vertical:'center'} } };
+    mrgList.push({ s:{r:1,c:0}, e:{r:1,c:a.headers.length-1} });
+
+    // Header
+    a.headers.forEach((h, ci) => {
+      ws[XLSX.utils.encode_cell({r:2, c:ci})] = { v:h, t:'s', s:{ font:S.headerFont, fill:S.headerFill, alignment:S.centerWrap, border:S.thinBorder } };
+    });
+
+    // Data
+    a.rows.forEach((row, ri) => {
+      const isAlt = ri % 2 === 1;
+      const rowFill = isAlt ? S.areaAltFill : { patternType:'none' };
+      a.headers.forEach((_, ci) => {
+        const val = row[ci] ?? '';
+        ws[XLSX.utils.encode_cell({r:ri+3, c:ci})] = { v:val, t: typeof val === 'number' ? 'n' : 's', s:{ font:S.dataFont, fill:rowFill, alignment:S.left, border:S.thinBorder } };
+      });
+    });
+
+    ws['!ref'] = XLSX.utils.encode_range({r:0,c:0},{r:a.rows.length+2,c:a.headers.length-1});
+    ws['!cols'] = a.headers.map(() => ({ wch:22 }));
+    ws['!rows'] = [{ hpt:26 }, { hpt:14 }];
+    ws['!merges'] = mrgList;
+
     const safeName = a.area.substring(0,28).replace(/[\\\/\?\*\[\]]/g,'');
     XLSX.utils.book_append_sheet(wb, ws, safeName || 'Lainnya');
   }
 
-  XLSX.writeFile(wb, `Laporan_SLO_NIDI_${new Date().toISOString().slice(0,10)}.xlsx`);
+  XLSX.writeFile(wb, `Laporan_SLO_NIDI_${new Date().toISOString().slice(0,10)}.xlsx`, { cellStyles: true, bookSST: false });
 }
 
 // ── Reset ──────────────────────────────────────────────────────────────────────
 function resetAll() {
-  workbook = null; areaStats = [];
+  workbook = null; areaStats = []; ambiguData = []; sharedHeadersGlobal = null; alamatColIdxGlobal = -1;
   document.getElementById('fileIn').value = '';
   document.getElementById('sheetInfo').innerHTML = '';
   document.getElementById('resultCard').style.display = 'none';
 }
 </script>
+
+<!-- Modal Konfirmasi Ambiguitas Area -->
+<div class="modal-overlay" id="ambiguModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span style="font-size:18px">⚠️</span>
+      <span class="modal-head-title">Data Alamat Ambigu — Perlu Konfirmasi Area</span>
+      <span class="ambigu-count-badge" id="ambiguCount">0</span>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--slate-600);margin-bottom:1rem;">
+        Alamat-alamat berikut mengandung <strong>lebih dari 1 nama area</strong>. Sistem otomatis memilih area dari bagian akhir alamat, tetapi Anda dapat mengubahnya sebelum download.
+      </p>
+      <div id="ambiguList"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeAmbiguModal()">Batalkan Download</button>
+      <button class="btn btn-green" onclick="konfirmasiDanDownload()">✅ Konfirmasi & Download</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
