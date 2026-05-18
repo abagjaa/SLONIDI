@@ -156,9 +156,48 @@
     .modal-nav { display:flex; align-items:center; gap:8px; justify-content:space-between; padding:.75rem 0; border-top:1px solid var(--slate-100); margin-top:.25rem; }
     .modal-nav-counter { font-size:12px; color:var(--slate-400); font-weight:600; }
 
+    /* ── UPLOAD MODE SELECTOR ── */
+    .upload-mode-selector {
+      display:flex; gap:10px; margin-bottom:1rem; flex-wrap:wrap;
+    }
+    .mode-btn {
+      flex:1; min-width:120px;
+      display:flex; flex-direction:column; align-items:center; gap:6px;
+      padding:1rem .75rem; border-radius:var(--radius-sm);
+      border:2px solid var(--slate-200); background:#fff;
+      cursor:pointer; font-family:inherit; transition:all .18s;
+      color:var(--slate-600);
+    }
+    .mode-btn:hover {
+      border-color:var(--blue-300); background:var(--blue-50);
+      color:var(--blue-dark); transform:translateY(-2px);
+      box-shadow:0 4px 16px rgba(96,165,250,0.15);
+    }
+    .mode-btn.active {
+      border-color:var(--blue-400); background:var(--blue-50);
+      color:var(--blue-dark);
+      box-shadow:0 4px 16px rgba(96,165,250,0.2);
+    }
+    .mode-btn.active-zip {
+      border-color:#F59E0B; background:#FFFBEB;
+      color:#92400E;
+      box-shadow:0 4px 16px rgba(245,158,11,0.2);
+    }
+    .mode-btn.active-folder {
+      border-color:var(--green); background:var(--green-light);
+      color:var(--green);
+      box-shadow:0 4px 16px rgba(22,163,74,0.2);
+    }
+    .mode-btn-icon { font-size:28px; line-height:1; }
+    .mode-btn-label { font-size:13px; font-weight:700; }
+    .mode-btn-desc { font-size:10px; font-weight:500; text-align:center; opacity:.75; line-height:1.4; }
+
     @media (max-width:700px) {
       .pdf-modal-body { grid-template-columns:1fr; grid-template-rows:55% 45%; }
       .pdf-modal-form { border-left:none; border-top:1px solid var(--slate-100); }
+      .upload-mode-selector { gap:6px; }
+      .mode-btn { padding:.75rem .5rem; min-width:90px; }
+      .mode-btn-icon { font-size:22px; }
     }
   </style>
 </head>
@@ -175,15 +214,54 @@
       <span class="card-title">Upload PDF SLO & NIDI yang ingin di-rename</span>
     </div>
     <div class="card-body">
-      <div class="drop-zone" id="pdfDrop" onclick="document.getElementById('pdfIn').click()">
-        <div class="drop-zone-icon">📂</div>
-        <p>Klik atau drag <strong>semua PDF</strong> sekaligus di sini</p>
-        <span>Nama file mengandung "SLO" → tipe SLO &nbsp;|&nbsp; mengandung "NIDI" → tipe NIDI</span>
+      <!-- Pilih mode upload -->
+      <div class="upload-mode-selector">
+        <button class="mode-btn active" id="modeBtnPdf" onclick="setUploadMode('pdf')">
+          <span class="mode-btn-icon">📄</span>
+          <span class="mode-btn-label">File PDF</span>
+          <span class="mode-btn-desc">Upload satu atau beberapa file .pdf sekaligus</span>
+        </button>
+        <button class="mode-btn" id="modeBtnZip" onclick="setUploadMode('zip')">
+          <span class="mode-btn-icon">🗜️</span>
+          <span class="mode-btn-label">File ZIP</span>
+          <span class="mode-btn-desc">ZIP berisi PDF — semua PDF di dalamnya diekstrak otomatis</span>
+        </button>
+        <button class="mode-btn" id="modeBtnFolder" onclick="setUploadMode('folder')">
+          <span class="mode-btn-icon">📁</span>
+          <span class="mode-btn-label">Folder</span>
+          <span class="mode-btn-desc">Pilih folder — semua PDF di dalamnya dipindai otomatis</span>
+        </button>
       </div>
-      <input type="file" id="pdfIn" accept=".pdf" multiple>
+
+      <!-- Drop zone PDF -->
+      <div class="drop-zone" id="dropPdf" onclick="document.getElementById('inPdf').click()">
+        <div class="drop-zone-icon">📄</div>
+        <p>Klik atau drag <strong>file PDF</strong> di sini</p>
+        <span>Bisa pilih banyak sekaligus &nbsp;|&nbsp; "SLO" dalam nama → tipe SLO &nbsp;|&nbsp; "NIDI" → tipe NIDI</span>
+      </div>
+
+      <!-- Drop zone ZIP -->
+      <div class="drop-zone" id="dropZip" style="display:none" onclick="document.getElementById('inZip').click()">
+        <div class="drop-zone-icon">🗜️</div>
+        <p>Klik atau drag <strong>file ZIP</strong> di sini</p>
+        <span>Semua .pdf di dalam ZIP akan diekstrak dan diproses</span>
+      </div>
+
+      <!-- Drop zone Folder -->
+      <div class="drop-zone" id="dropFolder" style="display:none" onclick="document.getElementById('inFolder').click()">
+        <div class="drop-zone-icon">📁</div>
+        <p>Klik atau drag <strong>folder</strong> di sini</p>
+        <span>Semua .pdf di dalam folder (termasuk subfolder) akan dipindai</span>
+      </div>
+
+      <!-- Hidden inputs -->
+      <input type="file" id="inPdf"    accept=".pdf" multiple>
+      <input type="file" id="inZip"    accept=".zip">
+      <input type="file" id="inFolder" webkitdirectory multiple>
+
       <div class="file-list" id="fileList"></div>
-      <div id="fileActions" style="display:none;gap:6px;margin-top:.75rem">
-        <button class="btn btn-sm" onclick="document.getElementById('pdfIn').click()">+ Tambah PDF</button>
+      <div id="fileActions" style="display:none;gap:6px;margin-top:.75rem;flex-wrap:wrap">
+        <button class="btn btn-sm" id="btnAddMore" onclick="triggerAddMore()">+ Tambah Lagi</button>
         <button class="btn btn-sm btn-ghost" onclick="clearFiles()">Hapus semua</button>
       </div>
     </div>
@@ -400,16 +478,67 @@ function resetZoom() { setZoom(1.0); }
   document.addEventListener('mouseup', () => { drag = false; viewer.style.cursor = 'grab'; });
 })();
 
-// ── DRAG & DROP ───────────────────────────────────────────────────
-function setupDrop(id, handler) {
-  const el = document.getElementById(id);
+// ── UPLOAD MODE ───────────────────────────────────────────────────
+let uploadMode = 'pdf'; // 'pdf' | 'zip' | 'folder'
+
+function setUploadMode(mode) {
+  uploadMode = mode;
+  document.getElementById('modeBtnPdf').className    = 'mode-btn' + (mode==='pdf'    ? ' active'        : '');
+  document.getElementById('modeBtnZip').className    = 'mode-btn' + (mode==='zip'    ? ' active-zip'    : '');
+  document.getElementById('modeBtnFolder').className = 'mode-btn' + (mode==='folder' ? ' active-folder' : '');
+  document.getElementById('dropPdf').style.display    = mode==='pdf'    ? '' : 'none';
+  document.getElementById('dropZip').style.display    = mode==='zip'    ? '' : 'none';
+  document.getElementById('dropFolder').style.display = mode==='folder' ? '' : 'none';
+}
+
+function triggerAddMore() {
+  if (uploadMode === 'pdf')         document.getElementById('inPdf').click();
+  else if (uploadMode === 'zip')    document.getElementById('inZip').click();
+  else                              document.getElementById('inFolder').click();
+}
+
+// ── DRAG & DROP setup ─────────────────────────────────────────────
+function setupDrop(dropId, handler) {
+  const el = document.getElementById(dropId);
   el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag'); });
   el.addEventListener('dragleave', () => el.classList.remove('drag'));
-  el.addEventListener('drop', e => { e.preventDefault(); el.classList.remove('drag'); handler(Array.from(e.dataTransfer.files)); });
+  el.addEventListener('drop', e => {
+    e.preventDefault(); el.classList.remove('drag');
+    handler(Array.from(e.dataTransfer.files));
+  });
 }
-setupDrop('pdfDrop', files => addFiles(files.filter(f => /\.pdf$/i.test(f.name))));
-document.getElementById('pdfIn').onchange = e => addFiles(Array.from(e.target.files));
+setupDrop('dropPdf',    files => addFiles(files.filter(f => /\.pdf$/i.test(f.name))));
+setupDrop('dropZip',    files => { const z = files.find(f => /\.zip$/i.test(f.name)); if (z) handleZip(z); });
+setupDrop('dropFolder', files => addFiles(files.filter(f => /\.pdf$/i.test(f.name))));
 
+document.getElementById('inPdf').onchange    = e => addFiles(Array.from(e.target.files));
+document.getElementById('inZip').onchange    = e => { if (e.target.files[0]) handleZip(e.target.files[0]); };
+document.getElementById('inFolder').onchange = e => addFiles(Array.from(e.target.files).filter(f => /\.pdf$/i.test(f.name)));
+
+// ── ZIP HANDLER ───────────────────────────────────────────────────
+async function handleZip(zipFile) {
+  showToast('📦 Membaca ZIP...', 'info');
+  try {
+    const ab = await zipFile.arrayBuffer();
+    const zip = await JSZip.loadAsync(ab);
+    const pdfEntries = Object.values(zip.files).filter(f => !f.dir && /\.pdf$/i.test(f.name));
+    if (!pdfEntries.length) { showToast('Tidak ada file PDF di dalam ZIP!', 'warn'); return; }
+    const extracted = [];
+    for (const entry of pdfEntries) {
+      const blob = await entry.async('blob');
+      // Ambil hanya nama file saja (tanpa path folder di dalam ZIP)
+      const fname = entry.name.split('/').pop();
+      const file = new File([blob], fname, { type: 'application/pdf' });
+      extracted.push(file);
+    }
+    addFiles(extracted);
+    showToast(`✅ ${extracted.length} PDF diekstrak dari ZIP`, 'success');
+  } catch(e) {
+    showToast('Gagal membaca ZIP: ' + e.message, 'error');
+  }
+}
+
+// ── FILE MANAGEMENT ───────────────────────────────────────────────
 function addFiles(files) {
   files.forEach(f => { if (!pdfFiles.find(p => p.name === f.name)) pdfFiles.push(f); });
   renderFileList();
@@ -422,7 +551,7 @@ function clearFiles() {
   processedFiles = new Set();
   hasProcessedOnce = false;
   renderFileList();
-  document.getElementById('pdfIn').value = '';
+  ['inPdf','inZip','inFolder'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('resultCard').style.display = 'none';
   document.getElementById('newFileHint').style.display = 'none';
   checkReady();
@@ -461,7 +590,6 @@ function removeFile(i) {
   const fname = pdfFiles[i].name;
   pdfFiles.splice(i, 1);
   processedFiles.delete(fname);
-  // Hapus dari items juga
   const itemIdx = items.findIndex(it => it.file.name === fname);
   if (itemIdx >= 0) items.splice(itemIdx, 1);
   renderFileList();
@@ -971,12 +1099,13 @@ function resetAll() {
   processedFiles = new Set();
   hasProcessedOnce = false;
   document.getElementById('fileList').innerHTML = '';
-  document.getElementById('pdfIn').value = '';
+  ['inPdf','inZip','inFolder'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('logBox').style.display = 'none'; document.getElementById('logBox').innerHTML = '';
   document.getElementById('progressWrap').style.display = 'none';
   document.getElementById('resultCard').style.display = 'none';
   document.getElementById('fileActions').style.display = 'none';
   document.getElementById('newFileHint').style.display = 'none';
+  setUploadMode('pdf');
   ['dot1','dot2'].forEach((id,i) => { const d=document.getElementById(id); d.classList.remove('done'); d.textContent=i+1; });
   checkReady();
   updateProcessBtn();
