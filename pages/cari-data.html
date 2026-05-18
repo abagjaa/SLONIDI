@@ -51,6 +51,11 @@
   mark{background:#FDE68A;border-radius:2px;padding:0 2px;}
   #searchArea{display:none;}
   #resultWrap{display:none;}
+  .file-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--green-light);border:1px solid var(--green-border);border-radius:var(--radius-sm);font-size:12px;font-weight:500;color:var(--green);}
+  .file-item .fname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--slate-800);}
+  .file-item .finfo{font-size:11px;color:var(--slate-400);white-space:nowrap;}
+  .file-item .fremove{background:none;border:none;color:var(--slate-400);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;transition:color .15s;}
+  .file-item .fremove:hover{color:#DC2626;}
 </style>
 </head>
 <body>
@@ -65,12 +70,12 @@
     <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileIn').click()"
       ondragover="event.preventDefault();this.classList.add('drag')"
       ondragleave="this.classList.remove('drag')"
-      ondrop="event.preventDefault();this.classList.remove('drag');handleFile(event.dataTransfer.files[0])">
+      ondrop="event.preventDefault();this.classList.remove('drag');handleFiles(event.dataTransfer.files)">
       <p>🔎 Klik atau drag file Excel untuk mulai mencari</p>
-      <span>Multi-sheet didukung — semua sheet akan dicari sekaligus</span>
+      <span>Bisa upload lebih dari 1 file sekaligus • Multi-sheet didukung</span>
     </div>
-    <input type="file" id="fileIn" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])">
-    <div id="fileInfo" style="font-size:12px;color:var(--slate-400);margin-top:.625rem;"></div>
+    <input type="file" id="fileIn" accept=".xlsx,.xls" style="display:none" multiple onchange="handleFiles(this.files)">
+    <div id="fileList" style="margin-top:.625rem;display:flex;flex-direction:column;gap:5px;"></div>
   </div>
 </div>
 
@@ -128,67 +133,96 @@
 </div>
 
 <script>
-let allData = []; // [{sheet, nama, slo, nidi, extra, rowRaw}]
-let activeFilter = 'all';
+let allData = [];
+let activeFilter = "all";
 let activeSheetFilter = null;
-let headers = {};
+let loadedFiles = [];
 
-function handleFile(file) {
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const wb = XLSX.read(e.target.result, { type: 'array' });
-    allData = [];
-    headers = {};
-
-    for (const sheetName of wb.SheetNames) {
-      const ws = wb.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-      if (rows.length < 2) continue;
-
-      // Find header row
-      let headerIdx = 0;
-      for (let i = 0; i < Math.min(5, rows.length); i++) {
-        const r = rows[i].map(c => String(c).toLowerCase());
-        if (r.some(c => c.includes('nama') || c.includes('slo') || c.includes('nidi'))) {
-          headerIdx = i; break;
+function handleFiles(fileList) {
+  const files = Array.from(fileList).filter(f => /\.xlsx?$/i.test(f.name));
+  if (!files.length) return;
+  const newFiles = files.filter(f => !loadedFiles.find(lf => lf.name === f.name));
+  if (!newFiles.length) { alert("File tersebut sudah diupload sebelumnya."); return; }
+  let pending = newFiles.length;
+  newFiles.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wb = XLSX.read(e.target.result, { type: "array" });
+      let rowCount = 0;
+      for (const sheetName of wb.SheetNames) {
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+        if (rows.length < 2) continue;
+        let headerIdx = 0;
+        for (let i = 0; i < Math.min(5, rows.length); i++) {
+          const r = rows[i].map(c => String(c).toLowerCase());
+          if (r.some(c => c.includes("nama") || c.includes("slo") || c.includes("nidi"))) { headerIdx = i; break; }
+        }
+        const hdrs = rows[headerIdx].map(c => String(c));
+        const namaIdx = findCol(hdrs, ["nama","name","pemilik"]);
+        const sloIdx  = findCol(hdrs, ["slo","laik operasi","sertifikat"]);
+        const nidiIdx = findCol(hdrs, ["nidi","identitas","registrasi"]);
+        for (const row of rows.slice(headerIdx + 1)) {
+          if (!row.some(c => c !== "")) continue;
+          const nama  = namaIdx >= 0 ? String(row[namaIdx] || "").trim() : "";
+          const slo   = sloIdx  >= 0 ? String(row[sloIdx]  || "").trim() : "";
+          const nidi  = nidiIdx >= 0 ? String(row[nidiIdx] || "").trim() : "";
+          const skip = new Set([namaIdx, sloIdx, nidiIdx].filter(i => i >= 0));
+          const extra = hdrs.map((h, i) => skip.has(i) ? null : (row[i] ? h+": "+row[i] : null)).filter(Boolean).slice(0,3).join(" • ");
+          allData.push({ sheet: file.name+" › "+sheetName, fileName: file.name, sheetName, nama, slo, nidi, extra, row });
+          rowCount++;
         }
       }
+      loadedFiles.push({ name: file.name, sheetCount: wb.SheetNames.length, rowCount });
+      pending--;
+      if (pending === 0) afterLoad();
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
 
-      const hdrs = rows[headerIdx].map(c => String(c));
-      headers[sheetName] = hdrs;
+function removeFile(fileName) {
+  loadedFiles = loadedFiles.filter(f => f.name !== fileName);
+  allData = allData.filter(d => d.fileName !== fileName);
+  afterLoad();
+}
 
-      const namaIdx = findCol(hdrs, ['nama', 'name', 'pemilik']);
-      const sloIdx  = findCol(hdrs, ['slo', 'laik operasi', 'sertifikat']);
-      const nidiIdx = findCol(hdrs, ['nidi', 'identitas', 'registrasi']);
+function afterLoad() {
+  renderFileList();
+  rebuildSheetFilters();
+  if (loadedFiles.length > 0) {
+    document.getElementById("searchArea").style.display = "block";
+    document.getElementById("resultWrap").style.display = "block";
+    document.getElementById("queryInput").focus();
+  } else {
+    document.getElementById("searchArea").style.display = "none";
+    document.getElementById("resultWrap").style.display = "none";
+  }
+  doSearch();
+}
 
-      for (const row of rows.slice(headerIdx + 1)) {
-        if (!row.some(c => c !== '')) continue;
-        const nama  = namaIdx >= 0 ? String(row[namaIdx] || '').trim() : '';
-        const slo   = sloIdx  >= 0 ? String(row[sloIdx]  || '').trim() : '';
-        const nidi  = nidiIdx >= 0 ? String(row[nidiIdx] || '').trim() : '';
-        // Extra columns (skip nama/slo/nidi)
-        const skip = new Set([namaIdx, sloIdx, nidiIdx].filter(i => i >= 0));
-        const extra = hdrs.map((h, i) => skip.has(i) ? null : (row[i] ? `${h}: ${row[i]}` : null))
-          .filter(Boolean).slice(0, 3).join(' • ');
+function renderFileList() {
+  document.getElementById("fileList").innerHTML = loadedFiles.map(f =>
+    "<div class="file-item"><span>✅</span><span class="fname">" + f.name + "</span><span class="finfo">" + f.sheetCount + " sheet • " + f.rowCount + " baris</span><button class="fremove" onclick="removeFile('" + f.name.replace(/'/g,"\'") + "')">✕</button></div>"
+  ).join("");
+  document.getElementById("fileIn").value = "";
+}
 
-        allData.push({ sheet: sheetName, nama, slo, nidi, extra, row });
-      }
-    }
-
-    document.getElementById('fileInfo').innerHTML =
-      `✅ <strong>${file.name}</strong> — ${wb.SheetNames.length} sheet, ${allData.length} baris data dimuat`;
-
-    // Sheet filter buttons
-    document.getElementById('sheetFilters').innerHTML =
-      wb.SheetNames.map(s => `<button class="filter-btn" data-sheet="${s}" onclick="setSheetFilter('${s}')">${s}</button>`).join('');
-
-    document.getElementById('searchArea').style.display = 'block';
-    document.getElementById('resultWrap').style.display = 'block';
-    document.getElementById('queryInput').focus();
-    doSearch();
-  };
-  reader.readAsArrayBuffer(file);
+function rebuildSheetFilters() {
+  const useFileFilter = loadedFiles.length > 1;
+  if (useFileFilter) {
+    document.getElementById("sheetFilters").innerHTML = loadedFiles.map(f =>
+      "<button class="filter-btn" data-sheet="" + f.name + "" onclick="setSheetFilter('" + f.name.replace(/'/g,"\'") + "')">📄 " + f.name + "</button>"
+    ).join("");
+  } else if (loadedFiles.length === 1) {
+    const sheets = [...new Set(allData.map(d => d.sheetName))];
+    document.getElementById("sheetFilters").innerHTML = sheets.length > 1
+      ? sheets.map(s => "<button class="filter-btn" data-sheet="" + s + "" onclick="setSheetFilter('" + s.replace(/'/g,"\'") + "')">📋 " + s + "</button>").join("")
+      : "";
+  } else {
+    document.getElementById("sheetFilters").innerHTML = "";
+  }
+  activeSheetFilter = null;
 }
 
 function findCol(headers, keywords) {
@@ -201,68 +235,58 @@ function findCol(headers, keywords) {
 
 function setFilter(f) {
   activeFilter = f;
-  document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+  document.querySelectorAll(".filter-btn[data-filter]").forEach(b => b.classList.toggle("active", b.dataset.filter === f));
   doSearch();
 }
 
 function setSheetFilter(sheet) {
   if (activeSheetFilter === sheet) {
     activeSheetFilter = null;
-    document.querySelectorAll('.filter-btn[data-sheet]').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll(".filter-btn[data-sheet]").forEach(b => b.classList.remove("active"));
   } else {
     activeSheetFilter = sheet;
-    document.querySelectorAll('.filter-btn[data-sheet]').forEach(b => b.classList.toggle('active', b.dataset.sheet === sheet));
+    document.querySelectorAll(".filter-btn[data-sheet]").forEach(b => b.classList.toggle("active", b.dataset.sheet === sheet));
   }
   doSearch();
 }
 
 function clearSearch() {
-  document.getElementById('queryInput').value = '';
+  document.getElementById("queryInput").value = "";
   doSearch();
 }
 
 function doSearch() {
-  const q = document.getElementById('queryInput').value.trim().toLowerCase();
+  const q = document.getElementById("queryInput").value.trim().toLowerCase();
   let results = allData;
-
-  // Filter by sheet
-  if (activeSheetFilter) results = results.filter(d => d.sheet === activeSheetFilter);
-
-  // Filter by field
+  if (activeSheetFilter) {
+    const useFileFilter = loadedFiles.length > 1;
+    results = results.filter(d => useFileFilter ? d.fileName === activeSheetFilter : d.sheetName === activeSheetFilter);
+  }
   if (q) {
     results = results.filter(d => {
-      if (activeFilter === 'nama') return d.nama.toLowerCase().includes(q);
-      if (activeFilter === 'slo')  return d.slo.toLowerCase().includes(q);
-      if (activeFilter === 'nidi') return d.nidi.toLowerCase().includes(q);
-      return d.nama.toLowerCase().includes(q) || d.slo.toLowerCase().includes(q) ||
-             d.nidi.toLowerCase().includes(q) || d.extra.toLowerCase().includes(q);
+      if (activeFilter === "nama") return d.nama.toLowerCase().includes(q);
+      if (activeFilter === "slo")  return d.slo.toLowerCase().includes(q);
+      if (activeFilter === "nidi") return d.nidi.toLowerCase().includes(q);
+      return d.nama.toLowerCase().includes(q) || d.slo.toLowerCase().includes(q) || d.nidi.toLowerCase().includes(q) || d.extra.toLowerCase().includes(q);
     });
   }
-
   const MAX = 200;
   const shown = results.slice(0, MAX);
-
-  document.getElementById('resultInfo').innerHTML = q
-    ? `Ditemukan <strong>${results.length}</strong> hasil untuk "<strong>${q}</strong>"${results.length > MAX ? ` (menampilkan ${MAX} pertama)` : ''}`
-    : `Menampilkan <strong>${Math.min(results.length, MAX)}</strong> dari <strong>${allData.length}</strong> data`;
-
+  document.getElementById("resultInfo").innerHTML = q
+    ? "Ditemukan <strong>"+results.length+"</strong> hasil untuk "<strong>"+q+"</strong>""+(results.length > MAX ? " (menampilkan "+MAX+" pertama)" : "")
+    : "Menampilkan <strong>"+Math.min(results.length,MAX)+"</strong> dari <strong>"+allData.length+"</strong> data";
   if (shown.length === 0) {
-    document.getElementById('resultBody').innerHTML = '';
-    document.getElementById('emptyState').style.display = 'block';
+    document.getElementById("resultBody").innerHTML = "";
+    document.getElementById("emptyState").style.display = "block";
     return;
   }
-  document.getElementById('emptyState').style.display = 'none';
-
-  document.getElementById('resultBody').innerHTML = shown.map(d => {
-    const hl = str => q ? str.replace(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<mark>$1</mark>') : str;
-    return `<tr>
-      <td><span class="badge-sheet">${d.sheet}</span></td>
-      <td style="font-weight:500;max-width:200px">${hl(d.nama) || '<span style="color:var(--slate-400)">—</span>'}</td>
-      <td><span class="num-slo">${hl(d.slo) || '<span style="color:var(--slate-400)">—</span>'}</span></td>
-      <td><span class="num-nidi">${hl(d.nidi) || '<span style="color:var(--slate-400)">—</span>'}</span></td>
-      <td style="font-size:11px;color:var(--slate-400);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.extra}">${d.extra || '—'}</td>
-    </tr>`;
-  }).join('');
+  document.getElementById("emptyState").style.display = "none";
+  document.getElementById("resultBody").innerHTML = shown.map(d => {
+    const esc = s => s.replace(/[.*+?^${}()|[\]\]/g,"\$&");
+    const hl = str => q ? str.replace(new RegExp("("+esc(q)+")","gi"),"<mark>$1</mark>") : str;
+    const sheetLabel = loadedFiles.length > 1 ? d.fileName+"<br><span style="font-size:10px;color:var(--slate-400)">"+d.sheetName+"</span>" : d.sheetName;
+    return "<tr><td><span class="badge-sheet" style="white-space:nowrap">"+sheetLabel+"</span></td><td style="font-weight:500;max-width:200px">"+( hl(d.nama)||"<span style="color:var(--slate-400)">—</span>" )+"</td><td><span class="num-slo">"+( hl(d.slo)||"<span style="color:var(--slate-400)">—</span>" )+"</span></td><td><span class="num-nidi">"+( hl(d.nidi)||"<span style="color:var(--slate-400)">—</span>" )+"</span></td><td style="font-size:11px;color:var(--slate-400);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="" + d.extra + "">"+( d.extra||"—" )+"</td></tr>";
+  }).join("");
 }
 </script>
 </body>
