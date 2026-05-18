@@ -12,6 +12,9 @@
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
+<!-- FLOATING PARTICLES -->
+<div class="particles" id="particles" aria-hidden="true"></div>
+
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
@@ -98,26 +101,38 @@
     <!-- HOME PAGE -->
     <div class="page active" id="page-home">
       <div class="welcome-card">
+        <div class="welcome-hearts">
+          <span class="heart h1">💙</span>
+          <span class="heart h2">💜</span>
+          <span class="heart h3">💙</span>
+          <span class="heart h4">✨</span>
+          <span class="heart h5">⭐</span>
+        </div>
         <h2 id="greetingText">Selamat datang! 🩵</h2>
         <p>Semua tools penerbitan SLO & NIDI tersedia di sini.</p>
-        <div class="welcome-emoji">✨</div>
+        <div class="welcome-emoji" id="welcomeEmoji">✨</div>
       </div>
 
       <div class="stats-grid">
-        <div class="stat-card">
+        <div class="stat-card stat-card-tools">
           <div class="stat-icon blue">📄</div>
           <div class="stat-num" data-tools-count>6</div>
           <div class="stat-label">Tools Tersedia</div>
+          <div class="stat-sparkle">✨</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon purple">🔧</div>
-          <div class="stat-num">SLO</div>
-          <div class="stat-label">Extractor Aktif</div>
+        <div class="stat-card stat-card-slo" onclick="showPage('slo-nidi', document.querySelector('[data-page=slo-nidi]'))" style="cursor:pointer" title="Buka SLO & NIDI Extractor">
+          <div class="stat-icon blue">📋</div>
+          <div class="stat-num stat-num-slo" id="statSloCount">0</div>
+          <div class="stat-label">SLO Diekstrak</div>
+          <div class="stat-sublabel" id="statSloSub">Belum ada data</div>
+          <div class="stat-badge-go">Buka →</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon green">✅</div>
-          <div class="stat-num">NIDI</div>
-          <div class="stat-label">Extractor Aktif</div>
+        <div class="stat-card stat-card-nidi" onclick="showPage('slo-nidi', document.querySelector('[data-page=slo-nidi]'))" style="cursor:pointer" title="Buka SLO & NIDI Extractor">
+          <div class="stat-icon purple">🪪</div>
+          <div class="stat-num stat-num-nidi" id="statNidiCount">0</div>
+          <div class="stat-label">NIDI Diekstrak</div>
+          <div class="stat-sublabel" id="statNidiSub">Belum ada data</div>
+          <div class="stat-badge-go">Buka →</div>
         </div>
       </div>
 

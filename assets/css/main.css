@@ -316,8 +316,173 @@ body {
   .section-title { font-size: 17px; }
 }
 
+/* ── FLOATING PARTICLES ── */
+.particles {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: floatUp linear infinite;
+  opacity: 0;
+}
+@keyframes floatUp {
+  0%   { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+  10%  { opacity: 0.7; }
+  90%  { opacity: 0.4; }
+  100% { transform: translateY(-60px) rotate(720deg); opacity: 0; }
+}
+
+/* ── WELCOME CARD ANIMATIONS ── */
+.welcome-card { position: relative; overflow: hidden; }
+.welcome-hearts { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.heart {
+  position: absolute;
+  font-size: 20px;
+  animation: heartFloat ease-in-out infinite;
+  opacity: 0.35;
+}
+.heart.h1 { bottom: 10%; left: 8%; animation-duration: 3.2s; animation-delay: 0s; }
+.heart.h2 { bottom: 20%; left: 20%; animation-duration: 4s; animation-delay: 0.8s; font-size: 14px; }
+.heart.h3 { bottom: 5%; left: 40%; animation-duration: 3.6s; animation-delay: 1.6s; font-size: 24px; }
+.heart.h4 { bottom: 30%; right: 15%; animation-duration: 2.8s; animation-delay: 0.4s; font-size: 16px; }
+.heart.h5 { bottom: 12%; right: 5%; animation-duration: 3.9s; animation-delay: 1.2s; font-size: 22px; }
+@keyframes heartFloat {
+  0%, 100% { transform: translateY(0) rotate(-10deg); }
+  50%       { transform: translateY(-18px) rotate(10deg); }
+}
+.welcome-emoji {
+  font-size: 40px;
+  position: absolute; right: 2rem; top: 50%; transform: translateY(-50%);
+  animation: emojiWiggle 1.5s ease-in-out infinite;
+}
+@keyframes emojiWiggle {
+  0%, 100% { transform: translateY(-50%) rotate(-8deg) scale(1); }
+  25%       { transform: translateY(-58%) rotate(8deg) scale(1.1); }
+  50%       { transform: translateY(-50%) rotate(-5deg) scale(1.05); }
+  75%       { transform: translateY(-42%) rotate(5deg) scale(1.1); }
+}
+
+/* ── STAT CARDS FUNCTIONAL ── */
+.stat-card { position: relative; overflow: hidden; transition: all .25s; }
+.stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(96,165,250,0.16); }
+
+.stat-sparkle {
+  position: absolute; top: 8px; right: 10px;
+  font-size: 16px; opacity: 0;
+  animation: sparkleIn 2s ease-in-out infinite;
+}
+.stat-card-tools:hover .stat-sparkle { opacity: 1; }
+@keyframes sparkleIn {
+  0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+  50%       { opacity: 1; transform: scale(1.2) rotate(180deg); }
+}
+
+.stat-card-slo, .stat-card-nidi {
+  cursor: pointer;
+  border: 1.5px solid rgba(147,197,253,0.2);
+}
+.stat-card-slo:hover { border-color: #93C5FD; background: linear-gradient(135deg,#fff,#EFF6FF); }
+.stat-card-nidi:hover { border-color: #C4B5FD; background: linear-gradient(135deg,#fff,#F5F3FF); }
+
+.stat-sublabel {
+  font-size: 11px; color: var(--slate-400); margin-top: 2px;
+  font-style: italic;
+  transition: color .2s;
+}
+.stat-card-slo:hover .stat-sublabel { color: var(--blue-400); }
+.stat-card-nidi:hover .stat-sublabel { color: #A78BFA; }
+
+.stat-badge-go {
+  position: absolute; bottom: 10px; right: 12px;
+  font-size: 10px; font-weight: 700;
+  color: var(--blue-400);
+  opacity: 0; transform: translateX(6px);
+  transition: all .2s;
+}
+.stat-card-slo:hover .stat-badge-go,
+.stat-card-nidi:hover .stat-badge-go {
+  opacity: 1; transform: translateX(0);
+}
+.stat-card-nidi:hover .stat-badge-go { color: #A78BFA; }
+
+.stat-num-slo { color: var(--blue-600); }
+.stat-num-nidi { color: #7C3AED; }
+
+/* Number count-up animation */
+@keyframes numPop {
+  0%   { transform: scale(0.7); opacity: 0; }
+  70%  { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.stat-num.updated { animation: numPop .4s cubic-bezier(.34,1.56,.64,1); }
+
+/* ── TOOL CARD CUTE HOVER ── */
+.tool-card {
+  transition: all .22s cubic-bezier(.34,1.56,.64,1);
+}
+.tool-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 12px 36px rgba(96,165,250,0.18);
+}
+.tool-icon {
+  display: inline-block;
+  transition: transform .2s;
+}
+.tool-card:hover .tool-icon {
+  animation: iconBounce .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes iconBounce {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.4) rotate(-8deg); }
+  70%  { transform: scale(0.9) rotate(4deg); }
+  100% { transform: scale(1); }
+}
+
+/* ── NAV ITEM ANIMATION ── */
+.nav-item { transition: all .18s cubic-bezier(.34,1.56,.64,1); }
+.nav-item:hover { transform: translateX(3px); }
+.nav-item.active { transform: translateX(0); }
+
+/* ── PAGE ENTER ANIMATION ── */
+.page.active {
+  animation: pageSlideIn .3s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes pageSlideIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── SIDEBAR LOGO PULSE ── */
+.logo-icon {
+  animation: logoPulse 3s ease-in-out infinite;
+}
+@keyframes logoPulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(96,165,250,0.3); }
+  50%       { box-shadow: 0 4px 20px rgba(167,139,250,0.5); }
+}
+
+/* ── USER AVATAR SHIMMER ── */
+.user-avatar {
+  animation: avatarShimmer 4s ease-in-out infinite;
+}
+@keyframes avatarShimmer {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(96,165,250,0); }
+  50%       { box-shadow: 0 0 0 4px rgba(167,139,250,0.2); }
+}
+
+/* ── TOAST NOTIFICATION CUTE ── */
+#toast {
+  transition: all .35s cubic-bezier(.34,1.56,.64,1) !important;
+}
+
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr; }
   .welcome-card { padding: 1.25rem; }
   .welcome-emoji { display: none; }
 }
+

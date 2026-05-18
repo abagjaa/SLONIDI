@@ -1075,6 +1075,13 @@ async function processAll() {
   log(`Total: ${results.filter(r=>r._SLO).length} SLO & ${results.filter(r=>r._NIDI).length} NIDI terisi.`, 'lok');
   updateProcessBtn();
   renderResult(excelNames);
+
+  // Kirim statistik ke dashboard parent
+  try {
+    const sloCount = results.filter(r=>r._SLO).length;
+    const nidiCount = results.filter(r=>r._NIDI).length;
+    window.parent.postMessage({ type: 'slo_nidi_stats', sloCount, nidiCount }, '*');
+  } catch(e) {}
 }
 
 // ── RENDER RESULT ────────────────────────────────────────────────
