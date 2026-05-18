@@ -203,7 +203,7 @@ function afterLoad() {
 
 function renderFileList() {
   document.getElementById("fileList").innerHTML = loadedFiles.map(f =>
-    "<div class="file-item"><span>✅</span><span class="fname">" + f.name + "</span><span class="finfo">" + f.sheetCount + " sheet • " + f.rowCount + " baris</span><button class="fremove" onclick="removeFile('" + f.name.replace(/'/g,"\'") + "')">✕</button></div>"
+    '<div class="file-item"><span>✅</span><span class="fname">' + f.name + '</span><span class="finfo">' + f.sheetCount + ' sheet • ' + f.rowCount + ' baris</span><button class="fremove" onclick="removeFile(\'' + f.name.replace(/'/g,"\\'") + '\')">✕</button></div>'
   ).join("");
   document.getElementById("fileIn").value = "";
 }
@@ -212,12 +212,12 @@ function rebuildSheetFilters() {
   const useFileFilter = loadedFiles.length > 1;
   if (useFileFilter) {
     document.getElementById("sheetFilters").innerHTML = loadedFiles.map(f =>
-      "<button class="filter-btn" data-sheet="" + f.name + "" onclick="setSheetFilter('" + f.name.replace(/'/g,"\'") + "')">📄 " + f.name + "</button>"
+      '<button class="filter-btn" data-sheet="' + f.name + '" onclick="setSheetFilter(\'' + f.name.replace(/'/g,"\\'") + '\')">📄 ' + f.name + '</button>'
     ).join("");
   } else if (loadedFiles.length === 1) {
     const sheets = [...new Set(allData.map(d => d.sheetName))];
     document.getElementById("sheetFilters").innerHTML = sheets.length > 1
-      ? sheets.map(s => "<button class="filter-btn" data-sheet="" + s + "" onclick="setSheetFilter('" + s.replace(/'/g,"\'") + "')">📋 " + s + "</button>").join("")
+      ? sheets.map(s => '<button class="filter-btn" data-sheet="' + s + '" onclick="setSheetFilter(\'' + s.replace(/'/g,"\\'") + '\')">📋 ' + s + '</button>').join("")
       : "";
   } else {
     document.getElementById("sheetFilters").innerHTML = "";
@@ -282,10 +282,10 @@ function doSearch() {
   }
   document.getElementById("emptyState").style.display = "none";
   document.getElementById("resultBody").innerHTML = shown.map(d => {
-    const esc = s => s.replace(/[.*+?^${}()|[\]\]/g,"\$&");
+    const esc = s => s.replace(/[.*+?^${}()|[\]\\/]/g,"\\$&");
     const hl = str => q ? str.replace(new RegExp("("+esc(q)+")","gi"),"<mark>$1</mark>") : str;
-    const sheetLabel = loadedFiles.length > 1 ? d.fileName+"<br><span style="font-size:10px;color:var(--slate-400)">"+d.sheetName+"</span>" : d.sheetName;
-    return "<tr><td><span class="badge-sheet" style="white-space:nowrap">"+sheetLabel+"</span></td><td style="font-weight:500;max-width:200px">"+( hl(d.nama)||"<span style="color:var(--slate-400)">—</span>" )+"</td><td><span class="num-slo">"+( hl(d.slo)||"<span style="color:var(--slate-400)">—</span>" )+"</span></td><td><span class="num-nidi">"+( hl(d.nidi)||"<span style="color:var(--slate-400)">—</span>" )+"</span></td><td style="font-size:11px;color:var(--slate-400);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="" + d.extra + "">"+( d.extra||"—" )+"</td></tr>";
+    const sheetLabel = loadedFiles.length > 1 ? d.fileName+'<br><span style="font-size:10px;color:var(--slate-400)">'+d.sheetName+'</span>' : d.sheetName;
+    return '<tr><td><span class="badge-sheet" style="white-space:nowrap">'+sheetLabel+'</span></td><td style="font-weight:500;max-width:200px">'+( hl(d.nama)||'<span style="color:var(--slate-400)">—</span>' )+'</td><td><span class="num-slo">'+( hl(d.slo)||'<span style="color:var(--slate-400)">—</span>' )+'</span></td><td><span class="num-nidi">'+( hl(d.nidi)||'<span style="color:var(--slate-400)">—</span>' )+'</span></td><td style="font-size:11px;color:var(--slate-400);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + d.extra + '">'+( d.extra||"—" )+'</td></tr>';
   }).join("");
 }
 </script>
