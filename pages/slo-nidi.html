@@ -154,13 +154,38 @@
 
   .table-scroll { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--slate-100); }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 700; color: var(--slate-400); background: var(--slate-50); border-bottom: 1px solid var(--slate-100); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
-  td { padding: 10px 14px; border-bottom: 1px solid var(--slate-50); vertical-align: middle; }
+  th { text-align: left; padding: 6px 12px; font-size: 11px; font-weight: 700; color: var(--slate-400); background: var(--slate-50); border-bottom: 1px solid var(--slate-100); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+  td { padding: 5px 12px; border-bottom: 1px solid var(--slate-50); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: #F8FBFF; }
   .td-slo { color: var(--blue-dark); font-weight: 600; font-family: 'Consolas', monospace; font-size: 12px; }
   .td-nidi { color: var(--green); font-weight: 600; font-family: 'Consolas', monospace; font-size: 12px; }
   .td-empty { color: var(--slate-400); }
+
+  /* OCR result highlight — amber warning */
+  .td-ocr {
+    background: #FFFBEB !important;
+    border-left: 3px solid #F59E0B !important;
+    position: relative;
+  }
+  .td-ocr .inline-edit { color: #92400E !important; }
+  .ocr-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 9px; font-weight: 700; letter-spacing: .04em;
+    background: #FEF3C7; color: #92400E;
+    border: 1px solid #FDE68A; border-radius: 4px;
+    padding: 1px 5px; vertical-align: middle; margin-left: 4px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .btn-verify-pdf {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 8px; border-radius: 6px; border: 1.5px solid #FDE68A;
+    background: #FFFBEB; font-size: 10px; font-weight: 600;
+    cursor: pointer; color: #92400E; font-family: inherit;
+    transition: all .15s; flex-shrink: 0; white-space: nowrap;
+  }
+  .btn-verify-pdf:hover { background: #FEF3C7; border-color: #F59E0B; }
+  .td-cell-wrap { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
 
   .unmatched-box {
     margin-top: 1rem; padding: 1rem 1.25rem;
@@ -183,7 +208,7 @@
   .inline-edit {
     border: none; background: transparent; font-family: 'Consolas', monospace;
     font-size: 12px; font-weight: 600; width: 100%; min-width: 120px;
-    padding: 3px 6px; border-radius: 6px; color: inherit; cursor: text;
+    padding: 2px 4px; border-radius: 6px; color: inherit; cursor: text;
   }
   .inline-edit:focus { outline: 2px solid var(--blue-300); background: #fff; border-radius: 6px; }
 
@@ -253,6 +278,117 @@
     box-shadow: 0 4px 14px rgba(52,211,153,0.3);
   }
   .btn-copy-sheets:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(52,211,153,0.4); background: linear-gradient(135deg, #34D399, #059669); }
+
+  /* ── PDF PREVIEW MODAL ── */
+  .pdf-modal-overlay {
+    position: fixed; inset: 0; z-index: 9000;
+    background: rgba(15,23,42,0.7); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
+  }
+  .pdf-modal {
+    background: #fff; border-radius: 16px;
+    width: 97vw; max-width: 1300px; height: 92vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+    overflow: hidden;
+  }
+  .pdf-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .875rem 1.25rem;
+    background: linear-gradient(135deg, #F8FBFF, #F5F3FF);
+    border-bottom: 1px solid var(--slate-100);
+    flex-shrink: 0;
+  }
+  .pdf-modal-title { font-weight: 700; font-size: 14px; color: var(--slate-800); }
+  .pdf-modal-filename { font-size: 11px; color: var(--slate-400); margin-top: 1px; }
+  .pdf-modal-body {
+    display: grid; grid-template-columns: 1fr 420px;
+    flex: 1; overflow: hidden; gap: 0;
+  }
+  .pdf-modal-viewer {
+    background: #374151;
+    display: flex; flex-direction: column; align-items: flex-start;
+    padding: 1rem; gap: 1rem;
+    overflow: scroll;
+    flex: 1;
+    cursor: grab;
+    user-select: none;
+    padding-top: 3rem;
+  }
+  .pdf-modal-viewer:active { cursor: grabbing; }
+  .pdf-modal-viewer canvas { border-radius: 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); flex-shrink: 0; display: block; }
+  .pdf-modal-form {
+    border-left: 1px solid var(--slate-100);
+    padding: 1.25rem; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+  .pdf-modal-form-title { font-weight: 700; font-size: 13px; color: var(--slate-800); }
+  .pdf-modal-field label { display: block; font-size: 11px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+  .pdf-modal-field input, .pdf-modal-field select {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid var(--slate-200); border-radius: 8px;
+    font-size: 16px; font-family: monospace; font-weight: 700;
+    color: var(--slate-800); background: #fff; outline: none;
+  }
+  .pdf-modal-field input:focus, .pdf-modal-field select:focus { border-color: var(--blue-400); }
+  .pdf-modal-ocr-text {
+    background: #0F172A; border-radius: 8px;
+    padding: .75rem; font-size: 11px;
+    font-family: 'Consolas', monospace; color: #94A3B8;
+    max-height: 200px; overflow-y: auto; line-height: 1.7;
+    white-space: pre-wrap; word-break: break-all;
+  }
+  .pdf-modal-ocr-label { font-size: 11px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+  .btn-view-pdf {
+    background: linear-gradient(135deg, #7C3AED, #6D28D9);
+    border-color: transparent; color: #fff;
+    box-shadow: 0 2px 8px rgba(124,58,237,0.3);
+    font-size: 11px; padding: 4px 10px;
+  }
+  .btn-view-pdf:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(124,58,237,0.4); background: linear-gradient(135deg, #7C3AED, #6D28D9); }
+  @media (max-width: 700px) {
+    .pdf-modal-body { grid-template-columns: 1fr; grid-template-rows: 60% 40%; }
+    .pdf-modal-viewer { padding: .5rem; }
+    .pdf-modal-form { border-left: none; border-top: 1px solid var(--slate-100); }
+  }
+
+  /* ── ZOOM BAR ── */
+  .zoom-bar {
+    position: sticky; top: 8px; z-index: 10;
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(15,23,42,0.85); backdrop-filter: blur(6px);
+    border-radius: 20px; padding: 4px 10px;
+    align-self: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  .zoom-bar button {
+    background: none; border: none; color: #E2E8F0;
+    font-size: 16px; cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+  .zoom-bar button:hover { color: #fff; }
+  .zoom-bar span { color: #94A3B8; font-size: 11px; font-weight: 600; min-width: 36px; text-align: center; }
+
+  /* ── REVIEW MODE ── */
+  .review-info-card {
+    background: var(--slate-50); border: 1px solid var(--slate-100);
+    border-radius: 10px; padding: .75rem 1rem;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .review-info-label { font-size: 10px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; letter-spacing: .05em; }
+  .review-info-value { font-size: 13px; font-weight: 700; color: var(--slate-800); }
+  .review-info-num { font-family: 'Consolas', monospace; font-size: 18px; font-weight: 800; letter-spacing: .03em; }
+  .review-nav {
+    display: flex; gap: 6px; align-items: center; justify-content: space-between;
+    padding: .75rem 0; border-top: 1px solid var(--slate-100); margin-top: .25rem;
+  }
+  .review-counter { font-size: 12px; color: var(--slate-400); font-weight: 600; }
+  .btn-review {
+    background: linear-gradient(135deg, #7C3AED, #6D28D9);
+    border-color: transparent; color: #fff;
+    box-shadow: 0 4px 14px rgba(124,58,237,0.3);
+  }
+  .btn-review:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,58,237,0.4); background: linear-gradient(135deg, #7C3AED, #6D28D9); }
 </style>
 </head>
 <body>
@@ -360,11 +496,15 @@
           <tbody id="resultBody"></tbody>
         </table>
       </div>
-      <p class="hint">💡 Klik angka nomor SLO/NIDI untuk edit manual jika perlu</p>
+      <p class="hint">💡 Klik nomor SLO/NIDI untuk edit langsung. Data berlatar <span style="background:#FFFBEB;border:1px solid #FDE68A;padding:1px 5px;border-radius:4px;color:#92400E;font-weight:700">⚠ OCR</span> wajib diverifikasi sebelum download.</p>
+      <div id="ocrWarningBanner" style="display:none;margin-top:.75rem;padding:.75rem 1rem;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;font-size:13px;color:#92400E;display:flex;align-items:center;gap:8px">
+        ⚠️ <strong>Ada data hasil OCR yang belum diverifikasi.</strong> Klik tombol 🔍 Verifikasi di setiap baris sebelum download.
+      </div>
       <div class="divider"></div>
       <div class="actions">
         <button class="btn btn-success" onclick="downloadExcel()" id="btnDownload">⬇️ Download Excel Lengkap</button>
         <button class="btn btn-copy-sheets" onclick="copyToSheets()">📋 Copy untuk Sheets/Excel</button>
+        <button class="btn btn-review" onclick="startReview()">🔎 Review & Verifikasi</button>
         <button class="btn" onclick="resetAll()">🔄 Mulai Ulang</button>
       </div>
       <div id="copyOutputBox" style="display:none" class="copy-output-box">
@@ -632,7 +772,7 @@ function enhanceCanvas(srcCanvas) {
   return dst;
 }
 
-// Skor kualitas teks OCR — semua 4 rotasi SELALU ditest, tidak ada early break
+// Skor kualitas teks OCR
 function scoreOcrText(text) {
   if (!text || text.trim().length < 10) return 0;
 
@@ -667,58 +807,58 @@ function scoreOcrText(text) {
 }
 
 async function extractTextOCR(pdf, log) {
-  log('  🔍 PDF scan terdeteksi — memulai OCR + auto-koreksi rotasi... (bisa 10–90 detik)', 'lwarn');
+  log('  🔍 PDF scan terdeteksi — OCR adaptif (rotasi berhenti saat data ditemukan)...', 'lwarn');
   const worker = await getOcrWorker();
   let fullText = '';
 
   for (let i = 1; i <= pdf.numPages; i++) {
-    log(`  📷 Halaman ${i}/${pdf.numPages}: testing 4 orientasi...`, 'lwarn');
     const page = await pdf.getPage(i);
-
-    // Scale 2.0 lebih stabil untuk scan resolusi tinggi; 2.5 sering OOM di mobile
     const scale = 2.0;
+    const rotations = [0, 90, 270, 180]; // urutan paling umum
 
-    // SELALU test semua 4 rotasi — tidak ada early break
-    // Tujuan: dokumen scan yang miring 90° bisa dapet skor lumayan di 0°
-    // sehingga early break salah orientasi
-    const rotations = [0, 90, 180, 270];
-    const scores = [];
+    let bestText = '';
+    let bestScore = 0;
+    let bestRot = 0;
 
+    // Selalu test semua rotasi, tapi berhenti lebih awal jika skor sudah sangat bagus (≥400)
+    const GREAT_SCORE = 400;
     for (const rot of rotations) {
+      log(`  📷 Hal. ${i}: OCR rotasi ${rot}°...`, '');
       const rawCanvas = await renderPageRotated(page, scale, rot);
       const enhanced = enhanceCanvas(rawCanvas);
       const { data: { text } } = await worker.recognize(enhanced.toDataURL('image/jpeg', 0.9));
       const score = scoreOcrText(text);
-      scores.push({ rot, text, score });
-      log(`    Rotasi ${rot}°: skor ${score}`, score > 30 ? 'lok' : '');
+      log(`    → skor ${score}${score >= GREAT_SCORE ? ' ⚡ cukup, skip rotasi lain' : ''}`, score >= GREAT_SCORE ? 'lok' : score > 10 ? '' : '');
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestText = text;
+        bestRot = rot;
+      }
+
+      if (score >= GREAT_SCORE) break; // data sudah sangat baik, tidak perlu test rotasi lain
     }
+    log(`  ✅ Rotasi terbaik: ${bestRot}° (skor ${bestScore})`, bestScore > 10 ? 'lok' : 'lwarn');
 
-    // Pilih rotasi dengan skor tertinggi
-    scores.sort((a, b) => b.score - a.score);
-    const best = scores[0];
-    const runnerUp = scores[1];
-
-    if (best.rot !== 0) {
-      log(`  🔄 Halaman ${i}: orientasi terbaik ${best.rot}° (skor ${best.score} vs runner-up ${runnerUp.rot}°: ${runnerUp.score})`, 'lwarn');
-    } else {
-      log(`  ✅ Halaman ${i}: orientasi normal (0°), skor ${best.score}`, 'lok');
-    }
-
-    // Kalau skor terbaik sangat rendah, coba ulang dengan scale lebih tinggi
-    if (best.score < 15) {
-      log(`  ⚠ Skor sangat rendah — retry dengan scale 3.0...`, 'lwarn');
-      const highResCanvas = await renderPageRotated(page, 3.0, best.rot);
+    // Kalau semua rotasi dapat skor rendah, coba sekali lagi dengan scale lebih tinggi
+    if (bestScore < 15) {
+      log(`  ⚠ Semua rotasi skor rendah — retry scale 3.0 pada rotasi ${bestRot}°...`, 'lwarn');
+      const highResCanvas = await renderPageRotated(page, 3.0, bestRot);
       const enhancedHR = enhanceCanvas(highResCanvas);
       const { data: { text: retryText } } = await worker.recognize(enhancedHR.toDataURL('image/jpeg', 0.95));
       const retryScore = scoreOcrText(retryText);
-      if (retryScore > best.score) {
+      if (retryScore > bestScore) {
         log(`  📈 Retry berhasil: skor naik ke ${retryScore}`, 'lok');
         fullText += retryText + '\n';
         continue;
       }
     }
 
-    fullText += best.text + '\n';
+    if (bestRot !== 0 && bestScore < 60) {
+      log(`  ℹ Rotasi terbaik: ${bestRot}° (skor ${bestScore})`, 'lwarn');
+    }
+
+    fullText += bestText + '\n';
   }
   return fullText;
 }
@@ -743,28 +883,69 @@ function extractSLO(text) {
 }
 
 function extractNIDI(text) {
-  // Normalize dulu: gabungkan baris agar newline dari OCR tidak memecah nomor
-  const norm = text.replace(/[\r\n]+/g, ' ').replace(/\s{2,}/g, ' ');
+  // Normalize: gabungkan baris dan hilangkan spasi ganda
+  let norm = text.replace(/[\r\n]+/g, ' ').replace(/\s{2,}/g, ' ');
 
-  // OCR sering salah baca huruf kapital "I" menjadi "l" (kecil) atau "1" (angka)
-  // Sehingga "I.02.2024.xxx" bisa menjadi "l.02.2024.xxx" atau "1.02.2024.xxx"
-  // Pattern [I1l] menangkap ketiga kemungkinan tsb
+  // ── Normalisasi OCR noise sebelum matching ──────────────────────────
+  // Separator yang umum salah-baca: titik dua ":" sering muncul sebagai
+  // pengganti titik "." di antara segmen nomor NIDI.
+  // Contoh nyata: "1.05:2026.OMV8" → seharusnya "I.05.2026.QMV8"
+  // Noise lain: "I" → "1" / "l" / "|", spasi di antara segmen.
+
+  // Langkah 1: Normalkan separator di dalam pola nomor NIDI
+  // Tangkap pola [I1l|] diikuti digit-digit yang dipisah oleh : . - atau spasi
+  // dan ganti semua separator dalam segmen itu menjadi titik.
+  norm = norm.replace(
+    /([I1l|])\s*[:\.\-]\s*(\d{2})\s*[:\.\-]\s*(\d{4})\s*[:\.\-]\s*([\w\d]{2,}(?:\s*[:\.\-]\s*[\w\d]{2,})*)/g,
+    (_, lead, seg1, seg2, rest) => {
+      // Normalisasi leading char → I, rest separators → titik
+      const cleanRest = rest.replace(/\s*[:\.\-]\s*/g, '.').replace(/\s+/g, '');
+      return `I.${seg1}.${seg2}.${cleanRest}`;
+    }
+  );
+
+  // Langkah 2: Bersihkan spasi di sekitar separator yang tersisa
+  norm = norm.replace(/([I1l|])\s*[\.\-]\s*(\d{2})\s*[\.\-]\s*(\d{4})/g, 'I.$2.$3');
+
+  // ── Pattern matching ─────────────────────────────────────────────────
+  // Separator sekarang sudah dinormalisasi → cukup match titik/strip
+  const SEP = '[.\\-]'; // separator antar segmen setelah normalisasi
+  const LEAD = '[I1l|]'; // karakter awal (I, 1, l, |)
   const ps = [
-    // Paling spesifik: ada kata "NIDI" diikuti nomor (pada teks digital maupun OCR)
-    /NOMOR IDENTITAS INSTALASI TENAGA LISTRIK\s*\(NIDI\)\s*([I1l][\.\-]\d{2}[\.\-]\d{4}[\.\-][\w\d\.\-]+)/i,
-    /\(NIDI\)\s*([I1l][\.\-]\d{2}[\.\-]\d{4}[\.\-][\w\d\.\-]+)/i,
-    /NIDI\s*[:\-]?\s*([I1l][\.\-]\d{2}[\.\-]\d{4}[\.\-][\w\d\.\-]+)/i,
-    // Fallback generik: pola nomor NIDI tanpa konteks kata NIDI
-    /([I1l][\.\-]\d{2}[\.\-]\d{4}[\.\-][\w\d\.\-]+)/,
+    // === PALING SPESIFIK: label lengkap NIDI ===
+    new RegExp(`NOMOR\\s+IDENTITAS\\s+INSTALASI\\s+TENAGA\\s+LISTRIK\\s*[\\(\\[]?NIDI[\\)\\]]?\\s*[:\\-]?\\s*(I${SEP}\\d{2}${SEP}\\d{4}${SEP}[\\w\\d\\.\\-]{3,})`, 'i'),
+    // === Label (NIDI) atau NIDI: ===
+    new RegExp(`[\\(\\[]NIDI[\\)\\]]\\s*[:\\-]?\\s*(I${SEP}\\d{2}${SEP}\\d{4}${SEP}[\\w\\d\\.\\-]{3,})`, 'i'),
+    new RegExp(`\\bNIDI\\s*[:\\-]\\s*(I${SEP}\\d{2}${SEP}\\d{4}${SEP}[\\w\\d\\.\\-]{3,})`, 'i'),
+    // === NIDI dan nomor bisa terpisah sedikit ===
+    new RegExp(`\\bNIDI\\b.{0,40}?(I${SEP}\\d{2}${SEP}\\d{4}${SEP}[\\w\\d\\.\\-]{3,})`, 'i'),
+    // === Fallback pola nomor NIDI saja ===
+    new RegExp(`(I[.\\-]\\d{2}[.\\-]\\d{4}[.\\-][\\w\\d]{2,}(?:[.\\-][\\w\\d]{2,})*)`),
+    // === Extra fallback: masih ada noise spasi/titik/colon ===
+    /([I1l|]\s*[:\.\-]\s*\d{2}\s*[:\.\-]\s*\d{4}\s*[:\.\-]\s*[\d\w\.\-: ]{3,25})/,
   ];
 
   for (const p of ps) {
     const m = norm.match(p);
-    if (m) {
-      // Normalisasi hasil: ganti "l." atau "1." di awal dengan "I." (standar NIDI)
-      return m[1].trim().replace(/^[l1]\./, 'I.');
-    }
+    if (!m) continue;
+    let result = m[1].trim();
+    // Bersihkan sisa noise: semua separator → titik, spasi hilang
+    result = result.replace(/\s*[:\.\-]\s*/g, '.').replace(/\s+/g, '');
+    // Normalisasi leading char → I
+    result = result.replace(/^[l1|]\./, 'I.').replace(/^1\./, 'I.');
+    // Validasi minimal: I.XX.XXXX.XXX
+    if (/^I\.\d{2}\.\d{4}\./i.test(result)) return result;
   }
+
+  // === Last resort: scan seluruh teks dengan separator sangat permisif ===
+  const allMatches = [...norm.matchAll(/([I1l|][\s:\.\-]\d{2}[\s:\.\-]\d{4}[\s:\.\-][\w\d\.\-\s:]{3,25})/g)];
+  for (const m of allMatches) {
+    let r = m[1].trim()
+      .replace(/\s*[:\.\-]\s*/g, '.').replace(/\s+/g, '')
+      .replace(/^[l1|]\./, 'I.').replace(/^1\./, 'I.');
+    if (/^I\.\d{2}\.\d{4}/i.test(r)) return r;
+  }
+
   return null;
 }
 
@@ -858,18 +1039,31 @@ async function processAll() {
         if (idx >= 0) {
           if (type === 'SLO') {
             results[idx]._SLO = number;
+            results[idx]._sloFile = file.name;
+            results[idx]._sloIsOcr = isOcr;
+            results[idx]._sloText = isOcr ? text.slice(0, 3000) : null;
             // Juga isi NIDI jika berhasil diekstrak dari file SLO yang sama
-            if (extraNidi && !results[idx]._NIDI) results[idx]._NIDI = extraNidi;
+            if (extraNidi && !results[idx]._NIDI) {
+              results[idx]._NIDI = extraNidi;
+              results[idx]._nidiFile = file.name;
+              results[idx]._nidiIsOcr = isOcr;
+              results[idx]._nidiText = isOcr ? text.slice(0, 3000) : null;
+            }
           }
-          if (type === 'NIDI') results[idx]._NIDI = number;
+          if (type === 'NIDI') {
+            results[idx]._NIDI = number;
+            results[idx]._nidiFile = file.name;
+            results[idx]._nidiIsOcr = isOcr;
+            results[idx]._nidiText = isOcr ? text.slice(0, 3000) : null;
+          }
           log(`  ✓ → ${excelNames[idx]}`, 'lok');
         } else {
           log('  ⚠ Tidak cocok otomatis', 'lwarn');
-          unmatched.push({ file: file.name, type, number, owner, isOcr, extraNidi });
+          unmatched.push({ file: file.name, type, number, owner, isOcr, extraNidi, ocrText: isOcr ? text.slice(0, 2000) : null });
         }
       } else {
         log(`  ✗ Nomor tidak terdeteksi${isOcr ? ' (setelah OCR)' : ''}`, 'lerr');
-        unmatched.push({ file: file.name, type, number: null, owner, isOcr, extraNidi });
+        unmatched.push({ file: file.name, type, number: null, owner, isOcr, extraNidi, ocrText: isOcr ? text.slice(0, 2000) : null });
       }
       processedFiles.add(file.name);
     } catch (e) { log(`  ✗ Error: ${e.message}`, 'lerr'); }
@@ -887,6 +1081,7 @@ async function processAll() {
 function renderResult(excelNames) {
   const names = excelNames || excelData.map(r => getNameKey(r));
   const slo = results.filter(r => r._SLO).length, nidi = results.filter(r => r._NIDI).length;
+  const ocrCount = results.filter(r => r._sloIsOcr || r._nidiIsOcr).length;
   const needManual = unmatched.filter(u => u.number);
   const needInput = unmatched.filter(u => !u.number);
 
@@ -894,18 +1089,55 @@ function renderResult(excelNames) {
     <div class="pill pill-blue">📋 Total: ${results.length}</div>
     <div class="pill pill-green">✓ SLO: ${slo}/${results.length}</div>
     <div class="pill pill-green">✓ NIDI: ${nidi}/${results.length}</div>
+    ${ocrCount ? `<div class="pill pill-amber">⚠ Perlu verifikasi OCR: ${ocrCount}</div>` : ''}
     ${needManual.length ? `<div class="pill pill-amber">⚠ Perlu cocokkan: ${needManual.length}</div>` : ''}
     ${needInput.length ? `<div class="pill" style="background:#FEF2F2;color:#DC2626;border:1px solid #FECACA">✏️ Input manual: ${needInput.length}</div>` : ''}`;
 
   document.getElementById('resultBody').innerHTML = results.map((r, i) => {
     const nama = getNameKey(r), no = r['No'] || r['NO'] || r['no'] || (i + 1);
+    const sloRef  = r._sloFile || null;
+    const nidiRef = r._nidiFile || r._sloFile || null;
+
+    // SLO cell
+    const sloOcr = r._SLO && r._sloIsOcr;
+    const sloEmpty = !r._SLO;
+    const sloCellClass = sloOcr ? 'td-ocr' : (r._SLO ? 'td-slo' : 'td-empty');
+    const sloOcrBadge = sloOcr ? `<span class="ocr-badge">⚠ OCR</span>` : '';
+    // Tombol: selalu tampil jika ada file referensi (untuk verifikasi), atau saat kosong
+    const sloBtn = sloRef
+      ? `<button class="btn-verify-pdf" onclick="openPdfModalForResult(${i},'SLO')" title="Buka PDF: ${sloRef}">${sloOcr ? '🔍 Verifikasi' : '🔍'}</button>` : '';
+
+    // NIDI cell
+    const nidiOcr = r._NIDI && r._nidiIsOcr;
+    const nidiEmpty = !r._NIDI;
+    const nidiCellClass = nidiOcr ? 'td-ocr' : (r._NIDI ? 'td-nidi' : 'td-empty');
+    const nidiOcrBadge = nidiOcr ? `<span class="ocr-badge">⚠ OCR</span>` : '';
+    const nidiBtn = nidiRef
+      ? `<button class="btn-verify-pdf" onclick="openPdfModalForResult(${i},'NIDI')" title="Buka PDF: ${nidiRef}">${nidiOcr ? '🔍 Verifikasi' : '🔍'}</button>` : '';
+
     return `<tr>
       <td>${no}</td>
       <td style="font-size:13px">${nama}</td>
-      <td class="${r._SLO ? 'td-slo' : 'td-empty'}"><input class="inline-edit" value="${r._SLO || ''}" placeholder="—" oninput="results[${i}]._SLO=this.value" style="color:${r._SLO?'var(--blue-dark)':'var(--slate-400)'}"></td>
-      <td class="${r._NIDI ? 'td-nidi' : 'td-empty'}"><input class="inline-edit" value="${r._NIDI || ''}" placeholder="—" oninput="results[${i}]._NIDI=this.value" style="color:${r._NIDI?'var(--green)':'var(--slate-400)'}"></td>
+      <td class="${sloCellClass}" style="white-space:nowrap">
+        <div class="td-cell-wrap">
+          <input class="inline-edit" value="${r._SLO || ''}" placeholder="—" oninput="results[${i}]._SLO=this.value" style="color:${sloOcr?'#92400E':r._SLO?'var(--blue-dark)':'var(--slate-400)'}">
+          ${sloOcrBadge}
+          ${sloBtn}
+        </div>
+      </td>
+      <td class="${nidiCellClass}" style="white-space:nowrap">
+        <div class="td-cell-wrap">
+          <input class="inline-edit" value="${r._NIDI || ''}" placeholder="—" oninput="results[${i}]._NIDI=this.value" style="color:${nidiOcr?'#92400E':r._NIDI?'var(--green)':'var(--slate-400)'}">
+          ${nidiOcrBadge}
+          ${nidiBtn}
+        </div>
+      </td>
     </tr>`;
   }).join('');
+
+  // Tampilkan banner peringatan OCR jika ada data OCR
+  const ocrBanner = document.getElementById('ocrWarningBanner');
+  if (ocrBanner) ocrBanner.style.display = ocrCount ? 'flex' : 'none';
 
   const ub = document.getElementById('unmatchedBox');
   let unmatchedHTML = '';
@@ -922,6 +1154,7 @@ function renderResult(excelNames) {
           <span class="mnum">${u.number}${ocrTag}</span>
           <span class="mowner-wrap" title="File: ${u.file}">${u.owner ? `<span class="mowner-name">📄 ${u.owner}</span><br><span class="mowner-file">${u.file}</span>` : `<span class="mowner-noname">⚠️ Nama tdk terbaca</span><br><span class="mowner-file">${u.file}</span>`}</span>
           <select id="ms_${i}">${optsWithSel}</select>
+          <button class="btn btn-sm btn-view-pdf" onclick="openPdfModal(false, ${i})">🔍 Lihat PDF</button>
           <button class="btn btn-sm btn-primary" onclick="applyManual(${i})">Terapkan</button>
         </div>`;
       }).join('')}
@@ -943,6 +1176,7 @@ function renderResult(excelNames) {
           <input id="mi_${idx}" type="text" placeholder="Ketik No. ${u.type} dari sertifikat..."
             style="flex:1;min-width:180px;padding:7px 10px;border:1.5px solid #FECACA;border-radius:8px;font-size:13px;font-family:monospace;font-weight:600;color:var(--slate-800);background:#fff">
           <select id="ms_${idx}" style="flex:1;min-width:160px;padding:7px 10px;border:1.5px solid #FECACA;border-radius:8px;background:#fff;font-size:13px;font-family:inherit;color:var(--slate-800)">${optsWithSel}</select>
+          <button class="btn btn-sm btn-view-pdf" onclick="openPdfModal(true, ${i})">🔍 Lihat PDF</button>
           <button class="btn btn-sm btn-primary" onclick="applyManualInput(${i}, ${idx})">Terapkan</button>
         </div>`;
       }).join('')}
@@ -985,6 +1219,42 @@ function applyManualInput(inputIdx, elIdx) {
 
 function downloadExcel() {
   if (!xlsxFile) return;
+
+  // Cek apakah ada data OCR yang belum diverifikasi atau data kosong
+  const ocrCount = results.filter(r => (r._SLO && r._sloIsOcr) || (r._NIDI && r._nidiIsOcr)).length;
+  const emptyCount = results.filter(r => !r._SLO || !r._NIDI).length;
+
+  if (ocrCount > 0 || emptyCount > 0) {
+    let warningHTML = '';
+    if (ocrCount > 0) {
+      warningHTML += `<div style="display:flex;align-items:flex-start;gap:10px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <span style="font-size:18px;flex-shrink:0">⚠️</span>
+        <div>
+          <div style="font-weight:700;color:#92400E;font-size:13px;margin-bottom:3px">${ocrCount} data hasil OCR belum diverifikasi</div>
+          <div style="font-size:12px;color:#B45309">Nomor SLO/NIDI yang dihasilkan OCR mungkin mengandung kesalahan baca. Harap buka 🔍 Verifikasi di setiap baris berlatar kuning sebelum download.</div>
+        </div>
+      </div>`;
+    }
+    if (emptyCount > 0) {
+      warningHTML += `<div style="display:flex;align-items:flex-start;gap:10px;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+        <span style="font-size:18px;flex-shrink:0">❌</span>
+        <div>
+          <div style="font-weight:700;color:#DC2626;font-size:13px;margin-bottom:3px">${emptyCount} baris masih kosong (SLO atau NIDI belum terisi)</div>
+          <div style="font-size:12px;color:#B91C1C">Pastikan semua nomor sudah diisi sebelum download, atau lanjutkan jika memang ada yang tidak tersedia.</div>
+        </div>
+      </div>`;
+    }
+    document.getElementById('dlConfirmBody').innerHTML = warningHTML;
+    document.getElementById('dlConfirmModal').style.display = 'flex';
+    return;
+  }
+
+  _doDownloadExcel();
+}
+
+function _doDownloadExcel() {
+  if (!xlsxFile) return;
+  document.getElementById('dlConfirmModal').style.display = 'none';
   const r = new FileReader();
   r.onload = async e => {
     const wb = XLSX.read(e.target.result, { type: 'array' });
@@ -1053,6 +1323,97 @@ function resetAll() {
   checkReady();
 }
 </script>
+<!-- PDF PREVIEW MODAL -->
+<div id="pdfModal" style="display:none" class="pdf-modal-overlay" onclick="if(event.target===this)closePdfModal()">
+  <div class="pdf-modal">
+    <div class="pdf-modal-header">
+      <div>
+        <div class="pdf-modal-title" id="pdfModalTitle">Preview PDF</div>
+        <div class="pdf-modal-filename" id="pdfModalFilename"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="pdfModalPageInfo" style="font-size:12px;color:var(--slate-400)"></span>
+        <button class="btn btn-sm" onclick="closePdfModal()" style="padding:5px 12px">✕ Tutup</button>
+      </div>
+    </div>
+    <div class="pdf-modal-body">
+      <div id="pdfViewerWrap" style="position:relative;background:#374151;display:flex;flex-direction:column;min-width:0;min-height:0;">
+        <!-- ZoomBar -->
+        <div class="zoom-bar" id="zoomBar" style="position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:10;pointer-events:auto;">
+          <button onclick="changeZoom(-0.25);event.stopPropagation();" title="Zoom out">−</button>
+          <span id="zoomLabel">100%</span>
+          <button onclick="changeZoom(0.25);event.stopPropagation();" title="Zoom in">+</button>
+          <button onclick="resetZoom();event.stopPropagation();" title="Reset zoom" style="font-size:11px;padding:0 6px">⊙</button>
+        </div>
+        <div class="pdf-modal-viewer" id="pdfModalViewer" style="padding-top:3rem;flex:1;">
+          <div style="color:#94A3B8;font-size:13px;margin-top:2rem">Memuat PDF...</div>
+        </div>
+      </div>
+      <div class="pdf-modal-form" id="pdfModalForm">
+        <div class="pdf-modal-form-title" id="pdfModalFormTitle">✏️ Input Manual</div>
+
+        <!-- Info pelanggan & data yang sudah ada (review + input mode) -->
+        <div id="pdfModalCustomerInfo" style="display:none"></div>
+
+        <!-- Tipe dokumen -->
+        <div class="pdf-modal-field">
+          <label>Tipe Dokumen</label>
+          <div id="pdfModalTypeBadge" style="font-size:13px;font-weight:700"></div>
+        </div>
+
+        <!-- Input nomor (disembunyikan saat mode review pure) -->
+        <div class="pdf-modal-field" id="pdfModalNumField">
+          <label id="pdfModalNumLabel">Nomor</label>
+          <input type="text" id="pdfModalNumInput" placeholder="Ketik nomor dari PDF..." spellcheck="false">
+        </div>
+
+        <!-- Select pelanggan (disembunyikan di mode result/review) -->
+        <div class="pdf-modal-field" id="pdfModalSelectField">
+          <label>Cocokkan ke Pelanggan</label>
+          <select id="pdfModalSelect"></select>
+        </div>
+
+        <!-- Tombol aksi -->
+        <div id="pdfModalActions">
+          <button class="btn btn-primary" onclick="applyFromModal()" style="width:100%;justify-content:center;margin-bottom:6px">✅ Terapkan</button>
+          <button class="btn" onclick="closePdfModal()" style="width:100%;justify-content:center;font-size:12px">Lewati / Tutup</button>
+        </div>
+
+        <!-- Navigasi review -->
+        <div class="review-nav" id="reviewNav" style="display:none">
+          <button class="btn btn-sm" onclick="reviewPrev()">← Prev</button>
+          <span class="review-counter" id="reviewCounter"></span>
+          <button class="btn btn-sm" onclick="reviewNext()">Next →</button>
+        </div>
+
+        <!-- Teks OCR -->
+        <div>
+          <div class="pdf-modal-ocr-label">Teks terbaca dari PDF (OCR):</div>
+          <div class="pdf-modal-ocr-text" id="pdfModalOcrText">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DOWNLOAD CONFIRMATION MODAL -->
+<div id="dlConfirmModal" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:460px;box-shadow:0 25px 80px rgba(0,0,0,0.35);overflow:hidden">
+    <div style="padding:1rem 1.25rem;background:linear-gradient(135deg,#FFF7ED,#FEF2F2);border-bottom:1px solid #FDE68A;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">⚠️</span>
+      <div>
+        <div style="font-weight:700;font-size:14px;color:#92400E">Periksa Data Sebelum Download</div>
+        <div style="font-size:11px;color:#B45309;margin-top:1px">Ditemukan potensi masalah pada data berikut:</div>
+      </div>
+    </div>
+    <div id="dlConfirmBody" style="padding:1.25rem;display:flex;flex-direction:column;gap:8px"></div>
+    <div style="padding:.875rem 1.25rem;border-top:1px solid #F1F5F9;display:flex;gap:8px;justify-content:flex-end;background:#F8FAFC">
+      <button class="btn" onclick="document.getElementById('dlConfirmModal').style.display='none'" style="font-size:13px">← Kembali & Periksa</button>
+      <button class="btn" onclick="_doDownloadExcel()" style="background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;border-color:transparent;font-size:13px;box-shadow:0 4px 14px rgba(245,158,11,0.35)">⬇️ Tetap Download</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast" style="
   position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(20px);
@@ -1064,6 +1425,398 @@ function resetAll() {
   pointer-events:none; max-width:90vw;
 "></div>
 <script>
+// ── PDF MODAL ──────────────────────────────────────────────────────
+let _modalUnmatchedIdx = null;
+let _modalIsInput = false;
+let _modalResultIdx = null;
+let _modalResultField = null;
+let _zoomLevel = 1.0;
+let _reviewList = []; // list of resultIdx for review mode
+let _reviewCursor = 0;
+
+// ── ZOOM ──
+const _canvasNaturalWidth = new WeakMap();
+
+function setZoom(level, focalX, focalY) {
+  const viewer = document.getElementById('pdfModalViewer');
+  const oldLevel = _zoomLevel;
+  _zoomLevel = Math.min(5, Math.max(0.3, level));
+  const ratio = _zoomLevel / oldLevel;
+
+  const canvases = viewer ? viewer.querySelectorAll('canvas') : [];
+  canvases.forEach(c => {
+    if (!_canvasNaturalWidth.has(c)) _canvasNaturalWidth.set(c, c.width);
+    const natural = _canvasNaturalWidth.get(c);
+    c.style.width  = Math.round(natural * _zoomLevel) + 'px';
+    c.style.height = Math.round(c.height * _zoomLevel) + 'px';
+  });
+
+  // Pertahankan titik focal (default: tengah viewport) agar tidak loncat ke kanan
+  if (viewer) {
+    const cx = focalX !== undefined ? focalX : viewer.scrollLeft + viewer.clientWidth / 2;
+    const cy = focalY !== undefined ? focalY : viewer.scrollTop  + viewer.clientHeight / 2;
+    viewer.scrollLeft = cx * ratio - viewer.clientWidth / 2;
+    viewer.scrollTop  = cy * ratio - viewer.clientHeight / 2;
+  }
+
+  const zlEl = document.getElementById('zoomLabel');
+  if (zlEl) zlEl.textContent = Math.round(_zoomLevel * 100) + '%';
+}
+function changeZoom(delta) { setZoom(_zoomLevel + delta); }
+function resetZoom() { setZoom(1.0); }
+
+function initViewerZoom(viewerEl) {
+  // no-op — events dipasang sekali via initPdfViewerEvents()
+}
+
+// Dipanggil SEKALI setelah halaman load sepenuhnya
+function initPdfViewerEvents() {
+  const viewer = document.getElementById('pdfModalViewer');
+  if (!viewer || viewer._eventsReady) return;
+  viewer._eventsReady = true;
+
+  // ── Wheel = zoom ──
+  viewer.addEventListener('wheel', function(e) {
+    const hasCanvas = viewer.querySelector('canvas');
+    if (!hasCanvas) return;
+    e.preventDefault();
+    // Focal point = posisi kursor relatif terhadap scroll content
+    const rect = viewer.getBoundingClientRect();
+    const focalX = viewer.scrollLeft + (e.clientX - rect.left);
+    const focalY = viewer.scrollTop  + (e.clientY - rect.top);
+    const delta = e.deltaY > 0 ? -0.15 : 0.15;
+    setZoom(_zoomLevel + delta, focalX, focalY);
+  }, { passive: false });
+
+  // ── Mouse drag = pan ──
+  let isDragging = false, startX, startY, scrollLeft, scrollTop;
+
+  viewer.addEventListener('mousedown', function(e) {
+    if (e.target.closest('#zoomBar') || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    scrollLeft = viewer.scrollLeft;
+    scrollTop  = viewer.scrollTop;
+    viewer.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    viewer.scrollLeft = scrollLeft - (e.clientX - startX);
+    viewer.scrollTop  = scrollTop  - (e.clientY - startY);
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    viewer.style.cursor = 'grab';
+  });
+
+  // ── Touch drag = pan (mobile) ──
+  let touchStartX, touchStartY, touchScrollLeft, touchScrollTop;
+
+  viewer.addEventListener('touchstart', function(e) {
+    if (e.touches.length !== 1) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchScrollLeft = viewer.scrollLeft;
+    touchScrollTop  = viewer.scrollTop;
+  }, { passive: true });
+
+  viewer.addEventListener('touchmove', function(e) {
+    if (e.touches.length !== 1) return;
+    viewer.scrollLeft = touchScrollLeft - (e.touches[0].clientX - touchStartX);
+    viewer.scrollTop  = touchScrollTop  - (e.touches[0].clientY - touchStartY);
+  }, { passive: true });
+}
+
+// Pasang setelah DOM siap — script ini ada setelah elemen, jadi langsung call
+initPdfViewerEvents();
+
+// ── RENDER PDF PAGES INTO VIEWER ──
+async function renderPdfInViewer(fileName, viewer) {
+  viewer.innerHTML = '<div style="color:#94A3B8;font-size:13px;margin-top:2rem">Memuat PDF...</div>';
+  _zoomLevel = 1.0;
+  const zlEl = document.getElementById('zoomLabel');
+  if (zlEl) zlEl.textContent = '100%';
+
+  const pdfFile = pdfFiles.find(f => f.name === fileName);
+  if (!pdfFile) {
+    viewer.innerHTML = `<div style="color:#FCA5A5;font-size:13px;margin-top:2rem;text-align:center;padding:1rem">
+      ⚠️ File <strong>${fileName}</strong> tidak ada di memori browser.<br>
+      <span style="font-size:11px;color:#94A3B8;display:block;margin-top:8px">Upload ulang file PDF tersebut, lalu klik 🔍 lagi.</span>
+    </div>`;
+    return;
+  }
+
+  try {
+    viewer.innerHTML = '';
+    const ab = await pdfFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+    const pageInfoEl = document.getElementById('pdfModalPageInfo');
+    if (pageInfoEl) pageInfoEl.textContent = `${pdf.numPages} hal.`;
+    for (let pi = 1; pi <= pdf.numPages; pi++) {
+      const page = await pdf.getPage(pi);
+      // Gunakan rotasi asli dari halaman PDF (penting untuk dokumen yang dirotasi)
+      const vp = page.getViewport({ scale: 1.8, rotation: page.rotate });
+      const canvas = document.createElement('canvas');
+      canvas.width = vp.width; canvas.height = vp.height;
+      canvas.style.display = 'block';
+      canvas.style.width = vp.width + 'px';
+      canvas.style.height = vp.height + 'px';
+      canvas.style.maxWidth = 'none';
+      canvas.style.flexShrink = '0';
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      viewer.appendChild(canvas);
+      if (pdf.numPages > 1) {
+        const lbl = document.createElement('div');
+        lbl.style.cssText = 'color:#6B7280;font-size:11px;text-align:center;padding:2px 0 6px';
+        lbl.textContent = `Halaman ${pi} / ${pdf.numPages}`;
+        viewer.appendChild(lbl);
+      }
+    }
+  } catch(e) {
+    const errDiv = document.createElement('div');
+    errDiv.style.cssText = 'color:#FCA5A5;font-size:13px;margin-top:2rem;text-align:center';
+    errDiv.textContent = `❌ Gagal render PDF: ${e.message}`;
+    viewer.innerHTML = '';
+    viewer.appendChild(errDiv);
+  }
+}
+
+// ── RESET MODAL STATE ──
+function resetModalPanelState() {
+  document.getElementById('pdfModalSelectField').style.display = '';
+  document.getElementById('pdfModalNumField').style.display = '';
+  document.getElementById('pdfModalActions').style.display = '';
+  document.getElementById('reviewNav').style.display = 'none';
+  document.getElementById('pdfModalFormTitle').textContent = '✏️ Input Manual';
+  const infoEl = document.getElementById('pdfModalCustomerInfo');
+  if (infoEl) infoEl.style.display = 'none';
+}
+
+// ── BUILD INFO PANEL (nama + SLO + NIDI terisi) ──
+function buildInfoPanel(resultIdx, highlightField) {
+  const r = results[resultIdx];
+  const nama = getNameKey(r);
+  const infoEl = document.getElementById('pdfModalCustomerInfo');
+  infoEl.style.display = '';
+  infoEl.innerHTML = `
+    <div class="review-info-card">
+      <div>
+        <div class="review-info-label">Pelanggan</div>
+        <div class="review-info-value">${nama}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <div style="padding:8px 10px;border-radius:8px;${highlightField==='SLO'?'background:#EFF6FF;border:1.5px solid #BFDBFE':'background:#F8FAFC;border:1px solid #E2E8F0'}">
+          <div class="review-info-label" style="color:${r._SLO?'var(--blue-dark)':'var(--slate-400)'}">NO. SLO</div>
+          <div class="review-info-num" style="color:${r._SLO?'var(--blue-dark)':'var(--slate-400)'};word-break:break-all">${r._SLO || '—'}</div>
+        </div>
+        <div style="padding:8px 10px;border-radius:8px;${highlightField==='NIDI'?'background:#F0FDF4;border:1.5px solid #BBF7D0':'background:#F8FAFC;border:1px solid #E2E8F0'}">
+          <div class="review-info-label" style="color:${r._NIDI?'var(--green)':'var(--slate-400)'}">NO. NIDI</div>
+          <div class="review-info-num" style="color:${r._NIDI?'var(--green)':'var(--slate-400)'};word-break:break-all">${r._NIDI || '—'}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── OPEN MODAL (unmatched list) ──
+async function openPdfModal(isInputList, listIdx) {
+  _modalIsInput = isInputList;
+  _modalUnmatchedIdx = listIdx;
+  _modalResultIdx = null;
+
+  const needManual = unmatched.filter(u => u.number);
+  const needInput = unmatched.filter(u => !u.number);
+  const u = isInputList ? needInput[listIdx] : needManual[listIdx];
+  if (!u) return;
+
+  resetModalPanelState();
+  document.getElementById('pdfModalTitle').textContent = `Preview PDF — ${u.type}`;
+  document.getElementById('pdfModalFilename').textContent = u.file;
+  document.getElementById('pdfModalTypeBadge').innerHTML = `<span class="badge ${u.type==='SLO'?'badge-slo':'badge-nidi'}">${u.type}</span>`;
+  document.getElementById('pdfModalNumLabel').textContent = `No. ${u.type}`;
+  document.getElementById('pdfModalNumInput').value = u.number || '';
+  document.getElementById('pdfModalNumInput').placeholder = `Ketik No. ${u.type} dari PDF...`;
+  document.getElementById('pdfModalPageInfo').textContent = '';
+  document.getElementById('pdfModalOcrText').textContent = u.ocrText || '(teks tidak tersimpan)';
+
+  const names = excelData.map(r => getNameKey(r));
+  const suggestIdx = u.owner ? Math.max(0, bestMatch(u.owner, names)) : 0;
+  document.getElementById('pdfModalSelect').innerHTML = names.map((n, j) =>
+    `<option value="${j}"${j===suggestIdx?' selected':''}>${n}</option>`).join('');
+
+  document.getElementById('pdfModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  const viewer = document.getElementById('pdfModalViewer');
+  initViewerZoom(viewer);
+  await renderPdfInViewer(u.file, viewer);
+}
+
+// ── OPEN MODAL (result table — field kosong) ──
+async function openPdfModalForResult(resultIdx, fieldType) {
+  const r = results[resultIdx];
+  const fileName = fieldType === 'NIDI' ? (r._nidiFile || r._sloFile) : r._sloFile;
+  const ocrText = fieldType === 'NIDI' ? (r._nidiText || r._sloText) : r._sloText;
+
+  if (!fileName) { showToast('File PDF tidak diketahui untuk baris ini', 'warn'); return; }
+
+  resetModalPanelState();
+  _modalIsInput = 'result';
+  _modalResultIdx = resultIdx;
+  _modalResultField = fieldType;
+
+  document.getElementById('pdfModalTitle').textContent = `Preview PDF — Input ${fieldType}`;
+  document.getElementById('pdfModalFilename').textContent = fileName;
+  document.getElementById('pdfModalTypeBadge').innerHTML = `<span class="badge ${fieldType==='SLO'?'badge-slo':'badge-nidi'}">${fieldType}</span>`;
+  document.getElementById('pdfModalNumLabel').textContent = `No. ${fieldType}`;
+  document.getElementById('pdfModalNumInput').value = '';
+  document.getElementById('pdfModalNumInput').placeholder = `Ketik No. ${fieldType} dari PDF...`;
+  document.getElementById('pdfModalPageInfo').textContent = '';
+  document.getElementById('pdfModalOcrText').textContent = ocrText || '(PDF digital — lihat langsung di viewer)';
+  document.getElementById('pdfModalSelectField').style.display = 'none';
+
+  buildInfoPanel(resultIdx, fieldType);
+
+  document.getElementById('pdfModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  const viewer = document.getElementById('pdfModalViewer');
+  initViewerZoom(viewer);
+  await renderPdfInViewer(fileName, viewer);
+}
+
+// ── REVIEW MODE ──
+function startReview() {
+  // Kumpulkan semua result yang punya setidaknya satu file PDF sumber
+  _reviewList = results.map((r, i) => i).filter(i => results[i]._sloFile || results[i]._nidiFile);
+  if (!_reviewList.length) { showToast('Tidak ada data yang bisa di-review (belum ada PDF dicocokkan)', 'warn'); return; }
+  _reviewCursor = 0;
+  openReviewAtCursor();
+}
+
+function openReviewAtCursor() {
+  const resultIdx = _reviewList[_reviewCursor];
+  const r = results[resultIdx];
+  const fileName = r._sloFile || r._nidiFile;
+  const ocrText = r._sloText || r._nidiText;
+
+  resetModalPanelState();
+  _modalIsInput = 'review';
+  _modalResultIdx = resultIdx;
+
+  document.getElementById('pdfModalTitle').textContent = `🔎 Review & Verifikasi`;
+  document.getElementById('pdfModalFilename').textContent = fileName;
+  document.getElementById('pdfModalTypeBadge').innerHTML = `<span class="badge badge-slo">SLO</span> <span class="badge badge-nidi" style="margin-left:4px">NIDI</span>`;
+  document.getElementById('pdfModalFormTitle').textContent = '🔎 Verifikasi Data';
+  document.getElementById('pdfModalPageInfo').textContent = '';
+  document.getElementById('pdfModalOcrText').textContent = ocrText || '(PDF digital)';
+
+  // Sembunyikan select & input, tampilkan review nav
+  document.getElementById('pdfModalSelectField').style.display = 'none';
+  document.getElementById('pdfModalNumField').style.display = 'none';
+  document.getElementById('pdfModalActions').style.display = 'none';
+  document.getElementById('reviewNav').style.display = 'flex';
+  document.getElementById('reviewCounter').textContent = `${_reviewCursor + 1} / ${_reviewList.length}`;
+
+  buildInfoPanel(resultIdx, null); // tampilkan kedua field tanpa highlight
+
+  // Tambahkan tombol koreksi
+  const infoEl = document.getElementById('pdfModalCustomerInfo');
+  infoEl.innerHTML += `
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="reviewCorrectField('SLO')" style="font-size:11px">✏️ Koreksi SLO</button>
+      <button class="btn btn-sm" onclick="reviewCorrectField('NIDI')" style="font-size:11px">✏️ Koreksi NIDI</button>
+      <button class="btn btn-sm" style="font-size:11px;color:var(--green);border-color:var(--green-border)" onclick="showToast('Data sudah benar ✓','success')">✅ Sudah Benar</button>
+    </div>`;
+
+  document.getElementById('pdfModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  const viewer = document.getElementById('pdfModalViewer');
+  initViewerZoom(viewer);
+  renderPdfInViewer(fileName, viewer);
+}
+
+function reviewCorrectField(field) {
+  // Switch ke mode input untuk field ini
+  _modalIsInput = 'result';
+  _modalResultField = field;
+  document.getElementById('pdfModalNumField').style.display = '';
+  document.getElementById('pdfModalNumLabel').textContent = `No. ${field} (koreksi)`;
+  document.getElementById('pdfModalNumInput').value = results[_modalResultIdx][`_${field}`] || '';
+  document.getElementById('pdfModalNumInput').placeholder = `Ketik No. ${field} yang benar...`;
+  document.getElementById('pdfModalActions').style.display = '';
+  document.getElementById('pdfModalTypeBadge').innerHTML = `<span class="badge ${field==='SLO'?'badge-slo':'badge-nidi'}">${field}</span>`;
+  document.getElementById('reviewNav').style.display = 'none';
+  buildInfoPanel(_modalResultIdx, field);
+  // Tambahkan tombol kembali ke review
+  const infoEl = document.getElementById('pdfModalCustomerInfo');
+  infoEl.innerHTML += `<button class="btn btn-sm" onclick="openReviewAtCursor()" style="margin-top:6px;font-size:11px">← Kembali ke Review</button>`;
+}
+
+function reviewPrev() {
+  if (_reviewCursor > 0) { _reviewCursor--; openReviewAtCursor(); }
+}
+function reviewNext() {
+  if (_reviewCursor < _reviewList.length - 1) { _reviewCursor++; openReviewAtCursor(); }
+  else { closePdfModal(); showToast('✅ Review selesai! Semua data sudah dicek.', 'success'); }
+}
+
+// ── CLOSE MODAL ──
+function closePdfModal() {
+  document.getElementById('pdfModal').style.display = 'none';
+  document.body.style.overflow = '';
+  _modalUnmatchedIdx = null;
+  _modalResultIdx = null;
+  _modalResultField = null;
+  resetModalPanelState();
+}
+
+// ── APPLY FROM MODAL ──
+function applyFromModal() {
+  const number = document.getElementById('pdfModalNumInput').value.trim();
+  if (!number) { showToast('Nomor tidak boleh kosong!', 'warn'); return; }
+
+  if (_modalIsInput === 'result' || _modalIsInput === 'review') {
+    if (_modalResultField === 'SLO') results[_modalResultIdx]._SLO = number;
+    if (_modalResultField === 'NIDI') results[_modalResultIdx]._NIDI = number;
+    renderResult();
+    showToast('✅ Data berhasil diterapkan!', 'success');
+    // Kalau dari review, kembali ke mode review
+    if (_modalIsInput === 'review') { openReviewAtCursor(); return; }
+    closePdfModal();
+    return;
+  }
+
+  const selIdx = parseInt(document.getElementById('pdfModalSelect').value);
+  const needManual = unmatched.filter(u => u.number);
+  const needInput = unmatched.filter(u => !u.number);
+
+  if (_modalIsInput) {
+    const u = needInput[_modalUnmatchedIdx];
+    if (!u) return;
+    if (u.type === 'SLO') results[selIdx]._SLO = number;
+    if (u.type === 'NIDI') results[selIdx]._NIDI = number;
+    const realIdx = unmatched.indexOf(u);
+    if (realIdx >= 0) unmatched[realIdx].number = '(manual)';
+  } else {
+    const u = needManual[_modalUnmatchedIdx];
+    if (!u) return;
+    if (u.type === 'SLO') {
+      results[selIdx]._SLO = u.number;
+      if (u.extraNidi && !results[selIdx]._NIDI) results[selIdx]._NIDI = u.extraNidi;
+    }
+    if (u.type === 'NIDI') results[selIdx]._NIDI = u.number;
+    const realIdx = unmatched.indexOf(u);
+    if (realIdx >= 0) unmatched[realIdx].number = null;
+  }
+
+  renderResult();
+  showToast('✅ Data berhasil diterapkan!', 'success');
+  closePdfModal();
+}
+
 function showToast(msg, type) {
   type = type || 'info';
   var t = document.getElementById('toast');
