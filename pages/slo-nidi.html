@@ -598,23 +598,56 @@ async function extractTextDigital(file) {
   return { text, pdf, ab };
 }
 
+// Render satu halaman PDF dengan rotasi tambahan (0/90/180/270)
+async function renderPageRotated(page, scale, extraRotation) {
+  const viewport = page.getViewport({ scale, rotation: (page.rotate + extraRotation) % 360 });
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+  return canvas;
+}
+
+// Skor kualitas teks OCR: lebih banyak kata bermakna = orientasi lebih tepat
+function scoreOcrText(text) {
+  const words = (text.match(/[a-zA-Z]{3,}/g) || []).length;
+  const keywords = (text.match(/\b(nama|pemilik|sertifikat|nomor|instalasi|listrik|laik|operasi|nidi|slo|daya|alamat|tanggal|berlaku|registrasi)\b/gi) || []).length;
+  return words + keywords * 5;
+}
+
 async function extractTextOCR(pdf, log) {
-  log('  🔍 PDF scan terdeteksi — memulai OCR... (bisa 10–30 detik)', 'lwarn');
+  log('  🔍 PDF scan terdeteksi — memulai OCR + deteksi rotasi... (bisa 10–60 detik)', 'lwarn');
   const worker = await getOcrWorker();
   let fullText = '';
+
   for (let i = 1; i <= pdf.numPages; i++) {
-    log(`  📷 OCR halaman ${i}/${pdf.numPages}...`, 'lwarn');
+    log(`  📷 OCR halaman ${i}/${pdf.numPages} (cek 4 orientasi)...`, 'lwarn');
     const page = await pdf.getPage(i);
     const scale = 2.5;
-    const viewport = page.getViewport({ scale });
-    const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    const ctx = canvas.getContext('2d');
-    await page.render({ canvasContext: ctx, viewport }).promise;
-    const imageData = canvas.toDataURL('image/png');
-    const { data: { text } } = await worker.recognize(imageData);
-    fullText += text + '\n';
+
+    // Coba 4 rotasi, pilih yang hasilkan teks paling bermakna
+    const rotations = [0, 90, 180, 270];
+    let bestText = '';
+    let bestScore = -1;
+    let bestRot = 0;
+
+    for (const rot of rotations) {
+      const canvas = await renderPageRotated(page, scale, rot);
+      const { data: { text } } = await worker.recognize(canvas.toDataURL('image/png'));
+      const score = scoreOcrText(text);
+      if (score > bestScore) {
+        bestScore = score;
+        bestText = text;
+        bestRot = rot;
+      }
+      // Kalau sudah dapat hasil bagus di rotasi ini, stop lebih awal
+      if (score > 50 && rot !== 270) break;
+    }
+
+    if (bestRot !== 0) {
+      log(`  🔄 Halaman ${i} dirotasi ${bestRot}° (skor terbaik: ${bestScore})`, 'lwarn');
+    }
+    fullText += bestText + '\n';
   }
   return fullText;
 }
@@ -645,18 +678,20 @@ function extractNIDI(text) {
 }
 
 function extractOwner(text) {
+  // Normalize dulu: OCR sering hasilkan newline dan spasi acak
+  const norm = text.replace(/[\r\n]+/g, ' ').replace(/\s{2,}/g, ' ');
   const ps = [
-    /Nama\s+[Pp]emilik\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
-    /Nama\s+[Pp]emilik\s+[Ii]nstalasi\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
-    /Nama\s+[Ii]nstalasi\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
-    /Nama\s+[Pp]elanggan\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
-    /Nama\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
+    /Nama\s+[Pp]emilik\s*:\s*(.{5,250}?)(?=Nomor\s+Identitas|Nomor\s+Sertifikat|Alamat|Titik\s+Koordinat|No\.\s|Daya\s|Tanggal|NIDI\b)/i,
+    /Nama\s+[Pp]emilik\s+[Ii]nstalasi\s*:\s*(.{5,250}?)(?=Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
+    /Nama\s+[Ii]nstalasi\s*:\s*(.{5,250}?)(?=Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
+    /Nama\s+[Pp]elanggan\s*:\s*(.{5,250}?)(?=Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
+    /Nama\s*:\s*(.{5,250}?)(?=Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
     /(?:atas\s+nama|a\.n\.)\s*[:\.]?\s*([^\n\r]{5,200})/i,
   ];
   for (const p of ps) {
-    const m = text.match(p);
+    const m = norm.match(p);
     if (!m) continue;
-    const block = m[1].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+    let block = m[1].trim().replace(/\s*:\s*$/, '').trim();
     const parMatch = block.match(/\(([^)]{4,})\)/);
     if (parMatch) return parMatch[1].trim();
     return block.replace(/^[^:]+:\s*/, '').trim();
