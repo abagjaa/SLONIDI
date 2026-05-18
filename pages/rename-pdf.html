@@ -2,210 +2,173 @@
 <html lang="id">
 <head>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rename PDF SLO & NIDI</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --blue-50: #EFF6FF; --blue-100: #DBEAFE; --blue-200: #BFDBFE;
-    --blue-300: #93C5FD; --blue-400: #60A5FA; --blue-600: #2563EB; --blue-dark: #1D4ED8;
-    --green: #16A34A; --green-light: #F0FDF4; --green-border: #BBF7D0;
-    --amber: #D97706; --amber-light: #FFFBEB; --amber-border: #FDE68A;
-    --red: #DC2626; --red-light: #FEF2F2; --red-border: #FECACA;
-    --slate-50: #F8FAFC; --slate-100: #F1F5F9; --slate-200: #E2E8F0;
-    --slate-400: #94A3B8; --slate-600: #475569; --slate-800: #1E293B;
-    --radius: 16px; --radius-sm: 10px;
-  }
-  body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background: transparent;
-    color: var(--slate-800);
-    padding: 1.5rem;
-    font-size: 14px; line-height: 1.6;
-  }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rename PDF SLO & NIDI</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue-50:#EFF6FF;--blue-100:#DBEAFE;--blue-200:#BFDBFE;
+      --blue-300:#93C5FD;--blue-400:#60A5FA;--blue-600:#2563EB;--blue-dark:#1D4ED8;
+      --green:#16A34A;--green-light:#F0FDF4;--green-border:#BBF7D0;
+      --amber:#D97706;--amber-light:#FFFBEB;--amber-border:#FDE68A;
+      --red:#DC2626;--red-light:#FEF2F2;--red-border:#FECACA;
+      --purple:#7C3AED;--purple-light:#F5F3FF;--purple-border:#DDD6FE;
+      --slate-50:#F8FAFC;--slate-100:#F1F5F9;--slate-200:#E2E8F0;
+      --slate-400:#94A3B8;--slate-600:#475569;--slate-800:#1E293B;
+      --radius:16px;--radius-sm:10px;
+    }
+    body { font-family:'Plus Jakarta Sans',sans-serif; background:transparent; color:var(--slate-800); padding:1.5rem; font-size:14px; line-height:1.6; }
 
-  .info-pill {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: var(--blue-50); border: 1px solid var(--blue-200);
-    color: var(--blue-600); border-radius: 20px;
-    padding: 6px 14px; font-size: 12px; font-weight: 500;
-    margin-bottom: 1.5rem;
-  }
+    .info-pill { display:inline-flex; align-items:center; gap:6px; background:var(--blue-50); border:1px solid var(--blue-200); color:var(--blue-600); border-radius:20px; padding:6px 14px; font-size:12px; font-weight:500; margin-bottom:1.5rem; }
 
-  .steps { display: flex; flex-direction: column; gap: 1rem; }
+    .steps { display:flex; flex-direction:column; gap:1rem; }
 
-  .card {
-    background: #fff;
-    border: 1px solid rgba(147,197,253,0.25);
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: 0 2px 12px rgba(96,165,250,0.06);
-  }
-  .card-header {
-    display: flex; align-items: center; gap: 10px;
-    padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, #F8FBFF, #F5F3FF);
-    border-bottom: 1px solid rgba(147,197,253,0.15);
-  }
-  .step-dot {
-    width: 26px; height: 26px; border-radius: 50%;
-    background: linear-gradient(135deg, #60A5FA, #A78BFA);
-    color: #fff; font-size: 12px; font-weight: 700;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; box-shadow: 0 2px 8px rgba(96,165,250,0.3);
-  }
-  .step-dot.done { background: linear-gradient(135deg, #34D399, #10B981); box-shadow: 0 2px 8px rgba(52,211,153,0.3); }
-  .card-title { font-weight: 600; font-size: 14px; color: var(--slate-800); }
-  .card-body { padding: 1.25rem; }
+    .card { background:#fff; border:1px solid rgba(147,197,253,0.25); border-radius:var(--radius); overflow:hidden; box-shadow:0 2px 12px rgba(96,165,250,0.06); }
+    .card-header { display:flex; align-items:center; gap:10px; padding:1rem 1.25rem; background:linear-gradient(135deg,#F8FBFF,#F5F3FF); border-bottom:1px solid rgba(147,197,253,0.15); }
+    .step-dot { width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,#60A5FA,#A78BFA); color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 2px 8px rgba(96,165,250,0.3); }
+    .step-dot.done { background:linear-gradient(135deg,#34D399,#10B981); box-shadow:0 2px 8px rgba(52,211,153,0.3); }
+    .card-title { font-weight:600; font-size:14px; color:var(--slate-800); }
+    .card-body { padding:1.25rem; }
 
-  /* Drop zone */
-  .drop-zone {
-    border: 2px dashed var(--blue-200);
-    border-radius: var(--radius-sm);
-    padding: 2.5rem 1.5rem;
-    text-align: center; cursor: pointer;
-    transition: all .2s;
-    background: var(--blue-50);
-  }
-  .drop-zone:hover, .drop-zone.drag {
-    border-color: var(--blue-400);
-    background: #EFF6FF;
-    transform: scale(1.01);
-  }
-  .drop-zone-icon { font-size: 36px; margin-bottom: .5rem; }
-  .drop-zone p { font-size: 14px; color: var(--slate-600); font-weight: 500; }
-  .drop-zone span { font-size: 12px; color: var(--slate-400); }
-  input[type=file] { display: none; }
+    .drop-zone { border:2px dashed var(--blue-200); border-radius:var(--radius-sm); padding:2.5rem 1.5rem; text-align:center; cursor:pointer; transition:all .2s; background:var(--blue-50); }
+    .drop-zone:hover,.drop-zone.drag { border-color:var(--blue-400); background:#EFF6FF; transform:scale(1.01); }
+    .drop-zone-icon { font-size:36px; margin-bottom:.5rem; }
+    .drop-zone p { font-size:14px; color:var(--slate-600); font-weight:500; }
+    .drop-zone span { font-size:12px; color:var(--slate-400); }
+    input[type=file] { display:none; }
 
-  /* Buttons */
-  .btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 10px 20px; border-radius: var(--radius-sm);
-    border: 1.5px solid var(--slate-200);
-    background: #fff; font-size: 13px; font-weight: 600;
-    cursor: pointer; color: var(--slate-800); font-family: inherit;
-    transition: all .15s;
-  }
-  .btn:hover { background: var(--slate-50); border-color: var(--blue-300); }
-  .btn:disabled { opacity: .4; cursor: not-allowed; }
-  .btn-primary {
-    background: linear-gradient(135deg, #60A5FA, #818CF8);
-    border-color: transparent; color: #fff;
-    box-shadow: 0 4px 14px rgba(96,165,250,0.3);
-  }
-  .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(96,165,250,0.4); }
-  .btn-success {
-    background: linear-gradient(135deg, #34D399, #10B981);
-    border-color: transparent; color: #fff;
-    box-shadow: 0 4px 14px rgba(52,211,153,0.3);
-  }
-  .btn-success:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(52,211,153,0.4); }
-  .btn-files {
-    background: linear-gradient(135deg, #60A5FA, #3B82F6);
-    border-color: transparent; color: #fff;
-    box-shadow: 0 4px 14px rgba(59,130,246,0.3);
-  }
-  .btn-files:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59,130,246,0.4); }
-  .btn-sm { padding: 5px 12px; font-size: 12px; }
-  .btn-ghost { background: none; border-color: transparent; color: var(--red); }
-  .btn-ghost:hover { background: var(--red-light); }
-  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem; }
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:10px 20px; border-radius:var(--radius-sm); border:1.5px solid var(--slate-200); background:#fff; font-size:13px; font-weight:600; cursor:pointer; color:var(--slate-800); font-family:inherit; transition:all .15s; }
+    .btn:hover { background:var(--slate-50); border-color:var(--blue-300); }
+    .btn:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-primary { background:linear-gradient(135deg,#60A5FA,#818CF8); border-color:transparent; color:#fff; box-shadow:0 4px 14px rgba(96,165,250,0.3); }
+    .btn-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 20px rgba(96,165,250,0.4); }
+    .btn-success { background:linear-gradient(135deg,#34D399,#10B981); border-color:transparent; color:#fff; box-shadow:0 4px 14px rgba(52,211,153,0.3); }
+    .btn-success:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 20px rgba(52,211,153,0.4); }
+    .btn-files { background:linear-gradient(135deg,#60A5FA,#3B82F6); border-color:transparent; color:#fff; box-shadow:0 4px 14px rgba(59,130,246,0.3); }
+    .btn-files:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 20px rgba(59,130,246,0.4); }
+    .btn-sm { padding:5px 12px; font-size:12px; }
+    .btn-ghost { background:none; border-color:transparent; color:var(--red); }
+    .btn-ghost:hover { background:var(--red-light); }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:1rem; }
 
-  /* Progress */
-  .progress-wrap { margin-top: .75rem; }
-  .progress-label { font-size: 12px; color: var(--slate-400); margin-bottom: 5px; }
-  .progress-bg { height: 6px; background: var(--blue-100); border-radius: 3px; overflow: hidden; }
-  .progress-bar { height: 100%; background: linear-gradient(90deg, #60A5FA, #A78BFA); border-radius: 3px; transition: width .3s; width: 0; }
+    .progress-wrap { margin-top:.75rem; }
+    .progress-label { font-size:12px; color:var(--slate-400); margin-bottom:5px; }
+    .progress-bg { height:6px; background:var(--blue-100); border-radius:3px; overflow:hidden; }
+    .progress-bar { height:100%; background:linear-gradient(90deg,#60A5FA,#A78BFA); border-radius:3px; transition:width .3s; width:0; }
 
-  /* Log box */
-  .log-box {
-    margin-top: .75rem; padding: .875rem 1rem;
-    background: #0F172A; border-radius: var(--radius-sm);
-    font-size: 12px; font-family: 'Consolas', monospace; color: #94A3B8;
-    max-height: 160px; overflow-y: auto; line-height: 1.8; display: none;
-  }
-  .lok { color: #86EFAC; } .lwarn { color: #FDE68A; } .lerr { color: #FCA5A5; } .lnum { color: #67E8F9; }
+    .log-box { margin-top:.75rem; padding:.875rem 1rem; background:#0F172A; border-radius:var(--radius-sm); font-size:12px; font-family:'Consolas',monospace; color:#94A3B8; max-height:160px; overflow-y:auto; line-height:1.8; display:none; }
+    .lok { color:#86EFAC; } .lwarn { color:#FDE68A; } .lerr { color:#FCA5A5; } .lnum { color:#67E8F9; }
 
-  /* Rename preview table */
-  .table-scroll { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--slate-100); }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th {
-    text-align: left; padding: 10px 14px;
-    font-size: 11px; font-weight: 700; color: var(--slate-400);
-    background: var(--slate-50); border-bottom: 1px solid var(--slate-100);
-    text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
-  }
-  td { padding: 10px 14px; border-bottom: 1px solid var(--slate-50); vertical-align: middle; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #F8FBFF; }
+    .table-scroll { overflow-x:auto; border-radius:var(--radius-sm); border:1px solid var(--slate-100); }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:left; padding:10px 14px; font-size:11px; font-weight:700; color:var(--slate-400); background:var(--slate-50); border-bottom:1px solid var(--slate-100); text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; }
+    td { padding:10px 14px; border-bottom:1px solid var(--slate-50); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:#F8FBFF; }
 
-  /* Status badge */
-  .badge {
-    display: inline-flex; align-items: center;
-    padding: 2px 10px; border-radius: 20px;
-    font-size: 11px; font-weight: 600; flex-shrink: 0;
-  }
-  .badge-slo  { background: var(--blue-100); color: var(--blue-dark); }
-  .badge-nidi { background: #F0FDF4; color: var(--green); }
-  .badge-unk  { background: var(--slate-100); color: var(--slate-600); }
-  .badge-ok   { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
-  .badge-warn { background: var(--amber-light); color: var(--amber); border: 1px solid var(--amber-border); }
-  .badge-err  { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
+    .badge { display:inline-flex; align-items:center; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:600; flex-shrink:0; }
+    .badge-slo  { background:var(--blue-100); color:var(--blue-dark); }
+    .badge-nidi { background:#F0FDF4; color:var(--green); }
+    .badge-unk  { background:var(--slate-100); color:var(--slate-600); }
+    .badge-ok   { background:var(--green-light); color:var(--green); border:1px solid var(--green-border); }
+    .badge-warn { background:var(--amber-light); color:var(--amber); border:1px solid var(--amber-border); }
+    .badge-err  { background:var(--red-light); color:var(--red); border:1px solid var(--red-border); }
 
-  /* Editable new name */
-  .name-old { font-size: 12px; color: var(--slate-400); font-family: 'Consolas', monospace; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .name-new-wrap { display: flex; align-items: center; gap: 6px; }
-  .name-new-input {
-    flex: 1; border: 1.5px solid var(--blue-200); border-radius: 8px;
-    padding: 5px 10px; font-size: 13px; font-weight: 600;
-    font-family: 'Consolas', monospace; color: var(--slate-800);
-    background: var(--blue-50); min-width: 200px;
-    transition: border-color .15s;
-  }
-  .name-new-input:focus { outline: none; border-color: var(--blue-400); background: #fff; }
-  .name-ext { font-size: 12px; color: var(--slate-400); font-weight: 600; }
+    .name-old { font-size:12px; color:var(--slate-400); font-family:'Consolas',monospace; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .name-new-wrap { display:flex; align-items:center; gap:6px; }
+    .name-new-input { flex:1; border:1.5px solid var(--blue-200); border-radius:8px; padding:5px 10px; font-size:13px; font-weight:600; font-family:'Consolas',monospace; color:var(--slate-800); background:var(--blue-50); min-width:200px; transition:border-color .15s; }
+    .name-new-input:focus { outline:none; border-color:var(--blue-400); background:#fff; }
+    .name-ext { font-size:12px; color:var(--slate-400); font-weight:600; }
 
-  /* Summary pills */
-  .summary-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
-  .pill {
-    display: flex; align-items: center; gap: 5px;
-    padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
-  }
-  .pill-blue  { background: var(--blue-100); color: var(--blue-dark); }
-  .pill-green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
-  .pill-amber { background: var(--amber-light); color: var(--amber); border: 1px solid var(--amber-border); }
-  .pill-red   { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
+    .summary-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:1rem; }
+    .pill { display:flex; align-items:center; gap:5px; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:600; }
+    .pill-blue  { background:var(--blue-100); color:var(--blue-dark); }
+    .pill-green { background:var(--green-light); color:var(--green); border:1px solid var(--green-border); }
+    .pill-amber { background:var(--amber-light); color:var(--amber); border:1px solid var(--amber-border); }
+    .pill-red   { background:var(--red-light); color:var(--red); border:1px solid var(--red-border); }
 
-  .divider { height: 1px; background: var(--slate-100); margin: 1.25rem 0; }
-  .hint { font-size: 11px; color: var(--slate-400); margin-top: 6px; }
+    .divider { height:1px; background:var(--slate-100); margin:1.25rem 0; }
+    .hint { font-size:11px; color:var(--slate-400); margin-top:6px; }
 
-  /* File list preview */
-  .file-list { display: flex; flex-direction: column; gap: 5px; margin-top: .75rem; }
-  .file-item {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 12px;
-    background: var(--slate-50); border: 1px solid var(--slate-100);
-    border-radius: var(--radius-sm); font-size: 13px;
-  }
-  .file-item .fname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--slate-600); }
+    .file-list { display:flex; flex-direction:column; gap:5px; margin-top:.75rem; }
+    .file-item { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--slate-50); border:1px solid var(--slate-100); border-radius:var(--radius-sm); font-size:13px; }
+    .file-item .fname { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--slate-600); }
+    .file-item.processed { border-color:var(--green-border); background:var(--green-light); }
+    .file-item.processed .fname { color:var(--green); }
 
-  .arrow-icon { color: var(--blue-400); font-size: 14px; }
-</style>
+    .btn-preview-pdf {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:4px 10px; border-radius:7px;
+      border:1.5px solid var(--purple-border);
+      background:var(--purple-light); font-size:11px; font-weight:600;
+      cursor:pointer; color:var(--purple); font-family:inherit;
+      transition:all .15s; white-space:nowrap; flex-shrink:0;
+    }
+    .btn-preview-pdf:hover { background:var(--purple); color:#fff; border-color:var(--purple); }
+
+    tr.row-warn td { background:#FFFBEB; }
+    tr.row-err  td { background:#FEF2F2; }
+    tr.row-warn:hover td { background:#FEF3C7; }
+    tr.row-err:hover  td { background:#FEE2E2; }
+
+    /* new-files badge */
+    .badge-new { background:#EDE9FE; color:#6D28D9; border:1px solid #DDD6FE; }
+
+    /* PDF MODAL */
+    .pdf-modal-overlay { display:none; position:fixed; inset:0; z-index:9000; background:rgba(15,23,42,0.7); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:1rem; }
+    .pdf-modal-overlay.open { display:flex; }
+    .pdf-modal { background:#fff; border-radius:var(--radius); width:97vw; max-width:1300px; height:92vh; display:flex; flex-direction:column; box-shadow:0 25px 80px rgba(0,0,0,0.4); overflow:hidden; }
+    .pdf-modal-header { display:flex; align-items:center; justify-content:space-between; padding:.875rem 1.25rem; background:linear-gradient(135deg,#F8FBFF,#F5F3FF); border-bottom:1px solid var(--slate-100); flex-shrink:0; }
+    .pdf-modal-title { font-weight:700; font-size:14px; color:var(--slate-800); }
+    .pdf-modal-filename { font-size:11px; color:var(--slate-400); margin-top:1px; max-width:400px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .pdf-modal-body { display:grid; grid-template-columns:1fr 400px; flex:1; overflow:hidden; }
+    .pdf-modal-viewer { background:#374151; display:flex; flex-direction:column; align-items:flex-start; padding:1rem; gap:1rem; overflow:scroll; flex:1; cursor:grab; user-select:none; padding-top:3rem; }
+    .pdf-modal-viewer:active { cursor:grabbing; }
+    .pdf-modal-viewer canvas { border-radius:6px; box-shadow:0 4px 20px rgba(0,0,0,0.4); flex-shrink:0; display:block; }
+    .pdf-modal-form { border-left:1px solid var(--slate-100); padding:1.25rem; overflow-y:auto; display:flex; flex-direction:column; gap:1rem; }
+    .pdf-modal-form-title { font-weight:700; font-size:14px; color:var(--slate-800); }
+    .pdf-modal-field label { display:block; font-size:11px; font-weight:700; color:var(--slate-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+    .pdf-modal-field input { width:100%; padding:10px 14px; border:1.5px solid var(--slate-200); border-radius:8px; font-size:14px; font-family:'Plus Jakarta Sans',sans-serif; font-weight:600; color:var(--slate-800); background:#fff; outline:none; }
+    .pdf-modal-field input:focus { border-color:var(--blue-400); }
+    .pdf-modal-ocr-label { font-size:11px; font-weight:700; color:var(--slate-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+    .pdf-modal-ocr-text { background:#0F172A; border-radius:8px; padding:.75rem; font-size:11px; font-family:'Consolas',monospace; color:#94A3B8; max-height:180px; overflow-y:auto; line-height:1.7; white-space:pre-wrap; word-break:break-all; }
+
+    .info-card { background:var(--slate-50); border:1px solid var(--slate-200); border-radius:var(--radius-sm); padding:.875rem 1rem; display:flex; flex-direction:column; gap:.5rem; }
+    .info-card-label { font-size:10px; font-weight:700; color:var(--slate-400); text-transform:uppercase; letter-spacing:.05em; }
+    .info-card-value { font-size:13px; font-weight:600; color:var(--slate-800); }
+    .info-card-value.ocr-flag { color:var(--amber); }
+
+    .name-arrow-row { display:flex; flex-direction:column; gap:4px; }
+    .name-old-box { font-size:11px; font-family:'Consolas',monospace; color:var(--slate-400); padding:5px 8px; background:var(--slate-100); border-radius:6px; word-break:break-all; }
+    .name-new-box { font-size:13px; font-family:'Consolas',monospace; color:var(--blue-dark); font-weight:700; padding:7px 10px; background:var(--blue-50); border:1.5px solid var(--blue-200); border-radius:8px; word-break:break-all; }
+    .arrow-down { color:var(--blue-400); font-size:16px; text-align:center; }
+
+    .zoom-bar { position:sticky; top:8px; z-index:10; display:flex; align-items:center; gap:6px; background:rgba(15,23,42,0.85); backdrop-filter:blur(6px); border-radius:20px; padding:4px 10px; align-self:center; box-shadow:0 2px 12px rgba(0,0,0,0.4); }
+    .zoom-bar button { background:none; border:none; color:#E2E8F0; font-size:16px; cursor:pointer; padding:0 4px; line-height:1; }
+    .zoom-bar button:hover { color:#fff; }
+    .zoom-bar span { color:#94A3B8; font-size:11px; font-weight:600; min-width:36px; text-align:center; }
+
+    .modal-nav { display:flex; align-items:center; gap:8px; justify-content:space-between; padding:.75rem 0; border-top:1px solid var(--slate-100); margin-top:.25rem; }
+    .modal-nav-counter { font-size:12px; color:var(--slate-400); font-weight:600; }
+
+    @media (max-width:700px) {
+      .pdf-modal-body { grid-template-columns:1fr; grid-template-rows:55% 45%; }
+      .pdf-modal-form { border-left:none; border-top:1px solid var(--slate-100); }
+    }
+  </style>
 </head>
 <body>
 
-<div class="info-pill">
-  ✏️ Rename PDF otomatis berdasarkan nama pemilik di dalam sertifikat
-</div>
+<div class="info-pill">✏️ Rename PDF otomatis — preview & edit langsung jika ada yang janggal</div>
 
 <div class="steps">
 
-  <!-- STEP 1: Upload PDF -->
+  <!-- STEP 1 -->
   <div class="card">
     <div class="card-header">
       <div class="step-dot" id="dot1">1</div>
@@ -215,27 +178,26 @@
       <div class="drop-zone" id="pdfDrop" onclick="document.getElementById('pdfIn').click()">
         <div class="drop-zone-icon">📂</div>
         <p>Klik atau drag <strong>semua PDF</strong> sekaligus di sini</p>
-        <span>File nama mengandung "SLO" → tipe SLO &nbsp;|&nbsp; mengandung "NIDI" → tipe NIDI</span>
+        <span>Nama file mengandung "SLO" → tipe SLO &nbsp;|&nbsp; mengandung "NIDI" → tipe NIDI</span>
       </div>
       <input type="file" id="pdfIn" accept=".pdf" multiple>
       <div class="file-list" id="fileList"></div>
-      <div id="fileActions" style="display:none; margin-top:.75rem; display:none; gap:6px">
+      <div id="fileActions" style="display:none;gap:6px;margin-top:.75rem">
         <button class="btn btn-sm" onclick="document.getElementById('pdfIn').click()">+ Tambah PDF</button>
         <button class="btn btn-sm btn-ghost" onclick="clearFiles()">Hapus semua</button>
       </div>
     </div>
   </div>
 
-  <!-- STEP 2: Proses -->
+  <!-- STEP 2 -->
   <div class="card">
     <div class="card-header">
       <div class="step-dot" id="dot2">2</div>
       <span class="card-title">Ekstrak & Generate Nama Baru</span>
     </div>
     <div class="card-body">
-      <button class="btn btn-primary" id="btnProses" disabled onclick="processAll()">
-        ✨ Proses Otomatis
-      </button>
+      <button class="btn btn-primary" id="btnProses" disabled onclick="processAll()">✨ Proses Otomatis</button>
+      <p class="hint" id="newFileHint" style="display:none;margin-top:.5rem">📎 Ada PDF baru — klik proses untuk melanjutkan tanpa mengulang dari awal.</p>
       <div id="progressWrap" style="display:none" class="progress-wrap">
         <div class="progress-label" id="progressLabel">Memproses...</div>
         <div class="progress-bg"><div class="progress-bar" id="progressBar"></div></div>
@@ -244,7 +206,7 @@
     </div>
   </div>
 
-  <!-- RESULT: Preview & Download -->
+  <!-- RESULT -->
   <div class="card" id="resultCard" style="display:none">
     <div class="card-header">
       <div class="step-dot done">✓</div>
@@ -257,18 +219,19 @@
         <table>
           <thead>
             <tr>
-              <th style="width:50px">#</th>
-              <th style="width:80px">Tipe</th>
+              <th style="width:42px">#</th>
+              <th style="width:70px">Tipe</th>
               <th>Nama File Lama</th>
-              <th style="width:16px" class="arrow-icon"></th>
+              <th style="width:14px;padding:0">→</th>
               <th>Nama File Baru (bisa diedit)</th>
+              <th style="width:110px">Aksi</th>
             </tr>
           </thead>
           <tbody id="resultBody"></tbody>
         </table>
       </div>
 
-      <p class="hint">💡 Klik pada nama file baru untuk mengedit jika ada yang kurang tepat</p>
+      <p class="hint">💡 Klik nama file baru untuk mengedit. Klik <strong>🔍 Preview</strong> untuk memeriksa PDF dan mengedit nama dari dalam modal.</p>
       <div class="divider"></div>
       <div class="actions">
         <button class="btn btn-success" id="btnDownloadZip" onclick="downloadAll()">⬇️ Download sebagai ZIP</button>
@@ -277,18 +240,167 @@
       </div>
     </div>
   </div>
-
 </div>
+
+<!-- ══ PDF PREVIEW MODAL ══════════════════════════════════════════ -->
+<div class="pdf-modal-overlay" id="pdfModal" onclick="if(event.target===this)closePdfModal()">
+  <div class="pdf-modal">
+
+    <div class="pdf-modal-header">
+      <div>
+        <div class="pdf-modal-title" id="modalTitle">Preview PDF</div>
+        <div class="pdf-modal-filename" id="modalFilename"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="modalPageInfo" style="font-size:12px;color:var(--slate-400)"></span>
+        <button class="btn btn-sm" onclick="closePdfModal()">✕ Tutup</button>
+      </div>
+    </div>
+
+    <div class="pdf-modal-body">
+
+      <div style="position:relative;background:#374151;display:flex;flex-direction:column;min-width:0;min-height:0;">
+        <div class="zoom-bar" id="zoomBar" style="position:absolute;top:8px;left:50%;transform:translateX(-50%);pointer-events:auto;">
+          <button onclick="changeZoom(-0.25);event.stopPropagation();" title="Zoom out">−</button>
+          <span id="zoomLabel">100%</span>
+          <button onclick="changeZoom(0.25);event.stopPropagation();" title="Zoom in">+</button>
+          <button onclick="resetZoom();event.stopPropagation();" style="font-size:11px;padding:0 6px" title="Reset">⊙</button>
+        </div>
+        <div class="pdf-modal-viewer" id="pdfViewer">
+          <div style="color:#94A3B8;font-size:13px;margin-top:2rem">Memuat PDF...</div>
+        </div>
+      </div>
+
+      <div class="pdf-modal-form" id="pdfForm">
+        <div class="pdf-modal-form-title">✏️ Edit Nama File</div>
+
+        <div class="info-card" id="modalInfoCard">
+          <div>
+            <div class="info-card-label">Tipe Dokumen</div>
+            <div id="modalTypeBadge"></div>
+          </div>
+          <div>
+            <div class="info-card-label">Status Ekstraksi</div>
+            <div id="modalStatusBadge"></div>
+          </div>
+          <div id="modalOcrFlag" style="display:none">
+            <div class="info-card-label">⚠️ Perhatian</div>
+            <div class="info-card-value ocr-flag">Hasil OCR — periksa nama dan nomor dari viewer</div>
+          </div>
+        </div>
+
+        <div class="name-arrow-row">
+          <div>
+            <div class="info-card-label" style="margin-bottom:4px">Nama Lama</div>
+            <div class="name-old-box" id="modalNameOld"></div>
+          </div>
+          <div class="arrow-down">↓</div>
+          <div>
+            <div class="info-card-label" style="margin-bottom:4px">Nama Baru</div>
+            <div class="name-new-box" id="modalNameNewPreview"></div>
+          </div>
+        </div>
+
+        <div class="pdf-modal-field">
+          <label>Edit Nama File Baru</label>
+          <input type="text" id="modalNameInput" placeholder="Ketik nama baru..." spellcheck="false">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="applyModalName()">✅ Terapkan</button>
+        </div>
+
+        <div class="info-card">
+          <div>
+            <div class="info-card-label">Nomor Terdeteksi</div>
+            <div class="info-card-value" id="modalNomor" style="font-family:monospace;word-break:break-all">—</div>
+          </div>
+          <div>
+            <div class="info-card-label">Nama Pemilik Terdeteksi</div>
+            <div class="info-card-value" id="modalNama" style="word-break:break-all">—</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="pdf-modal-ocr-label">Teks terbaca dari PDF:</div>
+          <div class="pdf-modal-ocr-text" id="modalOcrText">—</div>
+        </div>
+
+        <div class="modal-nav">
+          <button class="btn btn-sm" onclick="modalPrev()">← Prev</button>
+          <span class="modal-nav-counter" id="modalCounter"></span>
+          <button class="btn btn-sm" onclick="modalNext()">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" style="position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(20px);background:#1E293B;color:#fff;padding:.75rem 1.25rem;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,0.2);z-index:9999;opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:8px;pointer-events:none;max-width:90vw;"></div>
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 let pdfFiles = [];
-// items: { file, type, nomor, nama, newName, status: 'ok'|'warn'|'err' }
+// items: { file, type, nomor, nama, newName, status, isOcr, ocrText }
 let items = [];
 let ocrWorker = null;
+let processedFiles = new Set(); // ← tracking file yang sudah diproses
+let hasProcessedOnce = false;   // ← apakah sudah pernah proses
 
-// ── DRAG & DROP ──────────────────────────────────────────────────
+// ── ZOOM ─────────────────────────────────────────────────────────
+let _zoom = 1.0;
+const _naturalW = new WeakMap();
+
+function setZoom(level, focalX, focalY) {
+  const viewer = document.getElementById('pdfViewer');
+  const old = _zoom;
+  _zoom = Math.min(5, Math.max(0.3, level));
+  const ratio = _zoom / old;
+  viewer.querySelectorAll('canvas').forEach(c => {
+    if (!_naturalW.has(c)) _naturalW.set(c, c.width);
+    const n = _naturalW.get(c);
+    c.style.width  = Math.round(n * _zoom) + 'px';
+    c.style.height = Math.round(c.height * _zoom) + 'px';
+  });
+  if (viewer) {
+    const cx = focalX !== undefined ? focalX : viewer.scrollLeft + viewer.clientWidth / 2;
+    const cy = focalY !== undefined ? focalY : viewer.scrollTop + viewer.clientHeight / 2;
+    viewer.scrollLeft = cx * ratio - viewer.clientWidth / 2;
+    viewer.scrollTop  = cy * ratio - viewer.clientHeight / 2;
+  }
+  document.getElementById('zoomLabel').textContent = Math.round(_zoom * 100) + '%';
+}
+function changeZoom(d) { setZoom(_zoom + d); }
+function resetZoom() { setZoom(1.0); }
+
+(function initViewerEvents() {
+  const viewer = document.getElementById('pdfViewer');
+  viewer.addEventListener('wheel', e => {
+    if (!viewer.querySelector('canvas')) return;
+    e.preventDefault();
+    const r = viewer.getBoundingClientRect();
+    setZoom(_zoom + (e.deltaY > 0 ? -0.15 : 0.15),
+      viewer.scrollLeft + (e.clientX - r.left),
+      viewer.scrollTop  + (e.clientY - r.top));
+  }, { passive:false });
+
+  let drag = false, sx, sy, sl, st;
+  viewer.addEventListener('mousedown', e => {
+    if (e.target.closest('#zoomBar') || e.target.tagName === 'BUTTON') return;
+    drag = true; sx = e.clientX; sy = e.clientY;
+    sl = viewer.scrollLeft; st = viewer.scrollTop;
+    viewer.style.cursor = 'grabbing'; e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!drag) return;
+    viewer.scrollLeft = sl - (e.clientX - sx);
+    viewer.scrollTop  = st - (e.clientY - sy);
+  });
+  document.addEventListener('mouseup', () => { drag = false; viewer.style.cursor = 'grab'; });
+})();
+
+// ── DRAG & DROP ───────────────────────────────────────────────────
 function setupDrop(id, handler) {
   const el = document.getElementById(id);
   el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag'); });
@@ -302,15 +414,19 @@ function addFiles(files) {
   files.forEach(f => { if (!pdfFiles.find(p => p.name === f.name)) pdfFiles.push(f); });
   renderFileList();
   checkReady();
+  updateProcessBtn();
 }
 
 function clearFiles() {
-  pdfFiles = [];
-  items = [];
+  pdfFiles = []; items = [];
+  processedFiles = new Set();
+  hasProcessedOnce = false;
   renderFileList();
   document.getElementById('pdfIn').value = '';
   document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('newFileHint').style.display = 'none';
   checkReady();
+  updateProcessBtn();
 }
 
 function detectType(name) {
@@ -325,45 +441,71 @@ function renderFileList() {
   el.innerHTML = pdfFiles.map((f, i) => {
     const t = detectType(f.name);
     const bc = t === 'SLO' ? 'badge-slo' : t === 'NIDI' ? 'badge-nidi' : 'badge-unk';
-    return `<div class="file-item">
+    const isDone = processedFiles.has(f.name);
+    return `<div class="file-item${isDone ? ' processed' : ''}">
       <span class="badge ${bc}">${t}</span>
+      ${isDone ? '<span class="badge badge-ok" style="font-size:10px">✓ Selesai</span>' : '<span class="badge badge-new" style="font-size:10px">Baru</span>'}
       <span class="fname" title="${f.name}">${f.name}</span>
-      <button class="btn btn-sm btn-ghost" style="padding:2px 8px;" onclick="removeFile(${i})">✕</button>
+      <button class="btn btn-sm btn-ghost" style="padding:2px 8px" onclick="removeFile(${i})">✕</button>
     </div>`;
   }).join('');
 
   const act = document.getElementById('fileActions');
   act.style.display = pdfFiles.length ? 'flex' : 'none';
+  const d1 = document.getElementById('dot1');
+  if (pdfFiles.length) { d1.classList.add('done'); d1.textContent = '✓'; }
+  else { d1.classList.remove('done'); d1.textContent = '1'; }
+}
 
-  if (pdfFiles.length) {
-    document.getElementById('dot1').classList.add('done');
-    document.getElementById('dot1').textContent = '✓';
+function removeFile(i) {
+  const fname = pdfFiles[i].name;
+  pdfFiles.splice(i, 1);
+  processedFiles.delete(fname);
+  // Hapus dari items juga
+  const itemIdx = items.findIndex(it => it.file.name === fname);
+  if (itemIdx >= 0) items.splice(itemIdx, 1);
+  renderFileList();
+  checkReady();
+  updateProcessBtn();
+  if (hasProcessedOnce && items.length > 0) renderResult();
+  else if (items.length === 0) document.getElementById('resultCard').style.display = 'none';
+}
+
+function checkReady() {
+  const hasNew = pdfFiles.some(f => !processedFiles.has(f.name));
+  document.getElementById('btnProses').disabled = !hasNew;
+}
+
+function updateProcessBtn() {
+  const newFiles = pdfFiles.filter(f => !processedFiles.has(f.name));
+  const btn = document.getElementById('btnProses');
+  const hint = document.getElementById('newFileHint');
+  if (hasProcessedOnce && newFiles.length > 0) {
+    btn.textContent = `➕ Proses ${newFiles.length} PDF Baru`;
+    hint.style.display = 'block';
   } else {
-    document.getElementById('dot1').classList.remove('done');
-    document.getElementById('dot1').textContent = '1';
+    btn.textContent = '✨ Proses Otomatis';
+    hint.style.display = 'none';
   }
 }
 
-function removeFile(i) { pdfFiles.splice(i, 1); renderFileList(); checkReady(); }
-function checkReady() { document.getElementById('btnProses').disabled = pdfFiles.length === 0; }
-
 // ── BUILD NAME ────────────────────────────────────────────────────
-// Format: NamaFileLama (Nama Pemilik).pdf
-function buildName(namaFileLama, nama) {
-  const tanpaExt = namaFileLama.replace(/\.pdf$/i, '');
-  const namaBersih = sanitize(nama || '');
-  if (!namaBersih) return tanpaExt;
-  return `${tanpaExt} (${namaBersih})`;
+function buildName(oldName, nama) {
+  const noExt = oldName.replace(/\.pdf$/i, '');
+  const clean = sanitize(nama || '');
+  return clean ? `${noExt} (${clean})` : noExt;
+}
+function sanitize(s) {
+  return (s || '').replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-// ── OCR WORKER ───────────────────────────────────────────────────
+// ── OCR (sama persis dengan Extractor) ───────────────────────────
 async function getOcrWorker() {
   if (ocrWorker) return ocrWorker;
   ocrWorker = await Tesseract.createWorker('ind+eng', 1, { logger: () => {} });
   return ocrWorker;
 }
 
-// ── TEXT EXTRACTION (same logic as slo-nidi.html) ────────────────
 async function extractTextDigital(file) {
   const ab = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
@@ -376,114 +518,104 @@ async function extractTextDigital(file) {
   return { text, pdf };
 }
 
-function isTextEmpty(text) {
-  const meaningful = (text.match(/[a-zA-Z0-9]{3,}/g) || []).length;
-  return meaningful < 15;
+function isTextEmpty(text) { return (text.match(/[a-zA-Z0-9]{3,}/g) || []).length < 15; }
+
+async function renderPageRotated(page, scale, extraRot) {
+  const vp = page.getViewport({ scale, rotation: (page.rotate + extraRot) % 360 });
+  const c = document.createElement('canvas');
+  c.width = vp.width; c.height = vp.height;
+  await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+  return c;
 }
 
-// ── AUTO-ROTATE CANVAS ───────────────────────────────────────────
-// Renders a PDF page to canvas with a given extra rotation (0, 90, 180, 270)
-async function renderPageRotated(page, scale, extraRotation) {
-  const viewport = page.getViewport({ scale, rotation: (page.rotate + extraRotation) % 360 });
-  const canvas = document.createElement('canvas');
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-  return canvas;
-}
-
-// Pre-processing: tingkatkan kontras untuk scan gelap/pucat
-function enhanceCanvas(srcCanvas) {
-  const w = srcCanvas.width, h = srcCanvas.height;
+// ── Pre-processing: tingkatkan kontras (sama dengan Extractor) ──
+function enhanceCanvas(src) {
   const dst = document.createElement('canvas');
-  dst.width = w; dst.height = h;
+  dst.width = src.width; dst.height = src.height;
   const ctx = dst.getContext('2d');
-  ctx.drawImage(srcCanvas, 0, 0);
-  const imageData = ctx.getImageData(0, 0, w, h);
-  const d = imageData.data;
+  ctx.drawImage(src, 0, 0);
+  const id = ctx.getImageData(0, 0, src.width, src.height);
+  const d = id.data;
   let sum = 0;
-  for (let i = 0; i < d.length; i += 4) sum += 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-  const mean = sum / (d.length / 4);
-  const lo = Math.max(0, mean - 60), hi = Math.min(255, mean + 60);
+  for (let i = 0; i < d.length; i += 4) sum += 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+  const mean = sum / (d.length/4);
+  const lo = Math.max(0, mean-60), hi = Math.min(255, mean+60);
   for (let i = 0; i < d.length; i += 4) {
-    const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-    const stretched = Math.min(255, Math.max(0, ((gray - lo) / (hi - lo + 1)) * 255));
-    d[i] = d[i+1] = d[i+2] = stretched;
+    const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+    const s = Math.min(255, Math.max(0, ((g-lo)/(hi-lo+1))*255));
+    d[i] = d[i+1] = d[i+2] = s;
   }
-  ctx.putImageData(imageData, 0, 0);
+  ctx.putImageData(id, 0, 0);
   return dst;
 }
 
-// Score text quality — semua 4 rotasi selalu ditest, tidak ada early break
+// ── Skor kualitas OCR (sama dengan Extractor) ──
 function scoreText(text) {
   if (!text || text.trim().length < 10) return 0;
   const norm = text.toLowerCase();
-  const alphaNum = (text.match(/[a-zA-Z0-9]/g) || []).length;
-  const total = text.replace(/\s/g, '').length;
-  if (total > 0 && alphaNum / total < 0.35) return 0;
+  const alpha = (text.match(/[a-zA-Z0-9]/g) || []).length;
+  const total = text.replace(/\s/g,'').length;
+  // Kalau ratio alphanumerik terlalu rendah → banyak noise → skor rendah
+  if (total > 0 && alpha/total < 0.35) return 0;
   const words = (text.match(/[a-zA-Z]{3,}/g) || []).length;
-  const highValue = [
-    'nama', 'pemilik', 'sertifikat', 'nomor', 'instalasi', 'listrik',
-    'laik', 'operasi', 'nidi', 'daya', 'alamat', 'tanggal', 'berlaku',
-    'registrasi', 'titik', 'koordinat', 'tersambung', 'proteksi', 'penanggung',
-    'penyedia', 'perintis', 'perlindungan', 'nasional', 'kementerian', 'esdm',
-    'tegangan', 'rendah', 'menyatakan', 'bahwa', 'pemanfaatan'
+  // Keyword spesifik dokumen SLO/NIDI (bobot tinggi)
+  const kws = [
+    'nama','pemilik','sertifikat','nomor','instalasi','listrik',
+    'laik','operasi','nidi','daya','alamat','tanggal','berlaku',
+    'registrasi','titik','koordinat','tersambung','proteksi','penanggung',
+    'penyedia','perintis','perlindungan','nasional','kementerian','esdm',
+    'tegangan','rendah','menyatakan','bahwa','pemanfaatan'
   ];
-  const highHits = highValue.filter(kw => norm.includes(kw)).length;
-  const sloPattern = (text.match(/\d{4}[\.\-]\d+[\.\-][A-Z][\.\-]\d+/g) || []).length;
-  const nidiPattern = (text.match(/I\.\d{2}\.\d{4}/g) || []).length;
-  const coordPattern = (text.match(/\d+\.\d{4,}/g) || []).length;
-  return words + (highHits * 8) + (sloPattern * 20) + (nidiPattern * 20) + (coordPattern * 3);
+  const hits   = kws.filter(k => norm.includes(k)).length;
+  const sloP   = (text.match(/\d{4}[\.\-]\d+[\.\-][A-Z][\.\-]\d+/g) || []).length;
+  const nidiP  = (text.match(/[I1l]\.\d{2}\.\d{4}/g) || []).length;
+  const coordP = (text.match(/\d+\.\d{4,}/g) || []).length;
+  return words + hits*8 + sloP*20 + nidiP*20 + coordP*3;
 }
 
+// ── OCR Adaptif: semua rotasi, berhenti lebih awal jika skor sangat bagus ──
 async function extractTextOCR(pdf, log) {
-  log('  🔍 PDF scan — memulai OCR + auto-koreksi rotasi...', 'lwarn');
+  log('  🔍 PDF scan terdeteksi — OCR adaptif (rotasi berhenti saat data ditemukan)...', 'lwarn');
   const worker = await getOcrWorker();
-  let fullText = '';
+  let full = '';
+  const GREAT_SCORE = 400;
 
   for (let i = 1; i <= pdf.numPages; i++) {
-    log(`  📷 Halaman ${i}/${pdf.numPages}: testing 4 orientasi...`, 'lwarn');
     const page = await pdf.getPage(i);
-    const scale = 2.0;
+    const rots = [0, 90, 270, 180]; // urutan paling umum
+    let best = { text:'', score:0, rot:0 };
 
-    // Selalu test semua 4 rotasi — tidak ada early break
-    const rotations = [0, 90, 180, 270];
-    const scores = [];
-
-    for (const rot of rotations) {
-      const rawCanvas = await renderPageRotated(page, scale, rot);
-      const enhanced = enhanceCanvas(rawCanvas);
-      const { data: { text } } = await worker.recognize(enhanced.toDataURL('image/jpeg', 0.9));
-      const score = scoreText(text);
-      scores.push({ rot, text, score });
-      log(`    Rotasi ${rot}°: skor ${score}`, score > 30 ? 'lok' : '');
+    for (const rot of rots) {
+      log(`  📷 Hal. ${i}: OCR rotasi ${rot}°...`, '');
+      const c   = await renderPageRotated(page, 2.0, rot);
+      const enh = enhanceCanvas(c);
+      const { data:{ text } } = await worker.recognize(enh.toDataURL('image/jpeg', 0.9));
+      const s = scoreText(text);
+      log(`    → skor ${s}${s >= GREAT_SCORE ? ' ⚡ cukup, skip rotasi lain' : ''}`,
+          s >= GREAT_SCORE ? 'lok' : s > 10 ? '' : '');
+      if (s > best.score) best = { text, score:s, rot };
+      if (s >= GREAT_SCORE) break; // data sudah sangat baik, tidak perlu test rotasi lain
     }
 
-    scores.sort((a, b) => b.score - a.score);
-    const best = scores[0];
+    log(`  ✅ Rotasi terbaik: ${best.rot}° (skor ${best.score})`, best.score > 10 ? 'lok' : 'lwarn');
 
-    if (best.rot !== 0) {
-      log(`  🔄 Halaman ${i}: orientasi terbaik ${best.rot}° (skor ${best.score})`, 'lwarn');
-    } else {
-      log(`  ✅ Halaman ${i}: orientasi normal (skor ${best.score})`, 'lok');
-    }
-
+    // Kalau semua rotasi dapat skor rendah, coba sekali lagi dengan scale lebih tinggi
     if (best.score < 15) {
-      log(`  ⚠ Skor rendah — retry scale 3.0...`, 'lwarn');
-      const highResCanvas = await renderPageRotated(page, 3.0, best.rot);
-      const enhancedHR = enhanceCanvas(highResCanvas);
-      const { data: { text: retryText } } = await worker.recognize(enhancedHR.toDataURL('image/jpeg', 0.95));
+      log(`  ⚠ Semua rotasi skor rendah — retry scale 3.0 pada rotasi ${best.rot}°...`, 'lwarn');
+      const c   = await renderPageRotated(page, 3.0, best.rot);
+      const enh = enhanceCanvas(c);
+      const { data:{ text: retryText } } = await worker.recognize(enh.toDataURL('image/jpeg', 0.95));
       const retryScore = scoreText(retryText);
       if (retryScore > best.score) {
-        log(`  📈 Retry berhasil: skor ${retryScore}`, 'lok');
-        fullText += retryText + '\n';
+        log(`  📈 Retry berhasil: skor naik ke ${retryScore}`, 'lok');
+        full += retryText + '\n';
         continue;
       }
     }
 
-    fullText += best.text + '\n';
+    full += best.text + '\n';
   }
-  return fullText;
+  return full;
 }
 
 async function extractText(file, log) {
@@ -495,29 +627,61 @@ async function extractText(file, log) {
 
 // ── FIELD EXTRACTORS ─────────────────────────────────────────────
 function extractSLO(text) {
-  const ps = [
-    /Nomor\s+Sertifikat\s*:\s*([\w\d\.\-\/]+)/i,
-    /No\.?\s*SLO\s*:\s*([\w\d\.\-\/]+)/i,
-    /(\d{4}\.\d+\.[A-Z]\.\d+\.\d+\.[\w\d]+)/
-  ];
+  const ps = [/Nomor\s+Sertifikat\s*:\s*([\w\d\.\-\/]+)/i, /No\.?\s*SLO\s*:\s*([\w\d\.\-\/]+)/i, /(\d{4}\.\d+\.[A-Z]\.\d+\.\d+\.[\w\d]+)/];
   for (const p of ps) { const m = text.match(p); if (m) return m[1].trim(); }
   return null;
 }
 
 function extractNIDI(text) {
+  // Normalize: gabungkan baris dan hilangkan spasi ganda
+  let norm = text.replace(/[\r\n]+/g, ' ').replace(/\s{2,}/g, ' ');
+
+  // ── Normalisasi OCR noise sebelum matching ──────────────────────────
+  // Separator yang umum salah-baca: titik dua ":" sering muncul sebagai
+  // pengganti titik "." di antara segmen nomor NIDI.
+  norm = norm.replace(
+    /([I1l|])\s*[:\.\-]\s*(\d{2})\s*[:\.\-]\s*(\d{4})\s*[:\.\-]\s*([\w\d]{2,}(?:\s*[:\.\-]\s*[\w\d]{2,})*)/g,
+    (_, lead, seg1, seg2, rest) => {
+      const cleanRest = rest.replace(/\s*[:\.\-]\s*/g, '.').replace(/\s+/g, '');
+      return `I.${seg1}.${seg2}.${cleanRest}`;
+    }
+  );
+
+  // Langkah 2: Bersihkan spasi di sekitar separator
+  norm = norm.replace(/([I1l|])\s*[\.\-]\s*(\d{2})\s*[\.\-]\s*(\d{4})/g, 'I.$2.$3');
+
+  const SEP  = '[.\\-]';
   const ps = [
-    /NOMOR IDENTITAS INSTALASI TENAGA LISTRIK \(NIDI\)\s*([\w\d\.\-\/]+)/i,
-    /\(NIDI\)\s*\n?\s*(I\.\d{2}\.\d{4}\.[\w\d]+)/i,
-    /(I\.\d{2}\.\d{4}\.[\w\d]+)/
+    new RegExp(`NOMOR\\s+IDENTITAS\\s+INSTALASI\\s+TENAGA\\s+LISTRIK\\s*[\\(\\[]?NIDI[\\)\\]]?\\s*[:\\-]?\\s*(I${SEP}\\d{2}${SEP}\\d{4}${SEP}[\\w\\d\\.\\-]{3,})`, 'i'),
+    new RegExp(`[\\(\\[]NIDI[\\)\\]]\\s*[:\\-]?\\s*(I${SEP}\\d{2}${SEP}\\d{4}${SEP}[\\w\\d\\.\\-]{3,})`, 'i'),
+    new RegExp(`\\bNIDI\\s*[:\\-]\\s*(I${SEP}\\d{2}${SEP}\\d{4}${SEP}[\\w\\d\\.\\-]{3,})`, 'i'),
+    new RegExp(`\\bNIDI\\b.{0,40}?(I${SEP}\\d{2}${SEP}\\d{4}${SEP}[\\w\\d\\.\\-]{3,})`, 'i'),
+    new RegExp(`(I[.\\-]\\d{2}[.\\-]\\d{4}[.\\-][\\w\\d]{2,}(?:[.\\-][\\w\\d]{2,})*)`),
+    /([I1l|]\s*[:\.\-]\s*\d{2}\s*[:\.\-]\s*\d{4}\s*[:\.\-]\s*[\d\w\.\-: ]{3,25})/,
   ];
-  for (const p of ps) { const m = text.match(p); if (m) return m[1].trim(); }
+
+  for (const p of ps) {
+    const m = norm.match(p);
+    if (!m) continue;
+    let result = m[1].trim();
+    result = result.replace(/\s*[:\.\-]\s*/g, '.').replace(/\s+/g, '');
+    result = result.replace(/^[l1|]\./, 'I.').replace(/^1\./, 'I.');
+    if (/^I\.\d{2}\.\d{4}\./i.test(result)) return result;
+  }
+
+  const allMatches = [...norm.matchAll(/([I1l|][\s:\.\-]\d{2}[\s:\.\-]\d{4}[\s:\.\-][\w\d\.\-\s:]{3,25})/g)];
+  for (const m of allMatches) {
+    let r = m[1].trim()
+      .replace(/\s*[:\.\-]\s*/g, '.').replace(/\s+/g, '')
+      .replace(/^[l1|]\./, 'I.').replace(/^1\./, 'I.');
+    if (/^I\.\d{2}\.\d{4}/i.test(r)) return r;
+  }
+
   return null;
 }
 
 function extractOwner(text) {
-  // Normalize OCR artifacts: collapse newlines and multiple spaces for matching
-  const norm = text.replace(/[\r\n]+/g, ' ').replace(/\s{2,}/g, ' ');
-
+  const norm = text.replace(/[\r\n]+/g,' ').replace(/\s{2,}/g,' ');
   const ps = [
     /Nama\s+[Pp]emilik\s*:\s*(.{5,250}?)(?=Nomor\s+Identitas|Nomor\s+Sertifikat|Alamat|Titik\s+Koordinat|No\.\s|Daya\s|Tanggal|NIDI\b)/i,
     /Nama\s+[Pp]emilik\s+[Ii]nstalasi\s*:\s*(.{5,250}?)(?=Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
@@ -526,95 +690,81 @@ function extractOwner(text) {
     /Nama\s*:\s*(.{5,250}?)(?=Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
     /(?:atas\s+nama|a\.n\.)\s*[:\.]?\s*([^\n\r]{5,200})/i,
   ];
-
   for (const p of ps) {
     const m = norm.match(p);
     if (!m) continue;
-    let block = m[1].trim();
-    // Strip trailing colon noise
-    block = block.replace(/\s*:\s*$/, '').trim();
-    // Prefer parenthetical like (Planet Bar Raya...)
-    const parMatch = block.match(/\(([^)]{4,})\)/);
-    if (parMatch) return sanitize(parMatch[1].trim());
-    return sanitize(block.replace(/^[^:]+:\s*/, '').trim());
+    let block = m[1].trim().replace(/\s*:\s*$/,'').trim();
+    const par = block.match(/\(([^)]{4,})\)/);
+    if (par) return sanitize(par[1].trim());
+    return sanitize(block.replace(/^[^:]+:\s*/,'').trim());
   }
   return null;
 }
 
-function sanitize(name) {
-  // Remove characters not safe in file names, collapse spaces
-  return (name || '')
-    .replace(/[\\/:*?"<>|]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-// ── MAIN PROCESS ─────────────────────────────────────────────────
+// ── MAIN PROCESS (incremental) ────────────────────────────────────
 async function processAll() {
-  items = [];
+  // Hanya proses file yang belum pernah diproses
+  const toProcess = pdfFiles.filter(f => !processedFiles.has(f.name));
+  if (toProcess.length === 0) { showToast('Semua PDF sudah diproses!', 'info'); return; }
+
   const logEl = document.getElementById('logBox');
-  logEl.innerHTML = '';
+  if (hasProcessedOnce) {
+    logEl.innerHTML += '<span class="lwarn">── Proses lanjutan ──</span><br>';
+  } else {
+    logEl.innerHTML = '';
+  }
   logEl.style.display = 'block';
   document.getElementById('progressWrap').style.display = 'block';
-  document.getElementById('resultCard').style.display = 'none';
 
-  const log = (msg, cls = '') => {
-    logEl.innerHTML += `<span class="${cls}">${msg}</span><br>`;
-    logEl.scrollTop = logEl.scrollHeight;
-  };
-  const prog = (p, lbl) => {
-    document.getElementById('progressBar').style.width = p + '%';
-    document.getElementById('progressLabel').textContent = lbl;
-  };
+  const log = (msg, cls='') => { logEl.innerHTML += `<span class="${cls}">${msg}</span><br>`; logEl.scrollTop = logEl.scrollHeight; };
+  const prog = (p, lbl) => { document.getElementById('progressBar').style.width = p+'%'; document.getElementById('progressLabel').textContent = lbl; };
 
-  log(`Memproses ${pdfFiles.length} file PDF...`, 'lok');
+  log(`Memproses ${toProcess.length} PDF baru dari total ${pdfFiles.length}...`, 'lok');
 
-  for (let i = 0; i < pdfFiles.length; i++) {
-    const file = pdfFiles[i];
+  for (let i = 0; i < toProcess.length; i++) {
+    const file = toProcess[i];
     const type = detectType(file.name);
-    prog(Math.round((i / pdfFiles.length) * 90), `(${i+1}/${pdfFiles.length}) ${file.name}`);
+    prog(Math.round((i/toProcess.length)*90), `(${i+1}/${toProcess.length}) ${file.name}`);
     log(`→ ${file.name}`);
-
     try {
       const { text, isOcr } = await extractText(file, log);
       if (isOcr) log('  ✓ OCR selesai', 'lok');
-
       const nomor = type === 'SLO' ? extractSLO(text) : type === 'NIDI' ? extractNIDI(text) : null;
       const nama  = extractOwner(text);
-
-      if (nomor) log(`  Nomor: <span class="lnum">${nomor}</span>${isOcr ? ' <span style="color:#FDE68A">[OCR]</span>' : ''}`);
-      else       log('  ⚠ Nomor tidak terdeteksi', 'lwarn');
-
+      if (nomor) log(`  Nomor: <span class="lnum">${nomor}</span>${isOcr?' <span style="color:#FDE68A">[OCR]</span>':''}`);
+      else log('  ⚠ Nomor tidak terdeteksi', 'lwarn');
       if (nama) log(`  Nama: <span class="lok">${nama}</span>`);
-      else      log('  ⚠ Nama tidak terdeteksi', 'lwarn');
-
+      else log('  ⚠ Nama tidak terdeteksi', 'lwarn');
       const status = nama ? (nomor ? 'ok' : 'warn') : 'err';
-      const newName = buildName(file.name, nama) + '.pdf';
-
-      items.push({ file, type, nomor, nama, newName: newName.replace(/\.pdf\.pdf$/i, '.pdf'), status, isOcr });
+      let newName = buildName(file.name, nama) + '.pdf';
+      newName = newName.replace(/\.pdf\.pdf$/i, '.pdf');
+      // Tambahkan ke items (bukan reset)
+      items.push({ file, type, nomor, nama, newName, status, isOcr, ocrText: text.slice(0, 3000) });
       log(`  → <span class="lnum">${newName}</span>`, 'lok');
-
-    } catch (e) {
+      processedFiles.add(file.name);
+    } catch(e) {
       log(`  ✗ Error: ${e.message}`, 'lerr');
-      items.push({ file, type, nomor: null, nama: null, newName: file.name, status: 'err', isOcr: false });
+      items.push({ file, type, nomor:null, nama:null, newName:file.name, status:'err', isOcr:false, ocrText:'' });
+      processedFiles.add(file.name);
     }
   }
 
+  hasProcessedOnce = true;
   prog(100, '✓ Selesai!');
-  log('', '');
-  log(`${items.filter(x => x.status === 'ok').length} berhasil, ${items.filter(x => x.status === 'warn').length} sebagian, ${items.filter(x => x.status === 'err').length} gagal.`, 'lok');
+  const ok=items.filter(x=>x.status==='ok').length, warn=items.filter(x=>x.status==='warn').length, err=items.filter(x=>x.status==='err').length;
+  log(`Total: ${ok} berhasil, ${warn} sebagian, ${err} gagal.`, 'lok');
 
   document.getElementById('dot2').classList.add('done');
   document.getElementById('dot2').textContent = '✓';
+
+  updateProcessBtn();
+  renderFileList(); // refresh badge ✓ Selesai di daftar file
   renderResult();
 }
 
 // ── RENDER RESULT TABLE ───────────────────────────────────────────
 function renderResult() {
-  const ok   = items.filter(x => x.status === 'ok').length;
-  const warn = items.filter(x => x.status === 'warn').length;
-  const err  = items.filter(x => x.status === 'err').length;
-
+  const ok=items.filter(x=>x.status==='ok').length, warn=items.filter(x=>x.status==='warn').length, err=items.filter(x=>x.status==='err').length;
   document.getElementById('summaryRow').innerHTML = `
     <div class="pill pill-blue">📄 Total: ${items.length}</div>
     <div class="pill pill-green">✓ Berhasil: ${ok}</div>
@@ -622,224 +772,227 @@ function renderResult() {
     ${err  ? `<div class="pill pill-red">✗ Gagal: ${err}</div>` : ''}`;
 
   document.getElementById('resultBody').innerHTML = items.map((item, i) => {
-    const bc = item.type === 'SLO' ? 'badge-slo' : item.type === 'NIDI' ? 'badge-nidi' : 'badge-unk';
-    const sc = item.status === 'ok' ? 'badge-ok' : item.status === 'warn' ? 'badge-warn' : 'badge-err';
-    const sl = item.status === 'ok' ? '✓ OK' : item.status === 'warn' ? '⚠ Sebagian' : '✗ Gagal';
-    // Remove .pdf from editable value, add back as static label
-    const nameNoExt = item.newName.replace(/\.pdf$/i, '');
-    return `<tr>
-      <td>${i + 1}</td>
+    const bc = item.type==='SLO'?'badge-slo':item.type==='NIDI'?'badge-nidi':'badge-unk';
+    const sc = item.status==='ok'?'badge-ok':item.status==='warn'?'badge-warn':'badge-err';
+    const sl = item.status==='ok'?'✓ OK':item.status==='warn'?'⚠ Sebagian':'✗ Gagal';
+    const rowCls = item.status==='warn'?'row-warn':item.status==='err'?'row-err':'';
+    const nameNoExt = item.newName.replace(/\.pdf$/i,'');
+    return `<tr class="${rowCls}" id="row_${i}">
+      <td>${i+1}</td>
       <td><span class="badge ${bc}">${item.type}</span></td>
       <td><span class="name-old" title="${item.file.name}">${item.file.name}</span></td>
-      <td style="color:var(--blue-400);font-size:16px;padding:0 4px;">→</td>
+      <td style="color:var(--blue-400);font-size:16px;padding:0 4px;white-space:nowrap">→</td>
       <td>
         <div class="name-new-wrap">
           <input class="name-new-input" id="nn_${i}" value="${nameNoExt}"
-            oninput="items[${i}].newName = this.value + '.pdf'"
-            title="Klik untuk edit nama">
+            oninput="items[${i}].newName=this.value+'.pdf'"
+            title="Klik untuk edit">
           <span class="name-ext">.pdf</span>
-          <span class="badge ${sc}" style="min-width:70px;justify-content:center;">${sl}</span>
+          <span class="badge ${sc}" style="min-width:70px;justify-content:center">${sl}</span>
         </div>
-        ${item.isOcr ? '<div style="font-size:10px;color:var(--amber);margin-top:3px;">📷 Hasil OCR — harap periksa kembali</div>' : ''}
+        ${item.isOcr?'<div style="font-size:10px;color:var(--amber);margin-top:3px">📷 Hasil OCR — periksa via Preview</div>':''}
+      </td>
+      <td>
+        <button class="btn-preview-pdf" onclick="openModal(${i})">🔍 Preview</button>
       </td>
     </tr>`;
   }).join('');
 
   document.getElementById('resultCard').style.display = 'block';
-  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('resultCard').scrollIntoView({ behavior:'smooth' });
 }
 
-// ── HELPER: pilih lokasi simpan folder (File System Access API) ─────
-async function pickSaveFolder(label) {
-  if (!('showDirectoryPicker' in window)) return null; // fallback ke auto-download
+// ── MODAL ─────────────────────────────────────────────────────────
+let _modalIdx = -1;
+
+async function openModal(idx) {
+  _modalIdx = idx;
+  const item = items[idx];
+  _zoom = 1.0; document.getElementById('zoomLabel').textContent = '100%';
+
+  document.getElementById('modalTitle').textContent = `Preview PDF — ${item.type}`;
+  document.getElementById('modalFilename').textContent = item.file.name;
+  document.getElementById('modalPageInfo').textContent = '';
+
+  const bc = item.type==='SLO'?'badge-slo':item.type==='NIDI'?'badge-nidi':'badge-unk';
+  const sc = item.status==='ok'?'badge-ok':item.status==='warn'?'badge-warn':'badge-err';
+  const sl = item.status==='ok'?'✓ OK':item.status==='warn'?'⚠ Nama / Nomor sebagian terdeteksi':'✗ Gagal diekstrak';
+  document.getElementById('modalTypeBadge').innerHTML = `<span class="badge ${bc}">${item.type}</span>`;
+  document.getElementById('modalStatusBadge').innerHTML = `<span class="badge ${sc}">${sl}</span>`;
+  document.getElementById('modalOcrFlag').style.display = item.isOcr ? '' : 'none';
+
+  document.getElementById('modalNameOld').textContent = item.file.name;
+  document.getElementById('modalNameNewPreview').textContent = item.newName;
+  document.getElementById('modalNameInput').value = item.newName.replace(/\.pdf$/i,'');
+  document.getElementById('modalNomor').textContent = item.nomor || '— tidak terdeteksi';
+  document.getElementById('modalNama').textContent = item.nama || '— tidak terdeteksi';
+  document.getElementById('modalOcrText').textContent = item.ocrText || '(tidak ada teks tersimpan)';
+  document.getElementById('modalCounter').textContent = `${idx+1} / ${items.length}`;
+
+  document.getElementById('pdfModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  await renderPdfInViewer(item.file);
+}
+
+async function renderPdfInViewer(file) {
+  const viewer = document.getElementById('pdfViewer');
+  viewer.innerHTML = '<div style="color:#94A3B8;font-size:13px;margin-top:2rem;text-align:center">Memuat PDF...</div>';
   try {
-    const dir = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'downloads' });
-    return dir;
-  } catch (e) {
-    // user cancel
-    return undefined; // undefined = cancelled
+    const ab = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+    document.getElementById('modalPageInfo').textContent = `${pdf.numPages} hal.`;
+    viewer.innerHTML = '';
+    for (let pi = 1; pi <= pdf.numPages; pi++) {
+      const page = await pdf.getPage(pi);
+      const vp = page.getViewport({ scale: 1.8, rotation: page.rotate });
+      const canvas = document.createElement('canvas');
+      canvas.width = vp.width; canvas.height = vp.height;
+      canvas.style.width = vp.width + 'px'; canvas.style.height = vp.height + 'px';
+      canvas.style.display = 'block'; canvas.style.maxWidth = 'none'; canvas.style.flexShrink = '0';
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      viewer.appendChild(canvas);
+      if (pdf.numPages > 1) {
+        const lbl = document.createElement('div');
+        lbl.style.cssText = 'color:#6B7280;font-size:11px;text-align:center;padding:2px 0 6px';
+        lbl.textContent = `Halaman ${pi} / ${pdf.numPages}`;
+        viewer.appendChild(lbl);
+      }
+    }
+  } catch(e) {
+    viewer.innerHTML = `<div style="color:#FCA5A5;font-size:13px;margin-top:2rem;text-align:center;padding:1rem">❌ Gagal render PDF: ${e.message}</div>`;
   }
 }
 
-// ── DOWNLOAD ALL AS ZIP ───────────────────────────────────────────
+function applyModalName() {
+  const val = document.getElementById('modalNameInput').value.trim();
+  if (!val) { showToast('Nama tidak boleh kosong!', 'warn'); return; }
+  const newName = val.endsWith('.pdf') ? val : val + '.pdf';
+  items[_modalIdx].newName = newName;
+
+  const input = document.getElementById(`nn_${_modalIdx}`);
+  if (input) input.value = newName.replace(/\.pdf$/i,'');
+  document.getElementById('modalNameNewPreview').textContent = newName;
+
+  showToast('✅ Nama berhasil diperbarui!', 'success');
+}
+
+function closePdfModal() {
+  document.getElementById('pdfModal').classList.remove('open');
+  document.body.style.overflow = '';
+  _modalIdx = -1;
+}
+
+function modalPrev() { if (_modalIdx > 0) openModal(_modalIdx - 1); }
+function modalNext() {
+  if (_modalIdx < items.length - 1) openModal(_modalIdx + 1);
+  else { closePdfModal(); showToast('✅ Sudah mencapai item terakhir.', 'info'); }
+}
+
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('pdfModal').classList.contains('open')) return;
+  if (e.key === 'ArrowLeft') modalPrev();
+  if (e.key === 'ArrowRight') modalNext();
+  if (e.key === 'Escape') closePdfModal();
+  if (e.key === 'Enter' && document.activeElement === document.getElementById('modalNameInput')) applyModalName();
+});
+
+// ── DOWNLOAD ZIP ──────────────────────────────────────────────────
 async function downloadAll() {
   const btn = document.getElementById('btnDownloadZip');
-  btn.disabled = true;
-  btn.textContent = '⏳ Menyiapkan ZIP...';
-
+  btn.disabled = true; btn.textContent = '⏳ Menyiapkan ZIP...';
   try {
     const zip = new JSZip();
-    const nameCount = {};
-
+    const nc = {};
     for (const item of items) {
       const ab = await item.file.arrayBuffer();
-      let finalName = item.newName;
-      if (!finalName.toLowerCase().endsWith('.pdf')) finalName += '.pdf';
-      if (nameCount[finalName.toLowerCase()] === undefined) {
-        nameCount[finalName.toLowerCase()] = 1;
-      } else {
-        nameCount[finalName.toLowerCase()]++;
-        finalName = finalName.replace(/\.pdf$/i, ` (${nameCount[finalName.toLowerCase()]}).pdf`);
-      }
-      zip.file(finalName, ab);
+      let fn = item.newName.toLowerCase().endsWith('.pdf') ? item.newName : item.newName + '.pdf';
+      if (nc[fn.toLowerCase()] === undefined) nc[fn.toLowerCase()] = 1;
+      else { nc[fn.toLowerCase()]++; fn = fn.replace(/\.pdf$/i, ` (${nc[fn.toLowerCase()]}).pdf`); }
+      zip.file(fn, ab);
     }
-
-    const blob = await zip.generateAsync({ type: 'blob' });
+    const blob = await zip.generateAsync({ type:'blob' });
     const zipName = `PDF_Renamed_${new Date().toISOString().slice(0,10)}.zip`;
-
-    // Coba File System Access API dulu
     if ('showSaveFilePicker' in window) {
       try {
-        const fh = await window.showSaveFilePicker({
-          suggestedName: zipName,
-          startIn: 'downloads',
-          types: [{ description: 'ZIP File', accept: { 'application/zip': ['.zip'] } }]
-        });
-        const writable = await fh.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        btn.innerHTML = '⬇️ Download sebagai ZIP';
-        btn.disabled = false;
-        return;
-      } catch (e) {
-        if (e.name === 'AbortError') { btn.innerHTML = '⬇️ Download sebagai ZIP'; btn.disabled = false; return; }
-        // Fallback ke auto-download jika error lain
-      }
+        const fh = await window.showSaveFilePicker({ suggestedName: zipName, startIn:'downloads', types:[{ description:'ZIP File', accept:{'application/zip':['.zip']} }] });
+        const wr = await fh.createWritable(); await wr.write(blob); await wr.close();
+        btn.innerHTML = '⬇️ Download sebagai ZIP'; btn.disabled = false; return;
+      } catch(e) { if (e.name === 'AbortError') { btn.innerHTML = '⬇️ Download sebagai ZIP'; btn.disabled = false; return; } }
     }
-
-    // Fallback: auto-download
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = zipName;
-    a.click();
+    const a = document.createElement('a'); a.href = url; a.download = zipName; a.click();
     URL.revokeObjectURL(url);
-  } catch (e) {
-    showToast('Gagal membuat ZIP: ' + e.message, 'error');
-  }
-
-  btn.disabled = false;
-  btn.innerHTML = '⬇️ Download sebagai ZIP';
+  } catch(e) { showToast('Gagal membuat ZIP: ' + e.message, 'error'); }
+  btn.disabled = false; btn.innerHTML = '⬇️ Download sebagai ZIP';
 }
 
-// ── DOWNLOAD FILE SATU PER SATU (pilih folder) ────────────────────
+// ── DOWNLOAD SATU PER SATU ────────────────────────────────────────
 async function downloadFiles() {
   const btn = document.getElementById('btnDownloadFiles');
-
-  // File System Access API — pilih folder
+  const nc = {};
+  function finalName(item) {
+    let fn = item.newName.toLowerCase().endsWith('.pdf') ? item.newName : item.newName + '.pdf';
+    if (nc[fn.toLowerCase()] === undefined) nc[fn.toLowerCase()] = 1;
+    else { nc[fn.toLowerCase()]++; fn = fn.replace(/\.pdf$/i, ` (${nc[fn.toLowerCase()]}).pdf`); }
+    return fn;
+  }
   if ('showDirectoryPicker' in window) {
-    let dirHandle;
-    try {
-      dirHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'downloads' });
-    } catch (e) {
-      return; // user cancel
-    }
-
-    btn.disabled = true;
-    btn.textContent = '⏳ Menyimpan file...';
-
-    try {
-      const nameCount = {};
-      let saved = 0;
-      for (const item of items) {
-        const ab = await item.file.arrayBuffer();
-        let finalName = item.newName;
-        if (!finalName.toLowerCase().endsWith('.pdf')) finalName += '.pdf';
-        if (nameCount[finalName.toLowerCase()] === undefined) {
-          nameCount[finalName.toLowerCase()] = 1;
-        } else {
-          nameCount[finalName.toLowerCase()]++;
-          finalName = finalName.replace(/\.pdf$/i, ` (${nameCount[finalName.toLowerCase()]}).pdf`);
-        }
-        const fh = await dirHandle.getFileHandle(finalName, { create: true });
-        const writable = await fh.createWritable();
-        await writable.write(ab);
-        await writable.close();
-        saved++;
-        btn.textContent = `⏳ Menyimpan ${saved}/${items.length}...`;
-      }
-      showToast(saved + ' file berhasil disimpan ke folder yang dipilih!', 'success');
-    } catch (e) {
-      showToast('Gagal menyimpan file: ' + e.message, 'error');
-    }
-
-    btn.disabled = false;
-    btn.innerHTML = '📁 Download File Satu per Satu';
-
-  } else {
-    // Fallback browser lama: download satu per satu otomatis
-    btn.disabled = true;
-    btn.textContent = '⏳ Mengunduh...';
-    const nameCount = {};
+    let dir;
+    try { dir = await window.showDirectoryPicker({ mode:'readwrite', startIn:'downloads' }); }
+    catch(e) { return; }
+    btn.disabled = true; btn.textContent = '⏳ Menyimpan...';
+    let saved = 0;
     for (const item of items) {
       const ab = await item.file.arrayBuffer();
-      let finalName = item.newName;
-      if (!finalName.toLowerCase().endsWith('.pdf')) finalName += '.pdf';
-      if (nameCount[finalName.toLowerCase()] === undefined) {
-        nameCount[finalName.toLowerCase()] = 1;
-      } else {
-        nameCount[finalName.toLowerCase()]++;
-        finalName = finalName.replace(/\.pdf$/i, ` (${nameCount[finalName.toLowerCase()]}).pdf`);
-      }
-      const blob = new Blob([ab], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = finalName; a.click();
+      const fn = finalName(item);
+      const fh = await dir.getFileHandle(fn, { create:true });
+      const wr = await fh.createWritable(); await wr.write(ab); await wr.close();
+      saved++; btn.textContent = `⏳ ${saved}/${items.length}...`;
+    }
+    showToast(`${saved} file berhasil disimpan!`, 'success');
+    btn.disabled = false; btn.innerHTML = '📁 Download File Satu per Satu';
+  } else {
+    btn.disabled = true; btn.textContent = '⏳ Mengunduh...';
+    for (const item of items) {
+      const ab = await item.file.arrayBuffer();
+      const fn = finalName(item);
+      const url = URL.createObjectURL(new Blob([ab], { type:'application/pdf' }));
+      const a = document.createElement('a'); a.href = url; a.download = fn; a.click();
       URL.revokeObjectURL(url);
       await new Promise(r => setTimeout(r, 300));
     }
-    btn.disabled = false;
-    btn.innerHTML = '📁 Download File Satu per Satu';
+    btn.disabled = false; btn.innerHTML = '📁 Download File Satu per Satu';
   }
 }
 
 // ── RESET ─────────────────────────────────────────────────────────
 function resetAll() {
-  pdfFiles = [];
-  items = [];
+  pdfFiles = []; items = [];
+  processedFiles = new Set();
+  hasProcessedOnce = false;
   document.getElementById('fileList').innerHTML = '';
   document.getElementById('pdfIn').value = '';
-  document.getElementById('logBox').style.display = 'none';
-  document.getElementById('logBox').innerHTML = '';
+  document.getElementById('logBox').style.display = 'none'; document.getElementById('logBox').innerHTML = '';
   document.getElementById('progressWrap').style.display = 'none';
   document.getElementById('resultCard').style.display = 'none';
   document.getElementById('fileActions').style.display = 'none';
-  ['dot1','dot2'].forEach((id) => {
-    const d = document.getElementById(id);
-    d.classList.remove('done');
-    d.textContent = id === 'dot1' ? '1' : '2';
-  });
+  document.getElementById('newFileHint').style.display = 'none';
+  ['dot1','dot2'].forEach((id,i) => { const d=document.getElementById(id); d.classList.remove('done'); d.textContent=i+1; });
   checkReady();
+  updateProcessBtn();
 }
 
-// addFiles calls updatePreview which no longer exists — remove that call
-
-</script>
-<!-- TOAST -->
-<div id="toast" style="
-  position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(20px);
-  background:#1E293B; color:#fff; padding:.75rem 1.25rem;
-  border-radius:12px; font-size:13px; font-weight:500;
-  box-shadow:0 8px 30px rgba(0,0,0,0.2); z-index:9999;
-  opacity:0; transition:all .3s cubic-bezier(.34,1.56,.64,1);
-  display:flex; align-items:center; gap:8px;
-  pointer-events:none; max-width:90vw;
-"></div>
-<script>
+// ── TOAST ─────────────────────────────────────────────────────────
 function showToast(msg, type) {
-  type = type || 'info';
-  var t = document.getElementById('toast');
-  var icons = { success:'✅', error:'❌', warn:'⚠️', info:'💡' };
-  var colors = { success:'#10B981', error:'#EF4444', warn:'#F59E0B', info:'#60A5FA' };
-  t.innerHTML = '<span style="font-size:15px">' + (icons[type]||'💡') + '</span><span>' + msg + '</span>';
-  t.style.borderLeft = '3px solid ' + (colors[type] || colors.info);
-  t.style.opacity = '1';
-  t.style.transform = 'translateX(-50%) translateY(0)';
+  type = type||'info';
+  const t = document.getElementById('toast');
+  const icons={success:'✅',error:'❌',warn:'⚠️',info:'💡'};
+  const colors={success:'#10B981',error:'#EF4444',warn:'#F59E0B',info:'#60A5FA'};
+  t.innerHTML = `<span style="font-size:15px">${icons[type]||'💡'}</span><span>${msg}</span>`;
+  t.style.borderLeft = `3px solid ${colors[type]||colors.info}`;
+  t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)';
   clearTimeout(t._timer);
-  t._timer = setTimeout(function() {
-    t.style.opacity = '0';
-    t.style.transform = 'translateX(-50%) translateY(20px)';
-  }, 3000);
+  t._timer = setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; }, 3000);
 }
 </script>
 </body>
