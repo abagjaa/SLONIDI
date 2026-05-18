@@ -384,7 +384,6 @@ function isTextEmpty(text) {
 // ── AUTO-ROTATE CANVAS ───────────────────────────────────────────
 // Renders a PDF page to canvas with a given extra rotation (0, 90, 180, 270)
 async function renderPageRotated(page, scale, extraRotation) {
-  // PDF.js respects the page's built-in rotation; we add extraRotation on top
   const viewport = page.getViewport({ scale, rotation: (page.rotate + extraRotation) % 360 });
   const canvas = document.createElement('canvas');
   canvas.width = viewport.width;
@@ -393,47 +392,96 @@ async function renderPageRotated(page, scale, extraRotation) {
   return canvas;
 }
 
-// Score text quality: more meaningful words = better orientation
+// Pre-processing: tingkatkan kontras untuk scan gelap/pucat
+function enhanceCanvas(srcCanvas) {
+  const w = srcCanvas.width, h = srcCanvas.height;
+  const dst = document.createElement('canvas');
+  dst.width = w; dst.height = h;
+  const ctx = dst.getContext('2d');
+  ctx.drawImage(srcCanvas, 0, 0);
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const d = imageData.data;
+  let sum = 0;
+  for (let i = 0; i < d.length; i += 4) sum += 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+  const mean = sum / (d.length / 4);
+  const lo = Math.max(0, mean - 60), hi = Math.min(255, mean + 60);
+  for (let i = 0; i < d.length; i += 4) {
+    const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+    const stretched = Math.min(255, Math.max(0, ((gray - lo) / (hi - lo + 1)) * 255));
+    d[i] = d[i+1] = d[i+2] = stretched;
+  }
+  ctx.putImageData(imageData, 0, 0);
+  return dst;
+}
+
+// Score text quality — semua 4 rotasi selalu ditest, tidak ada early break
 function scoreText(text) {
-  // Count Indonesian/English words of 3+ chars and known SLO keywords
+  if (!text || text.trim().length < 10) return 0;
+  const norm = text.toLowerCase();
+  const alphaNum = (text.match(/[a-zA-Z0-9]/g) || []).length;
+  const total = text.replace(/\s/g, '').length;
+  if (total > 0 && alphaNum / total < 0.35) return 0;
   const words = (text.match(/[a-zA-Z]{3,}/g) || []).length;
-  const keywords = (text.match(/\b(nama|pemilik|sertifikat|nomor|instalasi|listrik|laik|operasi|nidi|slo|daya|alamat|tanggal|berlaku)\b/gi) || []).length;
-  return words + keywords * 5;
+  const highValue = [
+    'nama', 'pemilik', 'sertifikat', 'nomor', 'instalasi', 'listrik',
+    'laik', 'operasi', 'nidi', 'daya', 'alamat', 'tanggal', 'berlaku',
+    'registrasi', 'titik', 'koordinat', 'tersambung', 'proteksi', 'penanggung',
+    'penyedia', 'perintis', 'perlindungan', 'nasional', 'kementerian', 'esdm',
+    'tegangan', 'rendah', 'menyatakan', 'bahwa', 'pemanfaatan'
+  ];
+  const highHits = highValue.filter(kw => norm.includes(kw)).length;
+  const sloPattern = (text.match(/\d{4}[\.\-]\d+[\.\-][A-Z][\.\-]\d+/g) || []).length;
+  const nidiPattern = (text.match(/I\.\d{2}\.\d{4}/g) || []).length;
+  const coordPattern = (text.match(/\d+\.\d{4,}/g) || []).length;
+  return words + (highHits * 8) + (sloPattern * 20) + (nidiPattern * 20) + (coordPattern * 3);
 }
 
 async function extractTextOCR(pdf, log) {
-  log('  🔍 PDF scan — memulai OCR + auto-rotate...', 'lwarn');
+  log('  🔍 PDF scan — memulai OCR + auto-koreksi rotasi...', 'lwarn');
   const worker = await getOcrWorker();
   let fullText = '';
 
   for (let i = 1; i <= pdf.numPages; i++) {
-    log(`  📷 OCR halaman ${i}/${pdf.numPages} (deteksi orientasi)...`, 'lwarn');
+    log(`  📷 Halaman ${i}/${pdf.numPages}: testing 4 orientasi...`, 'lwarn');
     const page = await pdf.getPage(i);
-    const scale = 2.5;
+    const scale = 2.0;
 
-    // Try all 4 rotations, pick the one with best OCR score
+    // Selalu test semua 4 rotasi — tidak ada early break
     const rotations = [0, 90, 180, 270];
-    let bestText = '';
-    let bestScore = -1;
-    let bestRot = 0;
+    const scores = [];
 
     for (const rot of rotations) {
-      const canvas = await renderPageRotated(page, scale, rot);
-      const { data: { text } } = await worker.recognize(canvas.toDataURL('image/png'));
+      const rawCanvas = await renderPageRotated(page, scale, rot);
+      const enhanced = enhanceCanvas(rawCanvas);
+      const { data: { text } } = await worker.recognize(enhanced.toDataURL('image/jpeg', 0.9));
       const score = scoreText(text);
-      if (score > bestScore) {
-        bestScore = score;
-        bestText = text;
-        bestRot = rot;
-      }
-      // Early exit: if we have a strong confident result, skip remaining rotations
-      if (score > 50 && rot !== 270) break;
+      scores.push({ rot, text, score });
+      log(`    Rotasi ${rot}°: skor ${score}`, score > 30 ? 'lok' : '');
     }
 
-    if (bestRot !== 0) {
-      log(`  🔄 Halaman ${i} dirotasi ${bestRot}° untuk hasil terbaik`, 'lwarn');
+    scores.sort((a, b) => b.score - a.score);
+    const best = scores[0];
+
+    if (best.rot !== 0) {
+      log(`  🔄 Halaman ${i}: orientasi terbaik ${best.rot}° (skor ${best.score})`, 'lwarn');
+    } else {
+      log(`  ✅ Halaman ${i}: orientasi normal (skor ${best.score})`, 'lok');
     }
-    fullText += bestText + '\n';
+
+    if (best.score < 15) {
+      log(`  ⚠ Skor rendah — retry scale 3.0...`, 'lwarn');
+      const highResCanvas = await renderPageRotated(page, 3.0, best.rot);
+      const enhancedHR = enhanceCanvas(highResCanvas);
+      const { data: { text: retryText } } = await worker.recognize(enhancedHR.toDataURL('image/jpeg', 0.95));
+      const retryScore = scoreText(retryText);
+      if (retryScore > best.score) {
+        log(`  📈 Retry berhasil: skor ${retryScore}`, 'lok');
+        fullText += retryText + '\n';
+        continue;
+      }
+    }
+
+    fullText += best.text + '\n';
   }
   return fullText;
 }

@@ -608,46 +608,117 @@ async function renderPageRotated(page, scale, extraRotation) {
   return canvas;
 }
 
-// Skor kualitas teks OCR: lebih banyak kata bermakna = orientasi lebih tepat
+// Pre-processing canvas: tingkatkan kontras untuk scan gelap/pucat
+function enhanceCanvas(srcCanvas) {
+  const w = srcCanvas.width, h = srcCanvas.height;
+  const dst = document.createElement('canvas');
+  dst.width = w; dst.height = h;
+  const ctx = dst.getContext('2d');
+  ctx.drawImage(srcCanvas, 0, 0);
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const d = imageData.data;
+  // Adaptive contrast: hitung mean brightness lalu threshold
+  let sum = 0;
+  for (let i = 0; i < d.length; i += 4) sum += 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+  const mean = sum / (d.length / 4);
+  // Stretch kontras: piksel < mean-30 → gelap, > mean+30 → terang
+  const lo = Math.max(0, mean - 60), hi = Math.min(255, mean + 60);
+  for (let i = 0; i < d.length; i += 4) {
+    const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+    const stretched = Math.min(255, Math.max(0, ((gray - lo) / (hi - lo + 1)) * 255));
+    d[i] = d[i+1] = d[i+2] = stretched;
+  }
+  ctx.putImageData(imageData, 0, 0);
+  return dst;
+}
+
+// Skor kualitas teks OCR — semua 4 rotasi SELALU ditest, tidak ada early break
 function scoreOcrText(text) {
+  if (!text || text.trim().length < 10) return 0;
+
+  const norm = text.toLowerCase();
+
+  // Hitung total karakter alfanumerik vs total karakter
+  const alphaNum = (text.match(/[a-zA-Z0-9]/g) || []).length;
+  const total = text.replace(/\s/g, '').length;
+  const alphaRatio = total > 0 ? alphaNum / total : 0;
+  // Kalau ratio alphanumerik terlalu rendah, berarti banyak noise → skor rendah
+  if (alphaRatio < 0.35) return 0;
+
+  // Kata umum (bobot 1 per kata, min 3 huruf)
   const words = (text.match(/[a-zA-Z]{3,}/g) || []).length;
-  const keywords = (text.match(/\b(nama|pemilik|sertifikat|nomor|instalasi|listrik|laik|operasi|nidi|slo|daya|alamat|tanggal|berlaku|registrasi)\b/gi) || []).length;
-  return words + keywords * 5;
+
+  // Keyword spesifik dokumen SLO/NIDI (bobot tinggi)
+  const highValue = [
+    'nama', 'pemilik', 'sertifikat', 'nomor', 'instalasi', 'listrik',
+    'laik', 'operasi', 'nidi', 'daya', 'alamat', 'tanggal', 'berlaku',
+    'registrasi', 'titik', 'koordinat', 'tersambung', 'proteksi', 'penanggung',
+    'penyedia', 'perintis', 'perlindungan', 'nasional', 'kementerian', 'esdm',
+    'tegangan', 'rendah', 'menyatakan', 'bahwa', 'pemanfaatan'
+  ];
+  const highHits = highValue.filter(kw => norm.includes(kw)).length;
+
+  // Pattern numerik khas SLO/NIDI
+  const sloPattern = (text.match(/\d{4}[\.\-]\d+[\.\-][A-Z][\.\-]\d+/g) || []).length;
+  const nidiPattern = (text.match(/I\.\d{2}\.\d{4}/g) || []).length;
+  const coordPattern = (text.match(/\d+\.\d{4,}/g) || []).length;
+
+  return words + (highHits * 8) + (sloPattern * 20) + (nidiPattern * 20) + (coordPattern * 3);
 }
 
 async function extractTextOCR(pdf, log) {
-  log('  🔍 PDF scan terdeteksi — memulai OCR + deteksi rotasi... (bisa 10–60 detik)', 'lwarn');
+  log('  🔍 PDF scan terdeteksi — memulai OCR + auto-koreksi rotasi... (bisa 10–90 detik)', 'lwarn');
   const worker = await getOcrWorker();
   let fullText = '';
 
   for (let i = 1; i <= pdf.numPages; i++) {
-    log(`  📷 OCR halaman ${i}/${pdf.numPages} (cek 4 orientasi)...`, 'lwarn');
+    log(`  📷 Halaman ${i}/${pdf.numPages}: testing 4 orientasi...`, 'lwarn');
     const page = await pdf.getPage(i);
-    const scale = 2.5;
 
-    // Coba 4 rotasi, pilih yang hasilkan teks paling bermakna
+    // Scale 2.0 lebih stabil untuk scan resolusi tinggi; 2.5 sering OOM di mobile
+    const scale = 2.0;
+
+    // SELALU test semua 4 rotasi — tidak ada early break
+    // Tujuan: dokumen scan yang miring 90° bisa dapet skor lumayan di 0°
+    // sehingga early break salah orientasi
     const rotations = [0, 90, 180, 270];
-    let bestText = '';
-    let bestScore = -1;
-    let bestRot = 0;
+    const scores = [];
 
     for (const rot of rotations) {
-      const canvas = await renderPageRotated(page, scale, rot);
-      const { data: { text } } = await worker.recognize(canvas.toDataURL('image/png'));
+      const rawCanvas = await renderPageRotated(page, scale, rot);
+      const enhanced = enhanceCanvas(rawCanvas);
+      const { data: { text } } = await worker.recognize(enhanced.toDataURL('image/jpeg', 0.9));
       const score = scoreOcrText(text);
-      if (score > bestScore) {
-        bestScore = score;
-        bestText = text;
-        bestRot = rot;
-      }
-      // Kalau sudah dapat hasil bagus di rotasi ini, stop lebih awal
-      if (score > 50 && rot !== 270) break;
+      scores.push({ rot, text, score });
+      log(`    Rotasi ${rot}°: skor ${score}`, score > 30 ? 'lok' : '');
     }
 
-    if (bestRot !== 0) {
-      log(`  🔄 Halaman ${i} dirotasi ${bestRot}° (skor terbaik: ${bestScore})`, 'lwarn');
+    // Pilih rotasi dengan skor tertinggi
+    scores.sort((a, b) => b.score - a.score);
+    const best = scores[0];
+    const runnerUp = scores[1];
+
+    if (best.rot !== 0) {
+      log(`  🔄 Halaman ${i}: orientasi terbaik ${best.rot}° (skor ${best.score} vs runner-up ${runnerUp.rot}°: ${runnerUp.score})`, 'lwarn');
+    } else {
+      log(`  ✅ Halaman ${i}: orientasi normal (0°), skor ${best.score}`, 'lok');
     }
-    fullText += bestText + '\n';
+
+    // Kalau skor terbaik sangat rendah, coba ulang dengan scale lebih tinggi
+    if (best.score < 15) {
+      log(`  ⚠ Skor sangat rendah — retry dengan scale 3.0...`, 'lwarn');
+      const highResCanvas = await renderPageRotated(page, 3.0, best.rot);
+      const enhancedHR = enhanceCanvas(highResCanvas);
+      const { data: { text: retryText } } = await worker.recognize(enhancedHR.toDataURL('image/jpeg', 0.95));
+      const retryScore = scoreOcrText(retryText);
+      if (retryScore > best.score) {
+        log(`  📈 Retry berhasil: skor naik ke ${retryScore}`, 'lok');
+        fullText += retryText + '\n';
+        continue;
+      }
+    }
+
+    fullText += best.text + '\n';
   }
   return fullText;
 }
