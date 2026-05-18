@@ -215,8 +215,8 @@ function changeSheet() {
   allRows  = rows.slice(headerIdx + 1).filter(r => r.some(c => c !== ''));
 
   // ── AUTO-DETECT kolom area & alamat ──
-  areaColIdx   = headers.findIndex(h => /\b(area|kota|kabupaten|wilayah|daerah|region)\b/i.test(h));
-  alamatColIdx = headers.findIndex(h => /\b(alamat|address|lokasi|tempat)\b/i.test(h));
+  areaColIdx   = headers.findIndex(h => /(area|kota|kabupaten|wilayah|daerah|region)/i.test(h));
+  alamatColIdx = headers.findIndex(h => /(alamat|address|lokasi|tempat)/i.test(h));
 
   // Tentukan mode deteksi
   if (areaColIdx >= 0) {
@@ -236,45 +236,47 @@ function changeSheet() {
 }
 
 function renderDetectStatus() {
-  const modeLabel = {
-    kolom:  { icon: '📋', text: `Kolom area ditemukan: <strong>"${headers[areaColIdx]}"</strong> — data akan dikelompokkan dari kolom ini.`, cls: 'kolom' },
-    alamat: { icon: '📍', text: `Kolom area tidak ditemukan. Kolom alamat <strong>"${headers[alamatColIdx]}"</strong> akan di-scan otomatis untuk mendeteksi kota/kabupaten.`, cls: 'alamat' },
-    scan:   { icon: '🔍', text: `Kolom area & alamat tidak ditemukan. Seluruh teks di setiap baris akan di-scan untuk mendeteksi nama kota/kabupaten Jawa Barat.`, cls: 'scan' },
-  }[detectedMode];
-
+  let icon, text, cls;
+  if (detectedMode === 'kolom') {
+    icon = '📋'; cls = 'kolom';
+    text = `Kolom <strong>"${headers[areaColIdx]}"</strong> ditemukan → data dikelompokkan otomatis dari kolom ini.`;
+  } else if (detectedMode === 'alamat') {
+    icon = '📍'; cls = 'alamat';
+    text = `Kolom area tidak ditemukan. Kolom <strong>"${headers[alamatColIdx]}"</strong> akan di-scan untuk mendeteksi kota/kabupaten.`;
+  } else {
+    icon = '🔍'; cls = 'scan';
+    const allHeaders = headers.filter(h => h).join(', ');
+    text = `Kolom area & alamat tidak ditemukan di header: <em>${allHeaders}</em>. Seluruh teks tiap baris di-scan otomatis untuk mendeteksi nama kota/kabupaten Jawa Barat.`;
+  }
   document.getElementById('detectStatus').innerHTML = `
     <div class="detect-row">
       <span class="detect-label">Mode</span>
-      <span class="badge-mode ${modeLabel.cls}">${modeLabel.icon} ${detectedMode === 'kolom' ? 'Dari Kolom' : detectedMode === 'alamat' ? 'Dari Alamat' : 'Scan Semua'}</span>
-      <span style="font-size:13px;color:var(--slate-600)">${modeLabel.text}</span>
+      <span class="badge-mode ${cls}">${icon} ${detectedMode === 'kolom' ? 'Dari Kolom' : detectedMode === 'alamat' ? 'Dari Alamat' : 'Scan Semua'}</span>
+      <span style="font-size:13px;color:var(--slate-600)">${text}</span>
     </div>`;
 }
 
 // ── Tentukan area sebuah row (OTOMATIS) ─────────────────────────────────────
 function tentukanAreaRow(row) {
+  // Mode 1: ada kolom khusus area/wilayah → pakai langsung
   if (detectedMode === 'kolom') {
     const val = String(row[areaColIdx] || '').trim();
     if (val) {
-      // Nilai kolom area bisa sudah teks area, atau teks panjang → scan dulu
       const d = deteksiArea(val);
       return d || val; // kalau tidak cocok AREA_MAP, gunakan nilai aslinya
     }
   }
 
-  if (detectedMode === 'alamat' || detectedMode === 'scan') {
-    const startIdx = detectedMode === 'alamat' ? alamatColIdx : 0;
-    const endIdx   = detectedMode === 'alamat' ? alamatColIdx : row.length - 1;
+  // Mode 2: ada kolom alamat → scan teks alamat saja
+  if (detectedMode === 'alamat') {
+    const d = deteksiArea(row[alamatColIdx]);
+    if (d) return d;
+  }
 
-    if (detectedMode === 'alamat') {
-      const d = deteksiArea(row[alamatColIdx]);
-      if (d) return d;
-    } else {
-      // scan semua kolom
-      for (const cell of row) {
-        const d = deteksiArea(cell);
-        if (d) return d;
-      }
-    }
+  // Mode 3 (scan) atau fallback: scan SEMUA kolom di baris ini
+  for (const cell of row) {
+    const d = deteksiArea(cell);
+    if (d) return d;
   }
 
   return 'Lainnya';

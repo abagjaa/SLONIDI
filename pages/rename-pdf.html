@@ -381,21 +381,59 @@ function isTextEmpty(text) {
   return meaningful < 15;
 }
 
+// ── AUTO-ROTATE CANVAS ───────────────────────────────────────────
+// Renders a PDF page to canvas with a given extra rotation (0, 90, 180, 270)
+async function renderPageRotated(page, scale, extraRotation) {
+  // PDF.js respects the page's built-in rotation; we add extraRotation on top
+  const viewport = page.getViewport({ scale, rotation: (page.rotate + extraRotation) % 360 });
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+  return canvas;
+}
+
+// Score text quality: more meaningful words = better orientation
+function scoreText(text) {
+  // Count Indonesian/English words of 3+ chars and known SLO keywords
+  const words = (text.match(/[a-zA-Z]{3,}/g) || []).length;
+  const keywords = (text.match(/\b(nama|pemilik|sertifikat|nomor|instalasi|listrik|laik|operasi|nidi|slo|daya|alamat|tanggal|berlaku)\b/gi) || []).length;
+  return words + keywords * 5;
+}
+
 async function extractTextOCR(pdf, log) {
-  log('  🔍 PDF scan — memulai OCR...', 'lwarn');
+  log('  🔍 PDF scan — memulai OCR + auto-rotate...', 'lwarn');
   const worker = await getOcrWorker();
   let fullText = '';
+
   for (let i = 1; i <= pdf.numPages; i++) {
-    log(`  📷 OCR halaman ${i}/${pdf.numPages}...`, 'lwarn');
+    log(`  📷 OCR halaman ${i}/${pdf.numPages} (deteksi orientasi)...`, 'lwarn');
     const page = await pdf.getPage(i);
     const scale = 2.5;
-    const viewport = page.getViewport({ scale });
-    const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-    const { data: { text } } = await (await getOcrWorker()).recognize(canvas.toDataURL('image/png'));
-    fullText += text + '\n';
+
+    // Try all 4 rotations, pick the one with best OCR score
+    const rotations = [0, 90, 180, 270];
+    let bestText = '';
+    let bestScore = -1;
+    let bestRot = 0;
+
+    for (const rot of rotations) {
+      const canvas = await renderPageRotated(page, scale, rot);
+      const { data: { text } } = await worker.recognize(canvas.toDataURL('image/png'));
+      const score = scoreText(text);
+      if (score > bestScore) {
+        bestScore = score;
+        bestText = text;
+        bestRot = rot;
+      }
+      // Early exit: if we have a strong confident result, skip remaining rotations
+      if (score > 50 && rot !== 270) break;
+    }
+
+    if (bestRot !== 0) {
+      log(`  🔄 Halaman ${i} dirotasi ${bestRot}° untuk hasil terbaik`, 'lwarn');
+    }
+    fullText += bestText + '\n';
   }
   return fullText;
 }
@@ -429,21 +467,28 @@ function extractNIDI(text) {
 }
 
 function extractOwner(text) {
+  // Normalize OCR artifacts: collapse newlines and multiple spaces for matching
+  const norm = text.replace(/[\r\n]+/g, ' ').replace(/\s{2,}/g, ' ');
+
   const ps = [
-    /Nama\s+[Pp]emilik\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
-    /Nama\s+[Pp]emilik\s+[Ii]nstalasi\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
-    /Nama\s+[Ii]nstalasi\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
-    /Nama\s+[Pp]elanggan\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
-    /Nama\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
+    /Nama\s+[Pp]emilik\s*:\s*(.{5,250}?)(?=Nomor\s+Identitas|Nomor\s+Sertifikat|Alamat|Titik\s+Koordinat|No\.\s|Daya\s|Tanggal|NIDI\b)/i,
+    /Nama\s+[Pp]emilik\s+[Ii]nstalasi\s*:\s*(.{5,250}?)(?=Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
+    /Nama\s+[Ii]nstalasi\s*:\s*(.{5,250}?)(?=Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
+    /Nama\s+[Pp]elanggan\s*:\s*(.{5,250}?)(?=Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
+    /Nama\s*:\s*(.{5,250}?)(?=Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
     /(?:atas\s+nama|a\.n\.)\s*[:\.]?\s*([^\n\r]{5,200})/i,
   ];
+
   for (const p of ps) {
-    const m = text.match(p);
+    const m = norm.match(p);
     if (!m) continue;
-    const block = m[1].replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+    let block = m[1].trim();
+    // Strip trailing colon noise
+    block = block.replace(/\s*:\s*$/, '').trim();
+    // Prefer parenthetical like (Planet Bar Raya...)
     const parMatch = block.match(/\(([^)]{4,})\)/);
-    if (parMatch) return parMatch[1].trim();
-    return block.replace(/^[^:]+:\s*/, '').trim();
+    if (parMatch) return sanitize(parMatch[1].trim());
+    return sanitize(block.replace(/^[^:]+:\s*/, '').trim());
   }
   return null;
 }
