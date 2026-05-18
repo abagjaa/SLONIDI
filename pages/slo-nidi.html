@@ -281,20 +281,17 @@
 
   /* ── PDF PREVIEW MODAL ── */
   .pdf-modal-overlay {
-    position: absolute; inset: 0; z-index: 9000;
-    min-height: 100%;
+    position: fixed; inset: 0; z-index: 9000;
     background: rgba(15,23,42,0.7); backdrop-filter: blur(4px);
-    display: flex; align-items: flex-start; justify-content: center;
-    padding: 2rem 1rem;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
   }
   .pdf-modal {
     background: #fff; border-radius: 16px;
-    width: 97vw; max-width: 1300px; height: 86vh;
+    width: 97vw; max-width: 1300px; height: 92vh;
     display: flex; flex-direction: column;
     box-shadow: 0 25px 80px rgba(0,0,0,0.4);
     overflow: hidden;
-    position: sticky;
-    top: 2rem;
   }
   .pdf-modal-header {
     display: flex; align-items: center; justify-content: space-between;
@@ -392,17 +389,9 @@
     box-shadow: 0 4px 14px rgba(124,58,237,0.3);
   }
   .btn-review:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,58,237,0.4); background: linear-gradient(135deg, #7C3AED, #6D28D9); }
-
-  /* ── APP ROOT — agar modal tidak keluar dari iframe ── */
-  html, body { height: 100%; }
-  #appRoot {
-    position: relative;
-    min-height: 100%;
-  }
 </style>
 </head>
 <body>
-<div id="appRoot">
 
 <div class="info-pill">
   💡 Semua data diproses di browser — tidak ada yang dikirim ke server
@@ -1408,8 +1397,8 @@ function resetAll() {
 </div>
 
 <!-- DOWNLOAD CONFIRMATION MODAL -->
-<div id="dlConfirmModal" style="display:none;position:absolute;inset:0;min-height:100%;z-index:9500;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding:2rem 1rem">
-  <div style="background:#fff;border-radius:16px;width:100%;max-width:460px;box-shadow:0 25px 80px rgba(0,0,0,0.35);overflow:hidden;position:sticky;top:2rem">
+<div id="dlConfirmModal" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:460px;box-shadow:0 25px 80px rgba(0,0,0,0.35);overflow:hidden">
     <div style="padding:1rem 1.25rem;background:linear-gradient(135deg,#FFF7ED,#FEF2F2);border-bottom:1px solid #FDE68A;display:flex;align-items:center;gap:10px">
       <span style="font-size:20px">⚠️</span>
       <div>
@@ -1660,9 +1649,7 @@ async function openPdfModal(isInputList, listIdx) {
     `<option value="${j}"${j===suggestIdx?' selected':''}>${n}</option>`).join('');
 
   document.getElementById('pdfModal').style.display = 'flex';
-  // scroll ke atas agar modal terlihat
-  window.scrollTo(0, 0);
-  document.getElementById('appRoot').scrollTop = 0;
+  document.body.style.overflow = 'hidden';
   const viewer = document.getElementById('pdfModalViewer');
   initViewerZoom(viewer);
   await renderPdfInViewer(u.file, viewer);
@@ -1694,9 +1681,7 @@ async function openPdfModalForResult(resultIdx, fieldType) {
   buildInfoPanel(resultIdx, fieldType);
 
   document.getElementById('pdfModal').style.display = 'flex';
-  // scroll ke atas agar modal terlihat
-  window.scrollTo(0, 0);
-  document.getElementById('appRoot').scrollTop = 0;
+  document.body.style.overflow = 'hidden';
   const viewer = document.getElementById('pdfModalViewer');
   initViewerZoom(viewer);
   await renderPdfInViewer(fileName, viewer);
@@ -1747,9 +1732,7 @@ function openReviewAtCursor() {
     </div>`;
 
   document.getElementById('pdfModal').style.display = 'flex';
-  // scroll ke atas agar modal terlihat
-  window.scrollTo(0, 0);
-  document.getElementById('appRoot').scrollTop = 0;
+  document.body.style.overflow = 'hidden';
   const viewer = document.getElementById('pdfModalViewer');
   initViewerZoom(viewer);
   renderPdfInViewer(fileName, viewer);
@@ -1783,7 +1766,7 @@ function reviewNext() {
 // ── CLOSE MODAL ──
 function closePdfModal() {
   document.getElementById('pdfModal').style.display = 'none';
-  
+  document.body.style.overflow = '';
   _modalUnmatchedIdx = null;
   _modalResultIdx = null;
   _modalResultField = null;
@@ -1850,6 +1833,5 @@ function showToast(msg, type) {
   }, 3000);
 }
 </script>
-</div><!-- /#appRoot -->
 </body>
 </html>
