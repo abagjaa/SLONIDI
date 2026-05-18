@@ -660,7 +660,7 @@ function scoreOcrText(text) {
 
   // Pattern numerik khas SLO/NIDI
   const sloPattern = (text.match(/\d{4}[\.\-]\d+[\.\-][A-Z][\.\-]\d+/g) || []).length;
-  const nidiPattern = (text.match(/I\.\d{2}\.\d{4}/g) || []).length;
+  const nidiPattern = (text.match(/[I1l]\.\d{2}\.\d{4}/g) || []).length;
   const coordPattern = (text.match(/\d+\.\d{4,}/g) || []).length;
 
   return words + (highHits * 8) + (sloPattern * 20) + (nidiPattern * 20) + (coordPattern * 3);
@@ -743,13 +743,28 @@ function extractSLO(text) {
 }
 
 function extractNIDI(text) {
+  // Normalize dulu: gabungkan baris agar newline dari OCR tidak memecah nomor
+  const norm = text.replace(/[\r\n]+/g, ' ').replace(/\s{2,}/g, ' ');
+
+  // OCR sering salah baca huruf kapital "I" menjadi "l" (kecil) atau "1" (angka)
+  // Sehingga "I.02.2024.xxx" bisa menjadi "l.02.2024.xxx" atau "1.02.2024.xxx"
+  // Pattern [I1l] menangkap ketiga kemungkinan tsb
   const ps = [
-    /NOMOR IDENTITAS INSTALASI TENAGA LISTRIK \(NIDI\)\s*([\w\d\.\-\/]+)/i,
-    /\(NIDI\)\s*\n?\s*(I\.\d{2}\.\d{4}[\.\-][\w\d]+)/i,
-    /NIDI\s*[:\-]?\s*(I\.\d{2}\.\d{4}[\.\-][\w\d]+)/i,
-    /(I\.\d{2}\.\d{4}[\.\-][\w\d\.]+)/
+    // Paling spesifik: ada kata "NIDI" diikuti nomor (pada teks digital maupun OCR)
+    /NOMOR IDENTITAS INSTALASI TENAGA LISTRIK\s*\(NIDI\)\s*([I1l][\.\-]\d{2}[\.\-]\d{4}[\.\-][\w\d\.\-]+)/i,
+    /\(NIDI\)\s*([I1l][\.\-]\d{2}[\.\-]\d{4}[\.\-][\w\d\.\-]+)/i,
+    /NIDI\s*[:\-]?\s*([I1l][\.\-]\d{2}[\.\-]\d{4}[\.\-][\w\d\.\-]+)/i,
+    // Fallback generik: pola nomor NIDI tanpa konteks kata NIDI
+    /([I1l][\.\-]\d{2}[\.\-]\d{4}[\.\-][\w\d\.\-]+)/,
   ];
-  for (const p of ps) { const m = text.match(p); if (m) return m[1].trim(); }
+
+  for (const p of ps) {
+    const m = norm.match(p);
+    if (m) {
+      // Normalisasi hasil: ganti "l." atau "1." di awal dengan "I." (standar NIDI)
+      return m[1].trim().replace(/^[l1]\./, 'I.');
+    }
+  }
   return null;
 }
 
