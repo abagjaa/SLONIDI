@@ -273,7 +273,7 @@ function doSearch() {
   const MAX = 200;
   const shown = results.slice(0, MAX);
   document.getElementById("resultInfo").innerHTML = q
-    ? "Ditemukan <strong>"+results.length+"</strong> hasil untuk "<strong>"+q+"</strong>""+(results.length > MAX ? " (menampilkan "+MAX+" pertama)" : "")
+    ? 'Ditemukan <strong>'+results.length+'</strong> hasil untuk "<strong>'+q+'</strong>"'+( results.length > MAX ? ' (menampilkan '+MAX+' pertama)' : '')
     : "Menampilkan <strong>"+Math.min(results.length,MAX)+"</strong> dari <strong>"+allData.length+"</strong> data";
   if (shown.length === 0) {
     document.getElementById("resultBody").innerHTML = "";
@@ -282,7 +282,7 @@ function doSearch() {
   }
   document.getElementById("emptyState").style.display = "none";
   document.getElementById("resultBody").innerHTML = shown.map(d => {
-    const esc = s => s.replace(/[.*+?^${}()|[\]\\/]/g,"\\$&");
+    const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
     const hl = str => q ? str.replace(new RegExp("("+esc(q)+")","gi"),"<mark>$1</mark>") : str;
     const sheetLabel = loadedFiles.length > 1 ? d.fileName+'<br><span style="font-size:10px;color:var(--slate-400)">'+d.sheetName+'</span>' : d.sheetName;
     return '<tr><td><span class="badge-sheet" style="white-space:nowrap">'+sheetLabel+'</span></td><td style="font-weight:500;max-width:200px">'+( hl(d.nama)||'<span style="color:var(--slate-400)">—</span>' )+'</td><td><span class="num-slo">'+( hl(d.slo)||'<span style="color:var(--slate-400)">—</span>' )+'</span></td><td><span class="num-nidi">'+( hl(d.nidi)||'<span style="color:var(--slate-400)">—</span>' )+'</span></td><td style="font-size:11px;color:var(--slate-400);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + d.extra + '">'+( d.extra||"—" )+'</td></tr>';
