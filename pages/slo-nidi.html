@@ -743,7 +743,12 @@ function extractSLO(text) {
 }
 
 function extractNIDI(text) {
-  const ps = [/NOMOR IDENTITAS INSTALASI TENAGA LISTRIK \(NIDI\)\s*([\w\d\.\-\/]+)/i, /\(NIDI\)\s*\n?\s*(I\.\d{2}\.\d{4}\.[\w\d]+)/i, /(I\.\d{2}\.\d{4}\.[\w\d]+)/];
+  const ps = [
+    /NOMOR IDENTITAS INSTALASI TENAGA LISTRIK \(NIDI\)\s*([\w\d\.\-\/]+)/i,
+    /\(NIDI\)\s*\n?\s*(I\.\d{2}\.\d{4}[\.\-][\w\d]+)/i,
+    /NIDI\s*[:\-]?\s*(I\.\d{2}\.\d{4}[\.\-][\w\d]+)/i,
+    /(I\.\d{2}\.\d{4}[\.\-][\w\d\.]+)/
+  ];
   for (const p of ps) { const m = text.match(p); if (m) return m[1].trim(); }
   return null;
 }
@@ -821,21 +826,35 @@ async function processAll() {
       const { text, isOcr } = await extractText(file, log);
       if (isOcr) log('  ✓ OCR selesai', 'lok');
       const owner = extractOwner(text);
+
+      // Ekstrak nomor utama sesuai tipe file
       let number = type === 'SLO' ? extractSLO(text) : type === 'NIDI' ? extractNIDI(text) : null;
+
+      // Jika file SLO, coba juga ekstrak NIDI dari teks yang sama (sertifikat SLO selalu memuat NIDI)
+      let extraNidi = null;
+      if (type === 'SLO') {
+        extraNidi = extractNIDI(text);
+        if (extraNidi) log(`  NIDI dalam SLO: <span class="lnum">${extraNidi}</span>`, 'lok');
+      }
+
       if (number) {
         log(`  Nomor: <span class="lnum">${number}</span>${isOcr ? ' <span style="color:#FDE68A">[OCR]</span>' : ''}`);
         const idx = bestMatch(owner || file.name, excelNames);
         if (idx >= 0) {
-          if (type === 'SLO') results[idx]._SLO = number;
+          if (type === 'SLO') {
+            results[idx]._SLO = number;
+            // Juga isi NIDI jika berhasil diekstrak dari file SLO yang sama
+            if (extraNidi && !results[idx]._NIDI) results[idx]._NIDI = extraNidi;
+          }
           if (type === 'NIDI') results[idx]._NIDI = number;
           log(`  ✓ → ${excelNames[idx]}`, 'lok');
         } else {
           log('  ⚠ Tidak cocok otomatis', 'lwarn');
-          unmatched.push({ file: file.name, type, number, owner, isOcr });
+          unmatched.push({ file: file.name, type, number, owner, isOcr, extraNidi });
         }
       } else {
         log(`  ✗ Nomor tidak terdeteksi${isOcr ? ' (setelah OCR)' : ''}`, 'lerr');
-        unmatched.push({ file: file.name, type, number: null, owner, isOcr });
+        unmatched.push({ file: file.name, type, number: null, owner, isOcr, extraNidi });
       }
       processedFiles.add(file.name);
     } catch (e) { log(`  ✗ Error: ${e.message}`, 'lerr'); }
@@ -927,7 +946,11 @@ function applyManual(ui) {
   const needManual = unmatched.filter(u => u.number);
   const u = needManual[ui];
   const idx = parseInt(document.getElementById('ms_' + ui).value);
-  if (u.type === 'SLO') results[idx]._SLO = u.number;
+  if (u.type === 'SLO') {
+    results[idx]._SLO = u.number;
+    // Juga isi NIDI jika ada dari file SLO yang sama
+    if (u.extraNidi && !results[idx]._NIDI) results[idx]._NIDI = u.extraNidi;
+  }
   if (u.type === 'NIDI') results[idx]._NIDI = u.number;
   const dataIdx = unmatched.indexOf(u); unmatched[dataIdx].number = null;
   renderResult();
