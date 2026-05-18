@@ -189,6 +189,70 @@
 
   .divider { height: 1px; background: var(--slate-100); margin: 1.25rem 0; }
   .hint { font-size: 11px; color: var(--slate-400); margin-top: 6px; }
+
+  /* ── INPUT MODE TOGGLE ── */
+  .mode-tabs {
+    display: flex; gap: 4px; margin-bottom: 1rem;
+    background: var(--slate-100); border-radius: 10px; padding: 4px;
+  }
+  .mode-tab {
+    flex: 1; padding: 7px 10px; border-radius: 7px; border: none;
+    font-size: 12px; font-weight: 600; font-family: inherit;
+    cursor: pointer; transition: all .18s;
+    color: var(--slate-400); background: transparent;
+  }
+  .mode-tab.active {
+    background: #fff; color: var(--blue-dark);
+    box-shadow: 0 1px 6px rgba(96,165,250,0.18);
+  }
+
+  /* ── PASTE AREA ── */
+  .paste-area-wrap { position: relative; }
+  .paste-textarea {
+    width: 100%; min-height: 130px; max-height: 280px;
+    border: 2px dashed var(--blue-200); border-radius: var(--radius-sm);
+    padding: 1rem; font-size: 13px; font-family: 'Consolas', monospace;
+    color: var(--slate-800); background: var(--blue-50);
+    resize: vertical; outline: none; transition: border-color .2s;
+    line-height: 1.5;
+  }
+  .paste-textarea:focus { border-color: var(--blue-400); background: #EFF6FF; }
+  .paste-textarea::placeholder { color: var(--slate-400); font-style: italic; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; }
+  .paste-preview {
+    margin-top: .75rem;
+    background: var(--slate-50); border: 1px solid var(--slate-100);
+    border-radius: var(--radius-sm); overflow: hidden;
+  }
+  .paste-preview-header {
+    padding: 6px 12px; font-size: 11px; font-weight: 700;
+    color: var(--slate-400); text-transform: uppercase; letter-spacing: .05em;
+    background: var(--slate-100); display: flex; justify-content: space-between; align-items: center;
+  }
+  .paste-preview table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .paste-preview th { padding: 6px 10px; font-size: 10px; font-weight: 700; color: var(--slate-400); background: #F8FAFC; text-transform: uppercase; border-bottom: 1px solid var(--slate-100); white-space: nowrap; }
+  .paste-preview td { padding: 6px 10px; border-bottom: 1px solid var(--slate-50); color: var(--slate-600); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+  .paste-preview tr:last-child td { border-bottom: none; }
+
+  /* ── COPY OUTPUT ── */
+  .copy-output-box {
+    margin-top: 1rem; padding: 1rem;
+    background: #F0FDF4; border: 1px solid var(--green-border);
+    border-radius: var(--radius-sm);
+  }
+  .copy-output-label { font-size: 11px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .5rem; }
+  .copy-output-area {
+    width: 100%; min-height: 80px; max-height: 200px;
+    background: #fff; border: 1px solid var(--green-border);
+    border-radius: 8px; padding: .75rem; font-size: 12px;
+    font-family: 'Consolas', monospace; color: var(--slate-800);
+    resize: vertical; outline: none; line-height: 1.6;
+  }
+  .btn-copy-sheets {
+    background: linear-gradient(135deg, #34D399, #059669);
+    border-color: transparent; color: #fff;
+    box-shadow: 0 4px 14px rgba(52,211,153,0.3);
+  }
+  .btn-copy-sheets:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(52,211,153,0.4); background: linear-gradient(135deg, #34D399, #059669); }
 </style>
 </head>
 <body>
@@ -203,16 +267,34 @@
   <div class="card">
     <div class="card-header">
       <div class="step-dot" id="dot1">1</div>
-      <span class="card-title">Upload File Excel dari Pak Lontung</span>
+      <span class="card-title">Data Pelanggan (Belum Ada SLO/NIDI)</span>
     </div>
     <div class="card-body">
-      <div class="drop-zone" id="xlsxDrop" onclick="document.getElementById('xlsxIn').click()">
-        <div class="drop-zone-icon">📊</div>
-        <p>Klik atau drag file <strong>.xlsx</strong> di sini</p>
-        <span>Kolom: No, Nama, Alamat, Titik Koordinate, Daya</span>
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="tabUpload" onclick="switchInputMode('upload')">📂 Upload File Excel</button>
+        <button class="mode-tab" id="tabPaste" onclick="switchInputMode('paste')">📋 Paste dari Excel / Sheets</button>
       </div>
-      <input type="file" id="xlsxIn" accept=".xlsx,.xls">
-      <div id="xlsxReady" style="display:none;margin-top:.75rem"></div>
+      <div id="modeUpload">
+        <div class="drop-zone" id="xlsxDrop" onclick="document.getElementById('xlsxIn').click()">
+          <div class="drop-zone-icon">📊</div>
+          <p>Klik atau drag file <strong>.xlsx</strong> di sini</p>
+          <span>Kolom: No, Nama, Alamat, Titik Koordinate, Daya</span>
+        </div>
+        <input type="file" id="xlsxIn" accept=".xlsx,.xls">
+        <div id="xlsxReady" style="display:none;margin-top:.75rem"></div>
+      </div>
+      <div id="modePaste" style="display:none">
+        <p style="font-size:12px;color:var(--slate-400);margin-bottom:.5rem">Buka Excel atau Google Sheets lalu seleksi baris data (termasuk header) kemudian <strong>Ctrl+C</strong> dan klik di kolom bawah lalu <strong>Ctrl+V</strong></p>
+        <textarea class="paste-textarea" id="pasteInput" placeholder="Paste data di sini (Ctrl+V)&#10;&#10;Contoh kolom yang dikenali: No | Nama | Alamat | Titik Koordinate | Daya" onpaste="setTimeout(()=>parsePasteData(),0)" oninput="parsePasteData()"></textarea>
+        <div id="pastePreview" style="display:none" class="paste-preview">
+          <div class="paste-preview-header">
+            <span id="pastePreviewLabel">Preview</span>
+            <button class="btn btn-sm" onclick="clearPaste()" style="color:var(--slate-400);font-size:11px;padding:2px 8px;border-color:var(--slate-200)">Hapus</button>
+          </div>
+          <div style="overflow-x:auto"><table id="pastePreviewTable"></table></div>
+        </div>
+        <div id="pasteReady" style="display:none;margin-top:.75rem"></div>
+      </div>
     </div>
   </div>
 
@@ -281,8 +363,14 @@
       <p class="hint">💡 Klik angka nomor SLO/NIDI untuk edit manual jika perlu</p>
       <div class="divider"></div>
       <div class="actions">
-        <button class="btn btn-success" onclick="downloadExcel()">⬇️ Download Excel Lengkap</button>
+        <button class="btn btn-success" onclick="downloadExcel()" id="btnDownload">⬇️ Download Excel Lengkap</button>
+        <button class="btn btn-copy-sheets" onclick="copyToSheets()">📋 Copy untuk Sheets/Excel</button>
         <button class="btn" onclick="resetAll()">🔄 Mulai Ulang</button>
+      </div>
+      <div id="copyOutputBox" style="display:none" class="copy-output-box">
+        <div class="copy-output-label">✅ Siap di-paste ke Google Sheets / Excel</div>
+        <textarea class="copy-output-area" id="copyOutputArea" readonly onclick="this.select()"></textarea>
+        <p class="hint" style="margin-top:.4rem">👆 Klik teks di atas untuk select semua, lalu Ctrl+C → paste ke Sheets/Excel</p>
       </div>
     </div>
   </div>
@@ -293,15 +381,130 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 
 let xlsxFile = null, pdfFiles = [], excelData = [], results = [], unmatched = [];
 let ocrWorker = null;
-let processedFiles = new Set(); // PDFs already processed
-let hasProcessedOnce = false;   // whether we have results already
+let processedFiles = new Set();
+let hasProcessedOnce = false;
+let inputMode = 'upload'; // 'upload' | 'paste'
 
-// Initialize Tesseract worker (lazy — only when needed)
+// ── INPUT MODE SWITCH ──────────────────────────────────────────────
+function switchInputMode(mode) {
+  inputMode = mode;
+  document.getElementById('modeUpload').style.display = mode === 'upload' ? '' : 'none';
+  document.getElementById('modePaste').style.display = mode === 'paste' ? '' : 'none';
+  document.getElementById('tabUpload').classList.toggle('active', mode === 'upload');
+  document.getElementById('tabPaste').classList.toggle('active', mode === 'paste');
+  // Reset data ketika ganti mode
+  excelData = []; xlsxFile = null;
+  const dot1 = document.getElementById('dot1');
+  dot1.className = 'step-dot'; dot1.textContent = '1';
+  if (mode === 'upload') {
+    document.getElementById('xlsxReady').style.display = 'none';
+    document.getElementById('xlsxDrop').style.display = '';
+  } else {
+    document.getElementById('pasteReady').style.display = 'none';
+    document.getElementById('pastePreview').style.display = 'none';
+  }
+  checkReady();
+}
+
+// ── PASTE DATA PARSER ──────────────────────────────────────────────
+function parsePasteData() {
+  const raw = document.getElementById('pasteInput').value.trim();
+  if (!raw) { document.getElementById('pastePreview').style.display = 'none'; excelData = []; checkReady(); return; }
+
+  // Data dari Excel/Sheets: kolom dipisah TAB, baris dipisah newline
+  const rows = raw.split(/\r?\n/).filter(r => r.trim());
+  if (rows.length < 2) { excelData = []; checkReady(); return; }
+
+  const headers = rows[0].split('\t').map(h => h.trim());
+  const dataRows = rows.slice(1);
+
+  excelData = dataRows.map(row => {
+    const cols = row.split('\t');
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (cols[i] || '').trim(); });
+    return obj;
+  }).filter(r => Object.values(r).some(v => v)); // buang baris kosong
+
+  // Render preview table (max 5 baris)
+  const previewRows = dataRows.slice(0, 5);
+  const tableHTML = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${previewRows.map(row => {
+      const cols = row.split('\t');
+      return `<tr>${headers.map((_, i) => `<td>${(cols[i]||'').trim()}</td>`).join('')}</tr>`;
+    }).join('')}${dataRows.length > 5 ? `<tr><td colspan="${headers.length}" style="color:var(--slate-400);font-style:italic;text-align:center">... dan ${dataRows.length - 5} baris lainnya</td></tr>` : ''}</tbody>`;
+
+  document.getElementById('pastePreviewTable').innerHTML = tableHTML;
+  document.getElementById('pastePreviewLabel').textContent = `${excelData.length} baris data terdeteksi`;
+  document.getElementById('pastePreview').style.display = '';
+
+  if (excelData.length > 0) {
+    document.getElementById('pasteReady').style.display = 'block';
+    document.getElementById('pasteReady').innerHTML = `<div class="file-ready">✅ <strong>${excelData.length} data pelanggan</strong> siap diproses dari paste</div>`;
+    const dot1 = document.getElementById('dot1');
+    dot1.classList.add('done'); dot1.textContent = '✓';
+  }
+  checkReady();
+}
+
+function clearPaste() {
+  document.getElementById('pasteInput').value = '';
+  document.getElementById('pastePreview').style.display = 'none';
+  document.getElementById('pasteReady').style.display = 'none';
+  excelData = [];
+  const dot1 = document.getElementById('dot1');
+  dot1.className = 'step-dot'; dot1.textContent = '1';
+  checkReady();
+}
+
+// ── COPY TO SHEETS ─────────────────────────────────────────────────
+function copyToSheets() {
+  if (!results.length) return;
+
+  // Kumpulkan semua header dari data asli
+  const headers = Object.keys(results[0]).filter(k => !k.startsWith('_'));
+
+  // Cek apakah sudah ada kolom SLO/NIDI
+  const hasSloCol = headers.some(h => /slo/i.test(h));
+  const hasNidiCol = headers.some(h => /nidi/i.test(h));
+  const finalHeaders = [...headers];
+  if (!hasSloCol) finalHeaders.push('SLO');
+  if (!hasNidiCol) finalHeaders.push('NIDI');
+
+  const sloKey = hasSloCol ? headers.find(h => /slo/i.test(h)) : 'SLO';
+  const nidiKey = hasNidiCol ? headers.find(h => /nidi/i.test(h)) : 'NIDI';
+
+  const lines = [finalHeaders.join('\t')];
+  results.forEach(r => {
+    const row = finalHeaders.map(h => {
+      if (h === 'SLO' && !hasSloCol) return r._SLO || '';
+      if (h === 'NIDI' && !hasNidiCol) return r._NIDI || '';
+      if (h === sloKey && hasSloCol) return r._SLO || r[h] || '';
+      if (h === nidiKey && hasNidiCol) return r._NIDI || r[h] || '';
+      return r[h] !== undefined ? r[h] : '';
+    });
+    lines.push(row.join('\t'));
+  });
+
+  const tsv = lines.join('\n');
+  document.getElementById('copyOutputArea').value = tsv;
+  document.getElementById('copyOutputBox').style.display = '';
+  document.getElementById('copyOutputBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Auto copy ke clipboard
+  navigator.clipboard.writeText(tsv).then(() => {
+    showToast('✅ Data sudah di-copy! Tinggal Ctrl+V di Sheets/Excel', 'success');
+    document.getElementById('copyOutputArea').select();
+  }).catch(() => {
+    document.getElementById('copyOutputArea').select();
+    document.execCommand('copy');
+    showToast('📋 Data di-copy! Paste ke Sheets/Excel sekarang', 'success');
+  });
+}
+
+// Initialize Tesseract worker
 async function getOcrWorker() {
   if (ocrWorker) return ocrWorker;
-  ocrWorker = await Tesseract.createWorker('ind+eng', 1, {
-    logger: () => {}
-  });
+  ocrWorker = await Tesseract.createWorker('ind+eng', 1, { logger: () => {} });
   return ocrWorker;
 }
 
@@ -367,20 +570,7 @@ function renderPdfList() {
 }
 
 function removePdf(i) { pdfFiles.splice(i, 1); renderPdfList(); checkReady(); }
-function checkReady() { document.getElementById('btnProses').disabled = !(xlsxFile && pdfFiles.length && excelData.length); }
-
-function updateProcessBtn() {
-  const newPdfs = pdfFiles.filter(f => !processedFiles.has(f.name));
-  const btn = document.getElementById('btnProses');
-  const hint = document.getElementById('newPdfHint');
-  if (!btn.disabled && hasProcessedOnce && newPdfs.length > 0) {
-    btn.innerHTML = `➕ Proses ${newPdfs.length} PDF Baru`;
-    if (hint) hint.style.display = 'block';
-  } else {
-    btn.innerHTML = '✨ Ekstrak & Cocokkan Otomatis';
-    if (hint) hint.style.display = 'none';
-  }
-}
+function checkReady() { document.getElementById('btnProses').disabled = !(pdfFiles.length && excelData.length); }
 
 function updateProcessBtn() {
   const newPdfs = pdfFiles.filter(f => !processedFiles.has(f.name));
@@ -396,7 +586,6 @@ function updateProcessBtn() {
 }
 
 // ── TEXT EXTRACTION ──────────────────────────────────────────────
-// Step 1: try digital text from pdf.js
 async function extractTextDigital(file) {
   const ab = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
@@ -409,7 +598,6 @@ async function extractTextDigital(file) {
   return { text, pdf, ab };
 }
 
-// Step 2: if digital text is too short, do OCR on each page image
 async function extractTextOCR(pdf, log) {
   log('  🔍 PDF scan terdeteksi — memulai OCR... (bisa 10–30 detik)', 'lwarn');
   const worker = await getOcrWorker();
@@ -417,7 +605,6 @@ async function extractTextOCR(pdf, log) {
   for (let i = 1; i <= pdf.numPages; i++) {
     log(`  📷 OCR halaman ${i}/${pdf.numPages}...`, 'lwarn');
     const page = await pdf.getPage(i);
-    // Render page to canvas at 2x scale for better OCR accuracy
     const scale = 2.5;
     const viewport = page.getViewport({ scale });
     const canvas = document.createElement('canvas');
@@ -432,20 +619,14 @@ async function extractTextOCR(pdf, log) {
   return fullText;
 }
 
-// Decide whether text is "real" digital text or just noise from a scan
 function isTextEmpty(text) {
-  // A real digital PDF should have meaningful word characters
   const meaningful = (text.match(/[a-zA-Z0-9]{3,}/g) || []).length;
-  return meaningful < 15; // fewer than 15 real tokens = likely a scan
+  return meaningful < 15;
 }
 
-// Main extractor: digital first, OCR fallback
 async function extractText(file, log) {
   const { text, pdf } = await extractTextDigital(file);
-  if (!isTextEmpty(text)) {
-    return { text, isOcr: false };
-  }
-  // Fallback to OCR
+  if (!isTextEmpty(text)) return { text, isOcr: false };
   const ocrText = await extractTextOCR(pdf, log);
   return { text: ocrText, isOcr: true };
 }
@@ -464,8 +645,6 @@ function extractNIDI(text) {
 }
 
 function extractOwner(text) {
-  // Capture a generous block after 'Nama ...:' to handle multi-line names like
-  // 'PT VGREEN ... (Planet Ban Raya Caringin)' where parentheses may span lines
   const ps = [
     /Nama\s+[Pp]emilik\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
     /Nama\s+[Pp]emilik\s+[Ii]nstalasi\s*:[\s\S]{0,5}([\s\S]{5,300}?)(?:Nomor|Alamat|Titik|No\.|Daya|Tanggal)/i,
@@ -505,7 +684,6 @@ function bestMatch(name, names) {
 
 // ── MAIN PROCESS ─────────────────────────────────────────────────
 async function processAll() {
-  // Only process PDFs not yet processed — preserves existing results
   const toProcess = pdfFiles.filter(f => !processedFiles.has(f.name));
   if (toProcess.length === 0) { showToast('Semua PDF sudah diproses!', 'info'); return; }
 
@@ -519,6 +697,8 @@ async function processAll() {
   }
   logEl.style.display = 'block';
   document.getElementById('progressWrap').style.display = 'block';
+  // Reset copy output box kalau ada proses baru
+  document.getElementById('copyOutputBox').style.display = 'none';
 
   const log = (msg, cls = '') => { logEl.innerHTML += `<span class="${cls}">${msg}</span><br>`; logEl.scrollTop = logEl.scrollHeight; };
   const prog = (p, lbl) => { document.getElementById('progressBar').style.width = p + '%'; document.getElementById('progressLabel').textContent = lbl; };
@@ -568,7 +748,6 @@ function renderResult(excelNames) {
   const names = excelNames || excelData.map(r => getNameKey(r));
   const slo = results.filter(r => r._SLO).length, nidi = results.filter(r => r._NIDI).length;
   const needManual = unmatched.filter(u => u.number);
-  // OCR-failed: no number detected at all, need user to type it
   const needInput = unmatched.filter(u => !u.number);
 
   document.getElementById('summaryRow').innerHTML = `
@@ -591,7 +770,6 @@ function renderResult(excelNames) {
   const ub = document.getElementById('unmatchedBox');
   let unmatchedHTML = '';
 
-  // Section 1: number found but no Excel match — pick from dropdown
   if (needManual.length) {
     unmatchedHTML += `<div class="unmatched-box">
       <div class="unmatched-title">⚠️ ${needManual.length} PDF nomor terbaca tapi belum tercocokkan — pilih nama yang sesuai:</div>
@@ -610,7 +788,6 @@ function renderResult(excelNames) {
     </div>`;
   }
 
-  // Section 2: number NOT found (OCR failed or unreadable scan) — user types number + picks name
   if (needInput.length) {
     unmatchedHTML += `<div class="unmatched-box" style="margin-top:.75rem;background:#FEF2F2;border-color:#FECACA;">
       <div class="unmatched-title" style="color:#DC2626;">✏️ ${needInput.length} PDF nomornya tidak terbaca — ketik manual:</div>
@@ -635,6 +812,9 @@ function renderResult(excelNames) {
   ub.innerHTML = unmatchedHTML;
   document.getElementById('resultCard').style.display = 'block';
   document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+
+  // Tombol download hanya muncul kalau ada file Excel asli (mode upload)
+  document.getElementById('btnDownload').style.display = xlsxFile ? '' : 'none';
 }
 
 function applyManual(ui) {
@@ -660,6 +840,7 @@ function applyManualInput(inputIdx, elIdx) {
 }
 
 function downloadExcel() {
+  if (!xlsxFile) return;
   const r = new FileReader();
   r.onload = async e => {
     const wb = XLSX.read(e.target.result, { type: 'array' });
@@ -687,25 +868,17 @@ function downloadExcel() {
     const wbout = XLSX.write(newWb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
-    // Coba File System Access API (pilih lokasi simpan)
     if ('showSaveFilePicker' in window) {
       try {
         const fh = await window.showSaveFilePicker({
-          suggestedName: fileName,
-          startIn: 'downloads',
+          suggestedName: fileName, startIn: 'downloads',
           types: [{ description: 'Excel File', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }]
         });
         const writable = await fh.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        return;
-      } catch (e) {
-        if (e.name === 'AbortError') return; // user cancel
-        // Fallback jika browser tidak support atau error
-      }
+        await writable.write(blob); await writable.close(); return;
+      } catch (e) { if (e.name === 'AbortError') return; }
     }
 
-    // Fallback: auto-download
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = fileName; a.click();
@@ -715,13 +888,21 @@ function downloadExcel() {
 }
 
 function resetAll() {
-  xlsxFile = null; pdfFiles = []; excelData = []; results = []; unmatched = []; processedFiles = new Set(); hasProcessedOnce = false;
+  xlsxFile = null; pdfFiles = []; excelData = []; results = []; unmatched = []; processedFiles = new Set(); hasProcessedOnce = false; inputMode = 'upload';
   document.getElementById('xlsxDrop').style.display = '';
   document.getElementById('xlsxReady').style.display = 'none';
+  document.getElementById('modeUpload').style.display = '';
+  document.getElementById('modePaste').style.display = 'none';
+  document.getElementById('tabUpload').classList.add('active');
+  document.getElementById('tabPaste').classList.remove('active');
+  document.getElementById('pasteInput').value = '';
+  document.getElementById('pastePreview').style.display = 'none';
+  document.getElementById('pasteReady').style.display = 'none';
   document.getElementById('pdfList').innerHTML = '';
   document.getElementById('logBox').style.display = 'none';
   document.getElementById('progressWrap').style.display = 'none';
   document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('copyOutputBox').style.display = 'none';
   document.getElementById('xlsxIn').value = '';
   document.getElementById('pdfIn').value = '';
   ['dot1','dot2'].forEach(id => { const d = document.getElementById(id); d.className = 'step-dot'; d.textContent = id.slice(-1); });
