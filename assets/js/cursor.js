@@ -83,7 +83,6 @@
   let trailIdx = 0, lastTrail = 0;
   let mouseX = -100, mouseY = -100;
   let curX   = -100, curY   = -100;
-  let fromIframe = false;
 
   function setHover(on) {
     if (on) {
@@ -95,18 +94,11 @@
     }
   }
 
-  function updateDot(x, y, isIframe) {
-    fromIframe = !!isIframe;
+  function updatePos(x, y) {
     mouseX = x;
     mouseY = y;
     dot.style.left = x + 'px';
     dot.style.top  = y + 'px';
-    if (fromIframe) {
-      curX = x;
-      curY = y;
-      cursor.style.left = x + 'px';
-      cursor.style.top  = y + 'px';
-    }
   }
 
   function spawnTrail(x, y) {
@@ -125,7 +117,7 @@
 
   // Mouse di parent page
   document.addEventListener('mousemove', (e) => {
-    updateDot(e.clientX, e.clientY, false);
+    updatePos(e.clientX, e.clientY);
     spawnTrail(e.clientX, e.clientY);
   });
 
@@ -133,10 +125,8 @@
   window.addEventListener('message', (e) => {
     if (!e.data || !e.data._bridge) return;
     if (e.data.type === 'iframe-mousemove') {
-      updateDot(e.data.x, e.data.y, true);
+      updatePos(e.data.x, e.data.y);
       spawnTrail(e.data.x, e.data.y);
-    } else if (e.data.type === 'iframe-mouseleave') {
-      fromIframe = false;
     } else if (e.data.type === 'iframe-hover-on') {
       setHover(true);
     } else if (e.data.type === 'iframe-hover-off') {
@@ -144,14 +134,12 @@
     }
   });
 
-  // Smooth ring — hanya saat di parent
+  // Smooth ring follow — selalu aktif, baik dari parent maupun iframe
   (function animate() {
-    if (!fromIframe) {
-      curX += (mouseX - curX) * 0.12;
-      curY += (mouseY - curY) * 0.12;
-      cursor.style.left = curX + 'px';
-      cursor.style.top  = curY + 'px';
-    }
+    curX += (mouseX - curX) * 0.12;
+    curY += (mouseY - curY) * 0.12;
+    cursor.style.left = curX + 'px';
+    cursor.style.top  = curY + 'px';
     requestAnimationFrame(animate);
   })();
 
