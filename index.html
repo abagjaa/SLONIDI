@@ -389,8 +389,8 @@
 </script>
 
 <style>
-/* ── HIDE DEFAULT CURSOR ── */
-*, *::before, *::after { cursor: none !important; }
+/* ── HIDE DEFAULT CURSOR — semua level ── */
+html, body, *, *::before, *::after { cursor: none !important; }
 
 /* ── CUSTOM CURSOR RING ── */
 #customCursor {
@@ -400,9 +400,10 @@
   border-radius: 50%;
   pointer-events: none;
   z-index: 99999;
+  left: -100px; top: -100px;
   transform: translate(-50%, -50%);
   transition: width .2s, height .2s, border-color .2s, background .2s;
-  mix-blend-mode: normal;
+  will-change: left, top;
 }
 #customCursor.cursor-hover {
   width: 52px; height: 52px;
@@ -418,8 +419,10 @@
   border-radius: 50%;
   pointer-events: none;
   z-index: 100000;
+  left: -100px; top: -100px;
   transform: translate(-50%, -50%);
-  transition: width .15s, height .15s, background .15s;
+  transition: width .1s, height .1s, background .1s;
+  will-change: left, top;
 }
 #customCursorDot.dot-hover {
   width: 10px; height: 10px;
@@ -456,8 +459,8 @@
 
 /* Hide cursor effects on mobile/touch */
 @media (hover: none) and (pointer: coarse) {
-  #customCursor, #customCursorDot { display: none; }
-  *, *::before, *::after { cursor: auto !important; }
+  #customCursor, #customCursorDot { display: none !important; }
+  html, body, *, *::before, *::after { cursor: auto !important; }
 }
 </style>
 </body>
