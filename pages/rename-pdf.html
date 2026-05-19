@@ -156,6 +156,40 @@
     .modal-nav { display:flex; align-items:center; gap:8px; justify-content:space-between; padding:.75rem 0; border-top:1px solid var(--slate-100); margin-top:.25rem; }
     .modal-nav-counter { font-size:12px; color:var(--slate-400); font-weight:600; }
 
+    /* ── RENAME MODE SELECTOR ── */
+    .rename-mode-selector {
+      display:flex; gap:10px; margin-bottom:1.25rem; flex-wrap:wrap;
+    }
+    .rename-mode-btn {
+      flex:1; min-width:140px;
+      display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+      padding:.875rem 1rem; border-radius:var(--radius-sm);
+      border:2px solid var(--slate-200); background:#fff;
+      cursor:pointer; font-family:inherit; transition:all .18s;
+      color:var(--slate-600); text-align:left;
+    }
+    .rename-mode-btn:hover {
+      border-color:var(--blue-300); background:var(--blue-50);
+      transform:translateY(-2px); box-shadow:0 4px 16px rgba(96,165,250,0.15);
+    }
+    .rename-mode-btn.active {
+      border-color:var(--blue-400); background:var(--blue-50);
+      color:var(--blue-dark); box-shadow:0 4px 16px rgba(96,165,250,0.2);
+    }
+    .rename-mode-btn.active-replace {
+      border-color:var(--purple); background:var(--purple-light);
+      color:var(--purple); box-shadow:0 4px 16px rgba(124,58,237,0.18);
+    }
+    .rename-mode-icon { font-size:22px; line-height:1; }
+    .rename-mode-label { font-size:13px; font-weight:700; }
+    .rename-mode-desc { font-size:10px; font-weight:500; opacity:.75; line-height:1.4; }
+    .rename-mode-example {
+      font-size:10px; font-family:'Consolas',monospace;
+      padding:4px 8px; border-radius:5px; margin-top:2px;
+      background:rgba(0,0,0,0.04); color:inherit; opacity:.8;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+    }
+
     /* ── UPLOAD MODE SELECTOR ── */
     .upload-mode-selector {
       display:flex; gap:10px; margin-bottom:1rem; flex-wrap:wrap;
@@ -274,6 +308,25 @@
       <span class="card-title">Ekstrak & Generate Nama Baru</span>
     </div>
     <div class="card-body">
+      <!-- Pilih mode rename -->
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:12px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.6rem;">Format Nama File Baru</div>
+        <div class="rename-mode-selector">
+          <button class="rename-mode-btn active" id="rmodeBtnAppend" onclick="setRenameMode('append')">
+            <span class="rename-mode-icon">📎</span>
+            <span class="rename-mode-label">Tambahkan Nama</span>
+            <span class="rename-mode-desc">Nama asli dipertahankan, nama dari sertifikat ditambahkan di belakang</span>
+            <span class="rename-mode-example" id="exampleAppend">ContohFile.pdf → ContohFile (Budi Santoso).pdf</span>
+          </button>
+          <button class="rename-mode-btn" id="rmodeBtnReplace" onclick="setRenameMode('replace')">
+            <span class="rename-mode-icon">🔄</span>
+            <span class="rename-mode-label">Ganti Total</span>
+            <span class="rename-mode-desc">Nama file diganti sepenuhnya sesuai nama di dalam sertifikat</span>
+            <span class="rename-mode-example" id="exampleReplace">ContohFile.pdf → Budi Santoso.pdf</span>
+          </button>
+        </div>
+      </div>
+
       <button class="btn btn-primary" id="btnProses" disabled onclick="processAll()">✨ Proses Otomatis</button>
       <p class="hint" id="newFileHint" style="display:none;margin-top:.5rem">📎 Ada PDF baru — klik proses untuk melanjutkan tanpa mengulang dari awal.</p>
       <div id="progressWrap" style="display:none" class="progress-wrap">
@@ -481,6 +534,15 @@ function resetZoom() { setZoom(1.0); }
 // ── UPLOAD MODE ───────────────────────────────────────────────────
 let uploadMode = 'pdf'; // 'pdf' | 'zip' | 'folder'
 
+// ── RENAME MODE ───────────────────────────────────────────────────
+let renameMode = 'append'; // 'append' | 'replace'
+
+function setRenameMode(mode) {
+  renameMode = mode;
+  document.getElementById('rmodeBtnAppend').className  = 'rename-mode-btn' + (mode === 'append'  ? ' active'         : '');
+  document.getElementById('rmodeBtnReplace').className = 'rename-mode-btn' + (mode === 'replace' ? ' active-replace'  : '');
+}
+
 function setUploadMode(mode) {
   uploadMode = mode;
   document.getElementById('modeBtnPdf').className    = 'mode-btn' + (mode==='pdf'    ? ' active'        : '');
@@ -621,7 +683,9 @@ function updateProcessBtn() {
 function buildName(oldName, nama) {
   const noExt = oldName.replace(/\.pdf$/i, '');
   const clean = sanitize(nama || '');
-  return clean ? `${noExt} (${clean})` : noExt;
+  if (!clean) return noExt; // tidak ada nama dari sertifikat → pakai nama lama
+  if (renameMode === 'replace') return clean;
+  return `${noExt} (${clean})`; // mode 'append' (default)
 }
 function sanitize(s) {
   return (s || '').replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim();
