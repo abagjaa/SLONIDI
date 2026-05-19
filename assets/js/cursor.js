@@ -16,13 +16,35 @@
       z-index: 99999;
       left: -100px; top: -100px;
       transform: translate(-50%, -50%);
-      transition: width .2s, height .2s, border-color .2s, background .2s;
+      transition: width .2s, height .2s, border-color .2s, background .2s, opacity .3s;
       will-change: left, top;
     }
     #customCursor.cursor-hover {
       width: 52px; height: 52px;
       border-color: rgba(167,139,250,0.9);
       background: rgba(167,139,250,0.08);
+    }
+    #customCursor.cursor-hidden,
+    #customCursorDot.cursor-hidden {
+      opacity: 0 !important;
+    }
+
+    /* AFK: pulse animation pada ring */
+    #customCursor.cursor-afk {
+      animation: afkPulse 1.4s ease-in-out infinite;
+      border-color: rgba(167,139,250,0.7);
+    }
+    #customCursorDot.cursor-afk {
+      animation: afkDotPulse 1.4s ease-in-out infinite;
+      background: #A78BFA;
+    }
+    @keyframes afkPulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+      50%       { transform: translate(-50%, -50%) scale(1.5); opacity: 0.4; }
+    }
+    @keyframes afkDotPulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+      50%       { transform: translate(-50%, -50%) scale(0.4); opacity: 0.3; }
     }
 
     #customCursorDot {
@@ -34,7 +56,7 @@
       z-index: 100000;
       left: -100px; top: -100px;
       transform: translate(-50%, -50%);
-      transition: width .1s, height .1s, background .1s;
+      transition: width .1s, height .1s, background .1s, opacity .3s;
       will-change: left, top;
     }
     #customCursorDot.dot-hover {
@@ -83,7 +105,11 @@
   let trailIdx = 0, lastTrail = 0;
   let mouseX = -100, mouseY = -100;
   let curX   = -100, curY   = -100;
+  let afkTimer = null;
+  let isAfk = false;
+  const AFK_DELAY = 3000; // 3 detik tidak gerak = AFK
 
+  // ── HELPERS ──
   function setHover(on) {
     if (on) {
       cursor.classList.add('cursor-hover');
@@ -92,6 +118,33 @@
       cursor.classList.remove('cursor-hover');
       dot.classList.remove('dot-hover');
     }
+  }
+
+  function setAfk(on) {
+    isAfk = on;
+    if (on) {
+      cursor.classList.add('cursor-afk');
+      dot.classList.add('cursor-afk');
+    } else {
+      cursor.classList.remove('cursor-afk');
+      dot.classList.remove('cursor-afk');
+    }
+  }
+
+  function setVisible(on) {
+    if (on) {
+      cursor.classList.remove('cursor-hidden');
+      dot.classList.remove('cursor-hidden');
+    } else {
+      cursor.classList.add('cursor-hidden');
+      dot.classList.add('cursor-hidden');
+    }
+  }
+
+  function resetAfkTimer() {
+    if (isAfk) setAfk(false);
+    clearTimeout(afkTimer);
+    afkTimer = setTimeout(() => setAfk(true), AFK_DELAY);
   }
 
   function updatePos(x, y) {
@@ -115,18 +168,40 @@
     setTimeout(() => el.remove(), 900);
   }
 
-  // Mouse di parent page
+  // ── MOUSE EVENTS (parent) ──
   document.addEventListener('mousemove', (e) => {
+    setVisible(true);
+    resetAfkTimer();
     updatePos(e.clientX, e.clientY);
     spawnTrail(e.clientX, e.clientY);
   });
 
-  // Terima pesan dari iframe
+  // Cursor keluar dari window → sembunyikan
+  document.addEventListener('mouseleave', () => {
+    setVisible(false);
+    setAfk(false);
+    clearTimeout(afkTimer);
+  });
+
+  // Cursor masuk ke window → tampilkan
+  document.addEventListener('mouseenter', () => {
+    setVisible(true);
+    resetAfkTimer();
+  });
+
+  // ── PESAN DARI IFRAME ──
   window.addEventListener('message', (e) => {
     if (!e.data || !e.data._bridge) return;
     if (e.data.type === 'iframe-mousemove') {
+      setVisible(true);
+      resetAfkTimer();
       updatePos(e.data.x, e.data.y);
       spawnTrail(e.data.x, e.data.y);
+    } else if (e.data.type === 'iframe-mouseleave') {
+      // Mouse keluar dari iframe ke luar window
+      setVisible(false);
+      setAfk(false);
+      clearTimeout(afkTimer);
     } else if (e.data.type === 'iframe-hover-on') {
       setHover(true);
     } else if (e.data.type === 'iframe-hover-off') {
@@ -134,7 +209,7 @@
     }
   });
 
-  // Smooth ring follow — selalu aktif, baik dari parent maupun iframe
+  // ── SMOOTH RING ──
   (function animate() {
     curX += (mouseX - curX) * 0.12;
     curY += (mouseY - curY) * 0.12;
@@ -143,7 +218,7 @@
     requestAnimationFrame(animate);
   })();
 
-  // Hover scale di parent page
+  // ── HOVER BIND (parent) ──
   function bindHover() {
     document.querySelectorAll('a, button, .nav-item, .tool-card, [onclick], label, select, input, textarea').forEach(el => {
       if (el._cursorBound) return;
@@ -155,7 +230,7 @@
   bindHover();
   setInterval(bindHover, 2000);
 
-  // Click burst
+  // ── CLICK BURST ──
   const burstEmojis = ['💥','⭐','✨','💙','💜','🌟','💫','🎀','🩵'];
   document.addEventListener('click', (e) => {
     const count = 10 + Math.floor(Math.random() * 6);
@@ -175,5 +250,8 @@
       setTimeout(() => el.remove(), 700);
     }
   });
+
+  // Mulai timer AFK dari awal
+  resetAfkTimer();
 
 })();
