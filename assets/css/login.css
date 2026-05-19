@@ -15,9 +15,82 @@ body {
   position: absolute; border-radius: 50%;
   filter: blur(60px); opacity: 0.35; pointer-events: none;
 }
-.blob-1 { width: 400px; height: 400px; background: #BFDBFE; top: -100px; left: -100px; }
-.blob-2 { width: 350px; height: 350px; background: #DDD6FE; bottom: -80px; right: -80px; }
-.blob-3 { width: 200px; height: 200px; background: #BAE6FD; top: 40%; left: 10%; }
+.blob-1 { width: 400px; height: 400px; background: #BFDBFE; top: -100px; left: -100px; animation: blobDrift1 8s ease-in-out infinite; }
+.blob-2 { width: 350px; height: 350px; background: #DDD6FE; bottom: -80px; right: -80px; animation: blobDrift2 10s ease-in-out infinite; }
+.blob-3 { width: 200px; height: 200px; background: #BAE6FD; top: 40%; left: 10%; animation: blobDrift3 7s ease-in-out infinite; }
+
+@keyframes blobDrift1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(30px, 20px) scale(1.05); }
+  66%       { transform: translate(-10px, 30px) scale(0.97); }
+}
+@keyframes blobDrift2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40%       { transform: translate(-25px, -15px) scale(1.06); }
+  70%       { transform: translate(10px, -25px) scale(0.98); }
+}
+@keyframes blobDrift3 {
+  0%, 100% { transform: translate(0, 0); }
+  50%       { transform: translate(20px, -20px); }
+}
+
+/* Floating hearts */
+.login-hearts { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.lheart {
+  position: absolute;
+  font-size: 18px;
+  opacity: 0.25;
+  animation: lheartFloat ease-in-out infinite;
+}
+.lheart.lh1 { bottom: 8%;  left: 6%;   font-size: 20px; animation-duration: 3.4s; animation-delay: 0s; }
+.lheart.lh2 { bottom: 18%; left: 18%;  font-size: 14px; animation-duration: 4.1s; animation-delay: 0.7s; }
+.lheart.lh3 { bottom: 6%;  left: 42%;  font-size: 22px; animation-duration: 3.7s; animation-delay: 1.5s; }
+.lheart.lh4 { bottom: 28%; right: 12%; font-size: 16px; animation-duration: 2.9s; animation-delay: 0.3s; }
+.lheart.lh5 { bottom: 10%; right: 4%;  font-size: 20px; animation-duration: 4.0s; animation-delay: 1.1s; }
+.lheart.lh6 { top: 12%;    right: 20%; font-size: 12px; animation-duration: 5.0s; animation-delay: 2.0s; }
+.lheart.lh7 { top: 20%;    left: 8%;   font-size: 10px; animation-duration: 4.5s; animation-delay: 0.5s; }
+@keyframes lheartFloat {
+  0%, 100% { transform: translateY(0) rotate(-10deg); }
+  50%       { transform: translateY(-16px) rotate(10deg); }
+}
+
+/* Floating sparkles */
+.sparkles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.sparkle {
+  position: absolute;
+  font-size: 14px;
+  opacity: 0;
+  animation: sparkleTwinkle ease-in-out infinite;
+}
+.sparkle.s1 { top: 15%; left: 25%;  animation-duration: 2.8s; animation-delay: 0s; }
+.sparkle.s2 { top: 30%; right: 20%; animation-duration: 3.5s; animation-delay: 1.2s; }
+.sparkle.s3 { top: 60%; left: 15%;  animation-duration: 4.0s; animation-delay: 0.6s; }
+.sparkle.s4 { top: 70%; right: 10%; animation-duration: 2.5s; animation-delay: 1.8s; }
+.sparkle.s5 { top: 10%; right: 35%; animation-duration: 3.2s; animation-delay: 2.4s; }
+@keyframes sparkleTwinkle {
+  0%, 100% { opacity: 0;    transform: scale(0.5) rotate(0deg); }
+  50%       { opacity: 0.6; transform: scale(1.2) rotate(180deg); }
+}
+
+/* Card entrance animation */
+@keyframes cardSlideUp {
+  0%   { opacity: 0; transform: translateY(30px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Logo pulse animation */
+@keyframes logoPulse {
+  0%, 100% { box-shadow: 0 8px 24px rgba(96,165,250,0.3); }
+  50%       { box-shadow: 0 8px 32px rgba(167,139,250,0.5); }
+}
+
+/* Hearts emoji wiggle */
+@keyframes heartsWiggle {
+  0%, 100% { transform: scale(1) rotate(-5deg); }
+  25%       { transform: scale(1.15) rotate(5deg); }
+  50%       { transform: scale(1.05) rotate(-3deg); }
+  75%       { transform: scale(1.12) rotate(4deg); }
+}
 
 .card {
   background: rgba(255,255,255,0.85);
@@ -29,6 +102,7 @@ body {
   box-shadow: 0 8px 40px rgba(96,165,250,0.12), 0 2px 8px rgba(0,0,0,0.04);
   position: relative; z-index: 1;
   text-align: center;
+  animation: cardSlideUp 0.6s cubic-bezier(.34,1.56,.64,1) both;
 }
 
 .logo {
@@ -38,6 +112,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   margin: 0 auto 1.5rem;
   box-shadow: 0 8px 24px rgba(96,165,250,0.3);
+  animation: logoPulse 3s ease-in-out infinite;
 }
 .logo span { color: #fff; font-weight: 700; font-size: 18px; letter-spacing: -1px; }
 
@@ -83,7 +158,7 @@ h1 { font-size: 22px; font-weight: 700; color: #1E3A5F; margin-bottom: 4px; }
 }
 
 .footer-note { font-size: 11px; color: #CBD5E1; margin-top: 1.5rem; }
-.hearts { font-size: 18px; margin-bottom: .5rem; }
+.hearts { font-size: 18px; margin-bottom: .5rem; display: inline-block; animation: heartsWiggle 2s ease-in-out infinite; }
 
 @media (max-width: 480px) {
   .card { padding: 2rem 1.5rem; border-radius: 20px; margin: 1rem; }
