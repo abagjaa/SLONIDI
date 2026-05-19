@@ -27,9 +27,9 @@
     #customCursor.cursor-hidden,
     #customCursorDot.cursor-hidden {
       opacity: 0 !important;
+      animation: none !important;
     }
 
-    /* AFK: pulse animation pada ring */
     #customCursor.cursor-afk {
       animation: afkPulse 1.4s ease-in-out infinite;
       border-color: rgba(167,139,250,0.7);
@@ -107,38 +107,29 @@
   let curX   = -100, curY   = -100;
   let afkTimer = null;
   let isAfk = false;
-  const AFK_DELAY = 3000; // 3 detik tidak gerak = AFK
+  const AFK_DELAY = 3000;
 
   // ── HELPERS ──
   function setHover(on) {
-    if (on) {
-      cursor.classList.add('cursor-hover');
-      dot.classList.add('dot-hover');
-    } else {
-      cursor.classList.remove('cursor-hover');
-      dot.classList.remove('dot-hover');
-    }
+    cursor.classList.toggle('cursor-hover', on);
+    dot.classList.toggle('dot-hover', on);
   }
 
   function setAfk(on) {
     isAfk = on;
-    if (on) {
-      cursor.classList.add('cursor-afk');
-      dot.classList.add('cursor-afk');
-    } else {
-      cursor.classList.remove('cursor-afk');
-      dot.classList.remove('cursor-afk');
-    }
+    cursor.classList.toggle('cursor-afk', on);
+    dot.classList.toggle('cursor-afk', on);
   }
 
   function setVisible(on) {
-    if (on) {
-      cursor.classList.remove('cursor-hidden');
-      dot.classList.remove('cursor-hidden');
-    } else {
-      cursor.classList.add('cursor-hidden');
-      dot.classList.add('cursor-hidden');
-    }
+    cursor.classList.toggle('cursor-hidden', !on);
+    dot.classList.toggle('cursor-hidden', !on);
+  }
+
+  function hide() {
+    setVisible(false);
+    setAfk(false);
+    clearTimeout(afkTimer);
   }
 
   function resetAfkTimer() {
@@ -176,17 +167,22 @@
     spawnTrail(e.clientX, e.clientY);
   });
 
-  // Cursor keluar dari window → sembunyikan
-  document.addEventListener('mouseleave', () => {
-    setVisible(false);
-    setAfk(false);
-    clearTimeout(afkTimer);
-  });
-
-  // Cursor masuk ke window → tampilkan
+  document.addEventListener('mouseleave', () => hide());
   document.addEventListener('mouseenter', () => {
     setVisible(true);
     resetAfkTimer();
+  });
+
+  // ── SEMBUNYIKAN SAAT WINDOW KEHILANGAN FOKUS ──
+  // Ini mencakup: buka dialog file upload, alt-tab, klik di luar browser
+  window.addEventListener('blur', () => hide());
+  window.addEventListener('focus', () => {
+    // Jangan langsung tampil — tunggu mousemove dulu agar posisi akurat
+  });
+
+  // Jaga-jaga: visibility change (tab disembunyikan)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) hide();
   });
 
   // ── PESAN DARI IFRAME ──
@@ -198,10 +194,7 @@
       updatePos(e.data.x, e.data.y);
       spawnTrail(e.data.x, e.data.y);
     } else if (e.data.type === 'iframe-mouseleave') {
-      // Mouse keluar dari iframe ke luar window
-      setVisible(false);
-      setAfk(false);
-      clearTimeout(afkTimer);
+      hide();
     } else if (e.data.type === 'iframe-hover-on') {
       setHover(true);
     } else if (e.data.type === 'iframe-hover-off') {
@@ -251,7 +244,7 @@
     }
   });
 
-  // Mulai timer AFK dari awal
+  // Mulai timer AFK
   resetAfkTimer();
 
 })();
