@@ -44,44 +44,61 @@ function doLoginTransition(callback) {
   overlay.style.cssText = `
     position: fixed; inset: 0; z-index: 9999;
     background: linear-gradient(135deg, #60A5FA, #818CF8, #A78BFA);
+    background-size: 200% 200%;
     opacity: 0; pointer-events: none;
     display: flex; align-items: center; justify-content: center;
-    flex-direction: column; gap: 12px;
-    transition: opacity 0.4s ease;
+    flex-direction: column; gap: 16px;
+    transition: opacity 0.5s ease;
   `;
 
-  // Isi overlay — logo + teks
+  // Isi overlay — logo + teks + dots
   overlay.innerHTML = `
     <div style="
-      width:72px;height:72px;
+      width:80px;height:80px;
       background:rgba(255,255,255,0.25);
-      border-radius:24px;
+      border-radius:26px;
       display:flex;align-items:center;justify-content:center;
-      font-size:28px;font-weight:700;color:#fff;
-      box-shadow:0 8px 32px rgba(0,0,0,0.15);
-      animation: overlayLogoIn 0.5s cubic-bezier(.34,1.56,.64,1) 0.2s both;
+      font-size:32px;font-weight:700;color:#fff;
+      box-shadow:0 12px 40px rgba(0,0,0,0.2);
+      animation: overlayLogoIn 0.7s cubic-bezier(.34,1.56,.64,1) 0.3s both, overlayLogoPulse 2s ease-in-out 1.2s infinite;
     ">N</div>
     <div style="
-      color:rgba(255,255,255,0.9);font-size:15px;font-weight:600;
+      color:rgba(255,255,255,0.95);font-size:18px;font-weight:700;
       font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:0.03em;
-      animation: overlayTextIn 0.5s ease 0.35s both;
+      animation: overlayTextIn 0.6s ease 0.6s both;
     ">Halo, Nadia! 🩵</div>
     <div style="
-      color:rgba(255,255,255,0.6);font-size:12px;
+      color:rgba(255,255,255,0.7);font-size:13px;
       font-family:'Plus Jakarta Sans',sans-serif;
-      animation: overlayTextIn 0.5s ease 0.45s both;
-    ">Membuka dashboard...</div>
+      animation: overlayTextIn 0.6s ease 0.8s both;
+    ">Membuka dashboard untukmu...</div>
+    <div style="
+      display:flex;gap:8px;margin-top:8px;
+      animation: overlayTextIn 0.6s ease 1.0s both;
+    ">
+      <span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.8);animation:dotBounce 1.2s ease-in-out 1.2s infinite;"></span>
+      <span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.8);animation:dotBounce 1.2s ease-in-out 1.4s infinite;"></span>
+      <span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.8);animation:dotBounce 1.2s ease-in-out 1.6s infinite;"></span>
+    </div>
   `;
 
   const style = document.createElement('style');
   style.textContent = `
     @keyframes overlayLogoIn {
-      from { opacity:0; transform:scale(0.5) rotate(-10deg); }
+      from { opacity:0; transform:scale(0.4) rotate(-15deg); }
       to   { opacity:1; transform:scale(1) rotate(0deg); }
     }
+    @keyframes overlayLogoPulse {
+      0%,100% { box-shadow:0 12px 40px rgba(0,0,0,0.2); transform:scale(1); }
+      50%      { box-shadow:0 16px 50px rgba(255,255,255,0.3); transform:scale(1.06); }
+    }
     @keyframes overlayTextIn {
-      from { opacity:0; transform:translateY(10px); }
+      from { opacity:0; transform:translateY(14px); }
       to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes dotBounce {
+      0%,80%,100% { transform:translateY(0); opacity:0.5; }
+      40%          { transform:translateY(-10px); opacity:1; }
     }
     @keyframes cardShake {
       0%,100% { transform:translateX(0); }
@@ -96,9 +113,9 @@ function doLoginTransition(callback) {
 
   // Fade card keluar
   const card = document.querySelector('.card');
-  card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
   card.style.opacity = '0';
-  card.style.transform = 'scale(0.96) translateY(-10px)';
+  card.style.transform = 'scale(0.94) translateY(-12px)';
 
   // Fade overlay masuk
   requestAnimationFrame(() => {
@@ -106,8 +123,8 @@ function doLoginTransition(callback) {
     overlay.style.opacity = '1';
   });
 
-  // Pindah halaman setelah animasi
-  setTimeout(callback, 900);
+  // Pindah halaman setelah animasi cukup lama dinikmati
+  setTimeout(callback, 2200);
 }
 
 // Jika sudah login, langsung ke dashboard
