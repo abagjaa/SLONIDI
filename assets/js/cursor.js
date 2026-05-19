@@ -2,8 +2,7 @@
   // Jangan jalankan di touch device
   if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
 
-  // Jangan jalankan di dalam iframe — cukup dari parent page saja
-  // Ini mencegah double cursor (satu dari parent, satu dari iframe tools)
+  // Jangan jalankan di dalam iframe
   if (window.self !== window.top) return;
 
   // ── INJECT CSS ──
@@ -75,22 +74,53 @@
   document.head.appendChild(style);
 
   // ── INJECT HTML ──
-  const cursor    = document.createElement('div');
-  cursor.id       = 'customCursor';
-  const dot       = document.createElement('div');
-  dot.id          = 'customCursorDot';
+  const cursor = document.createElement('div');
+  cursor.id    = 'customCursor';
+  const dot    = document.createElement('div');
+  dot.id       = 'customCursorDot';
   document.body.appendChild(cursor);
   document.body.appendChild(dot);
+
+  // ── TRAILING EMOJI (deklarasi lebih awal agar bisa dipakai spawnTrail) ──
+  const trailEmojis = ['💙','💜','✨','⭐','🌸','💫','🌟','💎','🩵','🫧'];
+  let trailIdx = 0, lastTrail = 0;
 
   // ── MOUSE TRACKING ──
   let mouseX = -100, mouseY = -100;
   let curX   = -100, curY   = -100;
 
+  function updateDot(x, y) {
+    mouseX = x;
+    mouseY = y;
+    dot.style.left = x + 'px';
+    dot.style.top  = y + 'px';
+  }
+
+  function spawnTrail(x, y) {
+    const now = Date.now();
+    if (now - lastTrail < 80) return;
+    lastTrail = now;
+    const el = document.createElement('div');
+    el.className   = 'cursor-trail';
+    el.textContent = trailEmojis[trailIdx++ % trailEmojis.length];
+    el.style.left     = (x + (Math.random() - .5) * 16) + 'px';
+    el.style.top      = (y + (Math.random() - .5) * 16) + 'px';
+    el.style.fontSize = (11 + Math.random() * 10) + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 900);
+  }
+
+  // Mouse di parent page
   document.addEventListener('mousemove', (e) => {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-    dot.style.left = mouseX + 'px';
-    dot.style.top  = mouseY + 'px';
+    updateDot(e.clientX, e.clientY);
+    spawnTrail(e.clientX, e.clientY);
+  });
+
+  // ── TERIMA POSISI MOUSE DARI IFRAME (cursor-bridge.js) ──
+  window.addEventListener('message', (e) => {
+    if (!e.data || e.data.type !== 'iframe-mousemove') return;
+    updateDot(e.data.x, e.data.y);
+    spawnTrail(e.data.x, e.data.y);
   });
 
   // Smooth ring follow
@@ -102,7 +132,7 @@
     requestAnimationFrame(animate);
   })();
 
-  // Hover scale — re-check setiap kali DOM mungkin berubah (untuk SPA)
+  // Hover scale
   function bindHover() {
     document.querySelectorAll('a, button, .nav-item, .tool-card, [onclick], label, select, input, textarea').forEach(el => {
       if (el._cursorBound) return;
@@ -112,27 +142,7 @@
     });
   }
   bindHover();
-  // Re-bind setiap 2 detik untuk halaman yang load konten dinamis
   setInterval(bindHover, 2000);
-
-  // ── TRAILING EMOJI ──
-  const trailEmojis = ['💙','💜','✨','⭐','🌸','💫','🌟','💎','🩵','🫧'];
-  let trailIdx = 0, lastTrail = 0;
-
-  document.addEventListener('mousemove', (e) => {
-    const now = Date.now();
-    if (now - lastTrail < 80) return;
-    lastTrail = now;
-
-    const el = document.createElement('div');
-    el.className   = 'cursor-trail';
-    el.textContent = trailEmojis[trailIdx++ % trailEmojis.length];
-    el.style.left     = (e.clientX + (Math.random() - .5) * 16) + 'px';
-    el.style.top      = (e.clientY + (Math.random() - .5) * 16) + 'px';
-    el.style.fontSize = (11 + Math.random() * 10) + 'px';
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 900);
-  });
 
   // ── CLICK BURST ──
   const burstEmojis = ['💥','⭐','✨','💙','💜','🌟','💫','🎀','🩵'];
