@@ -1,8 +1,5 @@
 (function () {
-  // Jangan jalankan di touch device
   if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
-
-  // Jangan jalankan di dalam iframe
   if (window.self !== window.top) return;
 
   // ── INJECT CSS ──
@@ -81,19 +78,35 @@
   document.body.appendChild(cursor);
   document.body.appendChild(dot);
 
-  // ── TRAILING EMOJI (deklarasi lebih awal agar bisa dipakai spawnTrail) ──
+  // ── STATE ──
   const trailEmojis = ['💙','💜','✨','⭐','🌸','💫','🌟','💎','🩵','🫧'];
   let trailIdx = 0, lastTrail = 0;
-
-  // ── MOUSE TRACKING ──
   let mouseX = -100, mouseY = -100;
   let curX   = -100, curY   = -100;
+  let fromIframe = false;
 
-  function updateDot(x, y) {
+  function setHover(on) {
+    if (on) {
+      cursor.classList.add('cursor-hover');
+      dot.classList.add('dot-hover');
+    } else {
+      cursor.classList.remove('cursor-hover');
+      dot.classList.remove('dot-hover');
+    }
+  }
+
+  function updateDot(x, y, isIframe) {
+    fromIframe = !!isIframe;
     mouseX = x;
     mouseY = y;
     dot.style.left = x + 'px';
     dot.style.top  = y + 'px';
+    if (fromIframe) {
+      curX = x;
+      curY = y;
+      cursor.style.left = x + 'px';
+      cursor.style.top  = y + 'px';
+    }
   }
 
   function spawnTrail(x, y) {
@@ -112,58 +125,64 @@
 
   // Mouse di parent page
   document.addEventListener('mousemove', (e) => {
-    updateDot(e.clientX, e.clientY);
+    updateDot(e.clientX, e.clientY, false);
     spawnTrail(e.clientX, e.clientY);
   });
 
-  // ── TERIMA POSISI MOUSE DARI IFRAME (cursor-bridge.js) ──
+  // Terima pesan dari iframe
   window.addEventListener('message', (e) => {
-    if (!e.data || e.data.type !== 'iframe-mousemove') return;
-    updateDot(e.data.x, e.data.y);
-    spawnTrail(e.data.x, e.data.y);
+    if (!e.data || !e.data._bridge) return;
+    if (e.data.type === 'iframe-mousemove') {
+      updateDot(e.data.x, e.data.y, true);
+      spawnTrail(e.data.x, e.data.y);
+    } else if (e.data.type === 'iframe-mouseleave') {
+      fromIframe = false;
+    } else if (e.data.type === 'iframe-hover-on') {
+      setHover(true);
+    } else if (e.data.type === 'iframe-hover-off') {
+      setHover(false);
+    }
   });
 
-  // Smooth ring follow
+  // Smooth ring — hanya saat di parent
   (function animate() {
-    curX += (mouseX - curX) * 0.12;
-    curY += (mouseY - curY) * 0.12;
-    cursor.style.left = curX + 'px';
-    cursor.style.top  = curY + 'px';
+    if (!fromIframe) {
+      curX += (mouseX - curX) * 0.12;
+      curY += (mouseY - curY) * 0.12;
+      cursor.style.left = curX + 'px';
+      cursor.style.top  = curY + 'px';
+    }
     requestAnimationFrame(animate);
   })();
 
-  // Hover scale
+  // Hover scale di parent page
   function bindHover() {
     document.querySelectorAll('a, button, .nav-item, .tool-card, [onclick], label, select, input, textarea').forEach(el => {
       if (el._cursorBound) return;
       el._cursorBound = true;
-      el.addEventListener('mouseenter', () => { cursor.classList.add('cursor-hover'); dot.classList.add('dot-hover'); });
-      el.addEventListener('mouseleave', () => { cursor.classList.remove('cursor-hover'); dot.classList.remove('dot-hover'); });
+      el.addEventListener('mouseenter', () => setHover(true));
+      el.addEventListener('mouseleave', () => setHover(false));
     });
   }
   bindHover();
   setInterval(bindHover, 2000);
 
-  // ── CLICK BURST ──
+  // Click burst
   const burstEmojis = ['💥','⭐','✨','💙','💜','🌟','💫','🎀','🩵'];
-
   document.addEventListener('click', (e) => {
     const count = 10 + Math.floor(Math.random() * 6);
     for (let i = 0; i < count; i++) {
-      const el    = document.createElement('div');
+      const el = document.createElement('div');
       el.className   = 'cursor-burst';
       el.textContent = burstEmojis[Math.floor(Math.random() * burstEmojis.length)];
-
       const angle = (360 / count) * i + (Math.random() * 20 - 10);
       const dist  = 40 + Math.random() * 60;
       const rad   = angle * Math.PI / 180;
-
       el.style.left     = e.clientX + 'px';
       el.style.top      = e.clientY + 'px';
       el.style.fontSize = (12 + Math.random() * 14) + 'px';
       el.style.setProperty('--dx', Math.cos(rad) * dist + 'px');
       el.style.setProperty('--dy', Math.sin(rad) * dist + 'px');
-
       document.body.appendChild(el);
       setTimeout(() => el.remove(), 700);
     }
