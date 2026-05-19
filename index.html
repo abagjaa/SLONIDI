@@ -290,5 +290,37 @@
 <script src="assets/js/main.js"></script>
 
 <script src="assets/js/cursor.js"></script>
+
+<!-- Animasi masuk setelah login -->
+<script>
+(function() {
+  if (sessionStorage.getItem('ppiln_just_logged_in') === 'true') {
+    sessionStorage.removeItem('ppiln_just_logged_in');
+
+    // Overlay masih terlihat (warna dari login), fade out dengan reveal
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(135deg, #60A5FA, #818CF8, #A78BFA);
+      opacity: 1; pointer-events: all;
+      transition: opacity 0.6s ease 0.1s;
+    `;
+    document.body.appendChild(overlay);
+
+    // Sembunyikan semua konten dulu, biar transisi mulus
+    document.body.style.opacity = '0';
+
+    requestAnimationFrame(() => {
+      // Reveal konten, lalu fade overlay keluar
+      setTimeout(() => {
+        document.body.style.transition = 'opacity 0.01s';
+        document.body.style.opacity = '1';
+        overlay.style.opacity = '0';
+        overlay.addEventListener('transitionend', () => overlay.remove());
+      }, 80);
+    });
+  }
+})();
+</script>
 </body>
 </html>
