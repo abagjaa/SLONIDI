@@ -2,6 +2,10 @@
   // Jangan jalankan di touch device
   if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
 
+  // Jangan jalankan di dalam iframe — cukup dari parent page saja
+  // Ini mencegah double cursor (satu dari parent, satu dari iframe tools)
+  if (window.self !== window.top) return;
+
   // ── INJECT CSS ──
   const style = document.createElement('style');
   style.textContent = `
