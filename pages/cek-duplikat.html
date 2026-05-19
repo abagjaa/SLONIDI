@@ -1,727 +1,378 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cek Duplikat SLO & NIDI</title>
+<title>Rapikan Excel</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --blue-50: #EFF6FF; --blue-100: #DBEAFE; --blue-200: #BFDBFE;
-    --blue-300: #93C5FD; --blue-400: #60A5FA; --blue-600: #2563EB; --blue-dark: #1D4ED8;
-    --green: #16A34A; --green-light: #F0FDF4; --green-border: #BBF7D0;
-    --amber: #D97706; --amber-light: #FFFBEB; --amber-border: #FDE68A;
-    --red: #DC2626; --red-light: #FEF2F2; --red-border: #FECACA;
-    --slate-50: #F8FAFC; --slate-100: #F1F5F9; --slate-200: #E2E8F0;
-    --slate-400: #94A3B8; --slate-600: #475569; --slate-800: #1E293B;
-    --radius: 16px; --radius-sm: 10px;
+  *{box-sizing:border-box;margin:0;padding:0;cursor:none !important;}
+  :root{
+    --blue-50:#EFF6FF;--blue-100:#DBEAFE;--blue-200:#BFDBFE;--blue-600:#2563EB;--blue-dark:#1D4ED8;
+    --green:#16A34A;--green-light:#F0FDF4;--green-border:#BBF7D0;
+    --amber:#D97706;--amber-light:#FFFBEB;--amber-border:#FDE68A;
+    --red:#DC2626;--red-light:#FEF2F2;--red-border:#FECACA;
+    --purple:#7C3AED;--purple-light:#F5F3FF;--purple-border:#DDD6FE;
+    --slate-50:#F8FAFC;--slate-100:#F1F5F9;--slate-200:#E2E8F0;
+    --slate-400:#94A3B8;--slate-600:#475569;--slate-800:#1E293B;
+    --radius:16px;--radius-sm:10px;
   }
-  body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background: transparent;
-    color: var(--slate-800);
-    padding: 1.5rem;
-    font-size: 14px; line-height: 1.6;
-  }
-
-  .info-pill {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: var(--blue-50); border: 1px solid var(--blue-200);
-    color: var(--blue-600); border-radius: 20px;
-    padding: 6px 14px; font-size: 12px; font-weight: 500;
-    margin-bottom: 1.5rem;
-  }
-
-  .steps { display: flex; flex-direction: column; gap: 1rem; }
-
-  .card {
-    background: #fff;
-    border: 1px solid rgba(147,197,253,0.25);
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: 0 2px 12px rgba(96,165,250,0.06);
-  }
-  .card-header {
-    display: flex; align-items: center; gap: 10px;
-    padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, #F8FBFF, #F5F3FF);
-    border-bottom: 1px solid rgba(147,197,253,0.15);
-  }
-  .step-dot {
-    width: 26px; height: 26px; border-radius: 50%;
-    background: linear-gradient(135deg, #60A5FA, #A78BFA);
-    color: #fff; font-size: 12px; font-weight: 700;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; box-shadow: 0 2px 8px rgba(96,165,250,0.3);
-  }
-  .step-dot.done { background: linear-gradient(135deg, #34D399, #10B981); box-shadow: 0 2px 8px rgba(52,211,153,0.3); }
-  .card-title { font-weight: 600; font-size: 14px; color: var(--slate-800); }
-  .card-body { padding: 1.25rem; }
-
-  .drop-zone {
-    border: 2px dashed var(--blue-200);
-    border-radius: var(--radius-sm);
-    padding: 2rem 1.5rem;
-    text-align: center; cursor: pointer;
-    transition: all .2s;
-    background: var(--blue-50);
-  }
-  .drop-zone:hover, .drop-zone.drag {
-    border-color: var(--blue-400);
-    background: #EFF6FF;
-    transform: scale(1.01);
-  }
-  .drop-zone-icon { font-size: 32px; margin-bottom: .5rem; }
-  .drop-zone p { font-size: 14px; color: var(--slate-600); font-weight: 500; }
-  .drop-zone span { font-size: 12px; color: var(--slate-400); }
-  input[type=file] { display: none; }
-
-  .file-ready {
-    display: flex; align-items: center; gap: 10px;
-    padding: .875rem 1rem;
-    background: var(--green-light); border: 1px solid var(--green-border);
-    border-radius: var(--radius-sm);
-    color: var(--green); font-size: 13px; font-weight: 500;
-  }
-
-  .btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 10px 20px; border-radius: var(--radius-sm);
-    border: 1.5px solid var(--slate-200);
-    background: #fff; font-size: 13px; font-weight: 600;
-    cursor: pointer; color: var(--slate-800); font-family: inherit;
-    transition: all .15s;
-  }
-  .btn:hover { background: var(--slate-50); border-color: var(--blue-300); }
-  .btn:disabled { opacity: .4; cursor: not-allowed; }
-  .btn-primary {
-    background: linear-gradient(135deg, #60A5FA, #818CF8);
-    border-color: transparent; color: #fff;
-    box-shadow: 0 4px 14px rgba(96,165,250,0.3);
-  }
-  .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(96,165,250,0.4); }
-  .btn-success {
-    background: linear-gradient(135deg, #34D399, #10B981);
-    border-color: transparent; color: #fff;
-    box-shadow: 0 4px 14px rgba(52,211,153,0.3);
-  }
-  .btn-success:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(52,211,153,0.4); }
-  .btn-danger {
-    background: linear-gradient(135deg, #F87171, #EF4444);
-    border-color: transparent; color: #fff;
-    box-shadow: 0 4px 14px rgba(239,68,68,0.3);
-  }
-  .btn-danger:hover:not(:disabled) { transform: translateY(-1px); }
-  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem; }
-
-  /* Column detection badges */
-  .col-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: .75rem; }
-  .col-pill {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
-  }
-  .col-pill-blue { background: var(--blue-100); color: var(--blue-dark); }
-  .col-pill-green { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
-  .col-pill-gray { background: var(--slate-100); color: var(--slate-600); }
-
-  /* Summary cards */
-  .summary-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;
-    margin-bottom: 1rem;
-  }
-  .summary-card {
-    padding: .875rem 1rem; border-radius: var(--radius-sm);
-    text-align: center; border: 1.5px solid;
-  }
-  .summary-card.ok { background: var(--green-light); border-color: var(--green-border); color: var(--green); }
-  .summary-card.warn { background: var(--red-light); border-color: var(--red-border); color: var(--red); }
-  .summary-card.info { background: var(--blue-50); border-color: var(--blue-200); color: var(--blue-dark); }
-  .summary-card .sc-num { font-size: 28px; font-weight: 700; line-height: 1.1; }
-  .summary-card .sc-label { font-size: 11px; font-weight: 600; margin-top: 2px; opacity: .8; }
-
-  /* Filter tabs */
-  .filter-tabs { display: flex; gap: 6px; margin-bottom: 1rem; flex-wrap: wrap; }
-  .tab-btn {
-    padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
-    border: 1.5px solid var(--slate-200); background: #fff; cursor: pointer;
-    color: var(--slate-600); font-family: inherit; transition: all .15s;
-  }
-  .tab-btn.active { background: linear-gradient(135deg, #60A5FA, #818CF8); border-color: transparent; color: #fff; }
-  .tab-btn:hover:not(.active) { border-color: var(--blue-300); }
-
-  /* Search */
-  .search-wrap { position: relative; margin-bottom: 1rem; }
-  .search-wrap input {
-    width: 100%; padding: 9px 14px 9px 36px;
-    border: 1.5px solid var(--slate-200); border-radius: var(--radius-sm);
-    font-size: 13px; font-family: inherit; background: var(--slate-50);
-    color: var(--slate-800); outline: none;
-    transition: border-color .15s;
-  }
-  .search-wrap input:focus { border-color: var(--blue-300); background: #fff; }
-  .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--slate-400); pointer-events: none; }
-
-  /* Table */
-  .table-scroll { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--slate-100); }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 700; color: var(--slate-400); background: var(--slate-50); border-bottom: 1px solid var(--slate-100); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
-  td { padding: 10px 14px; border-bottom: 1px solid var(--slate-50); vertical-align: middle; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #F8FBFF; }
-  tr.dup-row td { background: #FFF5F5; }
-  tr.dup-row:hover td { background: #FEE2E2; }
-
-  .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .badge-slo { background: var(--blue-100); color: var(--blue-dark); }
-  .badge-nidi { background: var(--green-light); color: var(--green); }
-  .badge-dup { background: var(--red-light); color: var(--red); border: 1px solid var(--red-border); }
-  .badge-ok { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
-  .badge-kosong { background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; }
-  .badge-partial { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
-
-  tr.kosong-row td { background: #FAFAFA; color: #94A3B8; }
-
-  .mono { font-family: 'Consolas', monospace; font-size: 12px; font-weight: 600; }
-  .td-row { color: var(--slate-400); font-size: 11px; }
-  .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--slate-400); }
-  .empty-state .es-icon { font-size: 36px; margin-bottom: .5rem; }
-
-  .alert {
-    padding: .875rem 1.1rem; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
-    margin-bottom: 1rem; display: flex; align-items: flex-start; gap: 8px;
-  }
-  .alert-green { background: var(--green-light); border: 1px solid var(--green-border); color: var(--green); }
-  .alert-red { background: var(--red-light); border: 1px solid var(--red-border); color: var(--red); }
-
-  .divider { height: 1px; background: var(--slate-100); margin: 1.25rem 0; }
-  .hint { font-size: 11px; color: var(--slate-400); margin-top: 6px; }
-
-  /* highlight */
-  mark { background: #FEF08A; padding: 0 2px; border-radius: 2px; }
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:transparent;color:var(--slate-800);padding:1.5rem;font-size:14px;line-height:1.6;}
+  .card{background:#fff;border:1px solid var(--slate-200);border-radius:var(--radius);overflow:hidden;margin-bottom:1.25rem;box-shadow:0 1px 8px rgba(15,23,42,0.06);}
+  .card-header{padding:.875rem 1.25rem;background:var(--slate-50);border-bottom:1px solid var(--slate-200);display:flex;align-items:center;gap:10px;}
+  .card-title{font-size:14px;font-weight:700;color:var(--slate-800);}
+  .card-body{padding:1.25rem;}
+  .drop-zone{border:2px dashed var(--blue-200);border-radius:var(--radius-sm);padding:2rem 1rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--blue-50);}
+  .drop-zone:hover,.drop-zone.drag{border-color:var(--blue-600);background:var(--blue-100);}
+  .drop-zone-icon{font-size:2rem;margin-bottom:.5rem;}
+  .drop-zone p{font-size:14px;font-weight:600;color:var(--blue-600);margin-bottom:.25rem;}
+  .drop-zone span{font-size:12px;color:var(--slate-400);}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--radius-sm);border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;}
+  .btn-primary{background:linear-gradient(135deg,#6366F1,#4F46E5);color:#fff;box-shadow:0 4px 14px rgba(99,102,241,0.3);}
+  .btn-primary:hover{transform:translateY(-1px);}
+  .btn-green{background:linear-gradient(135deg,#22C55E,#16A34A);color:#fff;box-shadow:0 4px 14px rgba(34,197,94,0.3);}
+  .btn-green:hover{transform:translateY(-1px);}
+  .btn-ghost{background:var(--slate-100);color:var(--slate-600);border:1.5px solid var(--slate-200);}
+  .btn-ghost:hover{background:var(--slate-200);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;}
+  .col-config{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;margin-bottom:1rem;}
+  .col-select-group label{font-size:11px;font-weight:700;color:var(--slate-600);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;}
+  .col-select-group select{width:100%;padding:8px 10px;border:1.5px solid var(--slate-200);border-radius:8px;font-size:13px;font-family:inherit;color:var(--slate-800);background:#fff;}
+  .col-select-group select:focus{outline:none;border-color:var(--blue-600);}
+  .preview-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .preview-table th{background:var(--slate-50);padding:.5rem .75rem;text-align:left;font-weight:700;color:var(--slate-600);font-size:11px;border-bottom:2px solid var(--slate-200);}
+  .preview-table td{padding:.5rem .75rem;border-bottom:1px solid var(--slate-100);}
+  .preview-table tr:hover td{background:var(--slate-50);}
+  .badge-area{display:inline-block;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:600;background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border);}
+  .badge-mode{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:99px;font-size:11px;font-weight:700;}
+  .badge-mode.kolom{background:var(--blue-50);color:var(--blue-600);border:1px solid var(--blue-200);}
+  .badge-mode.alamat{background:var(--amber-light);color:var(--amber);border:1px solid var(--amber-border);}
+  .badge-mode.scan{background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border);}
+  .info-box{padding:.875rem 1rem;border-radius:var(--radius-sm);font-size:13px;margin-bottom:1rem;}
+  .info-box.blue{background:var(--blue-50);border:1px solid var(--blue-200);color:var(--blue-dark);}
+  .info-box.green{background:var(--green-light);border:1px solid var(--green-border);color:var(--green);}
+  .info-box.amber{background:var(--amber-light);border:1px solid var(--amber-border);color:var(--amber);}
+  .area-count-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.875rem;}
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:600;}
+  .pill-purple{background:var(--purple-light);color:var(--purple);border:1px solid var(--purple-border);}
+  .pill-blue{background:var(--blue-50);color:var(--blue-600);border:1px solid var(--blue-200);}
+  .detect-status{padding:.875rem 1rem;border-radius:var(--radius-sm);font-size:13px;margin-bottom:1rem;border:1px solid var(--slate-200);background:var(--slate-50);}
+  .detect-row{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;}
+  .detect-label{font-size:11px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:.04em;min-width:80px;}
+  #configCard,#previewCard{display:none;}
 </style>
 </head>
 <body>
 
-<div class="info-pill">
-  🔍 Semua data diproses di browser — tidak ada yang dikirim ke server
+<!-- STEP 1: Upload -->
+<div class="card">
+  <div class="card-header">
+    <span style="font-size:18px">📁</span>
+    <span class="card-title">Upload File Excel yang Perlu Dirapikan</span>
+  </div>
+  <div class="card-body">
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileIn').click()"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="event.preventDefault();this.classList.remove('drag');handleFile(event.dataTransfer.files[0])">
+      <div class="drop-zone-icon">🧹</div>
+      <p>Klik atau drag file Excel di sini</p>
+      <span>Bisa 1 sheet besar yang belum tersortir, atau multi-sheet</span>
+    </div>
+    <input type="file" id="fileIn" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])">
+    <div id="fileInfo" style="font-size:12px;color:var(--slate-400);margin-top:.75rem;"></div>
+  </div>
 </div>
 
-<div class="steps">
+<!-- STEP 2: Config -->
+<div class="card" id="configCard">
+  <div class="card-header">
+    <span style="font-size:18px">⚙️</span>
+    <span class="card-title">Konfigurasi</span>
+  </div>
+  <div class="card-body">
 
-  <!-- STEP 1: Upload -->
-  <div class="card">
-    <div class="card-header">
-      <div class="step-dot" id="dot1">1</div>
-      <span class="card-title">Upload File Excel</span>
+    <!-- Auto-detect status -->
+    <div class="detect-status" id="detectStatus"></div>
+
+    <div class="col-config">
+      <div class="col-select-group">
+        <label>Sheet Sumber</label>
+        <select id="sheetSel" onchange="changeSheet()"></select>
+      </div>
+      <div class="col-select-group">
+        <label>Sortir Berdasarkan</label>
+        <select id="sortCol">
+          <option value="">— Tidak disortir —</option>
+        </select>
+      </div>
     </div>
-    <div class="card-body">
-      <div class="drop-zone" id="xlsxDrop" onclick="document.getElementById('xlsxIn').click()"
-        ondragover="onDragOver(event,'xlsxDrop')" ondragleave="onDragLeave('xlsxDrop')" ondrop="onDrop(event)">
-        <div class="drop-zone-icon">📊</div>
-        <p>Klik atau seret file Excel ke sini</p>
-        <span>Format: .xlsx, .xls — file dari Pak Lontung / rekap SLO & NIDI</span>
-      </div>
-      <div class="file-ready" id="xlsxReady" style="display:none">
-        <span>✅</span><span id="xlsxName">—</span>
-        <button class="btn btn-sm" style="margin-left:auto" onclick="resetAll()">Ganti</button>
-      </div>
-      <input type="file" id="xlsxIn" accept=".xlsx,.xls" onchange="loadExcel(this.files[0])">
 
-      <div id="colDetect" style="display:none; margin-top:.75rem;">
-        <div style="font-size:12px; color:var(--slate-600); font-weight:600; margin-bottom:4px;">Kolom terdeteksi:</div>
-        <div class="col-pills" id="colPills"></div>
-        <p class="hint" id="colHint"></p>
-      </div>
+    <button class="btn btn-primary" onclick="doPreview()">👁 Preview Hasil</button>
+  </div>
+</div>
+
+<!-- STEP 3: Preview -->
+<div class="card" id="previewCard">
+  <div class="card-header">
+    <span style="font-size:18px">👁</span>
+    <span class="card-title">Preview Hasil Pemisahan</span>
+  </div>
+  <div class="card-body">
+    <div class="area-count-row" id="areaCountRow"></div>
+    <div style="overflow-x:auto;max-height:320px;overflow-y:auto;">
+      <table class="preview-table">
+        <thead id="previewHead"></thead>
+        <tbody id="previewBody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:1rem;display:flex;gap:.75rem;flex-wrap:wrap;">
+      <button class="btn btn-green" onclick="downloadRapikan()">⬇️ Download Excel Rapi</button>
+      <button class="btn btn-ghost" onclick="resetAll()">🔄 Upload Ulang</button>
     </div>
   </div>
-
-  <!-- STEP 2: Result -->
-  <div class="card" id="resultCard" style="display:none">
-    <div class="card-header">
-      <div class="step-dot done" id="dot2">✓</div>
-      <span class="card-title">Hasil Pemeriksaan Duplikat</span>
-    </div>
-    <div class="card-body">
-
-      <div class="summary-grid" id="summaryGrid"></div>
-
-      <div id="alertBox"></div>
-
-      <div class="filter-tabs" id="filterTabs">
-        <button class="tab-btn active" onclick="setFilter('all', this)">Semua</button>
-        <button class="tab-btn" onclick="setFilter('dup', this)">⚠️ Duplikat</button>
-        <button class="tab-btn" onclick="setFilter('ok', this)">✅ Unik & Lengkap</button>
-        <button class="tab-btn" onclick="setFilter('kosong', this)">⬜ Belum Ada SLO/NIDI</button>
-        <button class="tab-btn" onclick="setFilter('slo', this)">SLO saja</button>
-        <button class="tab-btn" onclick="setFilter('nidi', this)">NIDI saja</button>
-      </div>
-
-      <div class="search-wrap">
-        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="searchInput" placeholder="Cari nama, nomor SLO atau NIDI..." oninput="renderTable()">
-      </div>
-
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Baris</th>
-              <th id="th-sheet" style="display:none">Sheet</th>
-              <th id="th-name" style="display:none">Nama</th>
-              <th>Nomor SLO</th>
-              <th>Nomor NIDI</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
-
-      <p class="hint" id="tableHint" style="margin-top:6px;"></p>
-
-      <div class="divider"></div>
-      <div class="actions">
-        <button class="btn btn-success" id="btnDownload" onclick="downloadReport()">⬇️ Download Laporan Duplikat</button>
-        <button class="btn" onclick="resetAll()">🔄 Mulai Ulang</button>
-      </div>
-    </div>
-  </div>
-
 </div>
 
 <script>
-// ── STATE ─────────────────────────────────────────────────────────
-let allRows = [];      // { sheet, rowNum, name, slo, nidi, dupSlo, dupNidi }
-let currentFilter = 'all';
-let hasName = false;
-let xlsxFile = null;
+// ── AREA ENGINE ──────────────────────────────────────────────────────────────
+// Urut: PALING SPESIFIK dulu, baru umum
+// "Bandung Barat" dicek sebelum "Bandung"
+// "Kota Bandung" dan "Bandung" (biasa) → keduanya → label "Bandung"
+const AREA_MAP = [
+  { label: 'Bandung Barat',  re: /\bBandung\s+Barat\b|\bKBB\b/i },
+  { label: 'Bandung',        re: /\bBandung\b/i },          // mencakup "Kota Bandung" juga
+  { label: 'Bekasi',         re: /\bBekasi\b/i },
+  { label: 'Bogor',          re: /\bBogor\b/i },
+  { label: 'Cimahi',         re: /\bCimahi\b/i },
+  { label: 'Cirebon',        re: /\bCirebon\b/i },
+  { label: 'Depok',          re: /\bDepok\b/i },
+  { label: 'Karawang',       re: /\bKarawang\b|\bKRW\b/i },
+  { label: 'Cianjur',        re: /\bCianjur\b/i },
+  { label: 'Sukabumi',       re: /\bSukabumi\b/i },
+  { label: 'Garut',          re: /\bGarut\b/i },
+  { label: 'Tasikmalaya',    re: /\bTasikmalaya\b|\bTasik\b/i },
+  { label: 'Banjar',         re: /\bBanjar\b/i },
+  { label: 'Ciamis',         re: /\bCiamis\b/i },
+  { label: 'Pangandaran',    re: /\bPangandaran\b/i },
+  { label: 'Kuningan',       re: /\bKuningan\b/i },
+  { label: 'Majalengka',     re: /\bMajalengka\b/i },
+  { label: 'Indramayu',      re: /\bIndramayu\b/i },
+  { label: 'Subang',         re: /\bSubang\b/i },
+  { label: 'Purwakarta',     re: /\bPurwakarta\b/i },
+  { label: 'Sumedang',       re: /\bSumedang\b/i },
+];
 
-// ── DRAG & DROP ───────────────────────────────────────────────────
-function onDragOver(e, id) { e.preventDefault(); document.getElementById(id).classList.add('drag'); }
-function onDragLeave(id) { document.getElementById(id).classList.remove('drag'); }
-function onDrop(e) {
-  e.preventDefault(); onDragLeave('xlsxDrop');
-  const f = e.dataTransfer.files[0];
-  if (f) loadExcel(f);
-}
-
-// ── HELPER: Cari semua kandidat header row dalam sheet ───────────
-// Strategi: scan semua baris, kumpulkan kandidat, pilih yang terbaik.
-// "Tabel data pelanggan" cirinya:
-//   1. Ada kolom bernama tepat "SLO" atau "NIDI" (bukan "SLO Terisi", "SLO Kosong", dll)
-//   2. Idealnya juga ada kolom "Nama" atau "No" di baris yang sama
-// Kalau tidak ada yang eksak, fallback ke matching lebih longgar.
-function findHeaderRow(rows) {
-  const candidates = [];
-
-  for (let i = 0; i < Math.min(rows.length, 50); i++) {
-    const row = rows[i].map(c => String(c || '').trim());
-
-    // Cari kolom SLO yang TEPAT (exact match atau sangat singkat)
-    // "SLO" ✓ | "Nomor SLO" ✓ | "No. SLO" ✓
-    // "SLO Terisi" ✗ | "SLO Kosong" ✗ | "% SLO" ✗
-    const sloIdx = row.findIndex(h => {
-      if (!h) return false;
-      // Pastikan tidak mengandung kata setelah SLO yang menunjukkan statistik
-      return /^(no\.?\s*)?slo$|^nomor\s+slo$|^no\.?\s+slo$/i.test(h);
-    });
-
-    const nidiIdx = row.findIndex(h => {
-      if (!h) return false;
-      return /^(no\.?\s*)?nidi$|^nomor\s+nidi$|^no\.?\s+nidi$/i.test(h);
-    });
-
-    if (sloIdx < 0 && nidiIdx < 0) continue;
-
-    const nameIdx = row.findIndex(h => /^nama$/i.test(h));
-    const noIdx   = row.findIndex(h => /^no\.?$|^nomor$/i.test(h));
-
-    // Skor: makin banyak kolom data yang cocok, makin diprioritaskan
-    let score = 0;
-    if (sloIdx  >= 0) score += 2;
-    if (nidiIdx >= 0) score += 2;
-    if (nameIdx >= 0) score += 3; // kolom Nama sangat indikasikan tabel data pelanggan
-    if (noIdx   >= 0) score += 1;
-
-    candidates.push({ headerRowIdx: i, sloColIdx: sloIdx, nidiColIdx: nidiIdx, nameColIdx: nameIdx, score });
+function deteksiArea(teks) {
+  const s = String(teks || '');
+  for (const k of AREA_MAP) {
+    if (k.re.test(s)) return k.label;
   }
-
-  if (candidates.length === 0) {
-    // Fallback: coba matching lebih longgar (mengandung "slo" atau "nidi" di mana saja)
-    // tapi hindari "% SLO", "SLO Terisi", "SLO Kosong"
-    for (let i = 0; i < Math.min(rows.length, 50); i++) {
-      const row = rows[i].map(c => String(c || '').trim());
-      const sloIdx  = row.findIndex(h => /slo/i.test(h) && !/terisi|kosong|%/i.test(h));
-      const nidiIdx = row.findIndex(h => /nidi/i.test(h) && !/terisi|kosong|%/i.test(h));
-      if (sloIdx < 0 && nidiIdx < 0) continue;
-      const nameIdx = row.findIndex(h => /nama/i.test(h));
-      candidates.push({ headerRowIdx: i, sloColIdx: sloIdx, nidiColIdx: nidiIdx, nameColIdx: nameIdx, score: 1 });
-      break; // ambil satu saja untuk fallback
-    }
-  }
-
-  if (candidates.length === 0) return null;
-
-  // Pilih kandidat dengan skor tertinggi; jika seri, ambil yang lebih bawah (tabel data biasanya setelah rekap)
-  candidates.sort((a, b) => b.score - a.score || b.headerRowIdx - a.headerRowIdx);
-  return candidates[0];
+  return null; // tidak cocok
 }
 
-// ── HELPER: Cek apakah nilai kemungkinan nomor SLO/NIDI asli ──────
-// Nomor SLO asli: "9394.0.P.3.501.3204.E26", "A051.0.P.3.501.3204.E26"
-// Nomor NIDI asli: "I.05.2026.SQT4", "I.05.2026.SHH6"
-// Yang BUKAN nomor: "1", "2", "3" (nomor urut), "Tanggal: 18 Mei 2026", nama kota
-function looksLikeId(val) {
-  if (!val) return false;
-  const v = val.trim();
-  // Harus mengandung angka
-  if (!/\d/.test(v)) return false;
-  // Jika hanya angka bulat sederhana (1, 2, 11, 100) → kemungkinan nomor urut/data rekap
-  if (/^\d{1,4}$/.test(v)) return false;
-  // Jika mengandung kata-kata umum → bukan ID
-  if (/tanggal|total|area|kota|rekap/i.test(v)) return false;
-  return true;
-}
+// ── State ────────────────────────────────────────────────────────────────────
+let workbook = null;
+let headers = [];
+let allRows = [];
+let areaGroups = {};
+let detectedMode = ''; // 'kolom' | 'alamat' | 'scan'
+let areaColIdx = -1;
+let alamatColIdx = -1;
 
-// ── LOAD EXCEL ────────────────────────────────────────────────────
-function loadExcel(file) {
+// ── File handler ─────────────────────────────────────────────────────────────
+function handleFile(file) {
   if (!file) return;
-  xlsxFile = file;
-  const r = new FileReader();
-  r.onload = e => {
-    const wb = XLSX.read(e.target.result, { type: 'array' });
-
-    allRows = [];
-    hasName = false;
-    const sheetSummary = []; // untuk info kolom per sheet
-
-    // ── Proses SETIAP sheet ──────────────────────────────────────
-    for (const sheetName of wb.SheetNames) {
-      const ws = wb.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-      if (rows.length < 2) continue;
-
-      // Cari baris header yang valid (mengandung kolom SLO/NIDI)
-      const found = findHeaderRow(rows);
-      if (!found) continue; // sheet ini tidak punya kolom SLO/NIDI, skip
-
-      const { headerRowIdx, sloColIdx, nidiColIdx, nameColIdx } = found;
-      if (nameColIdx >= 0) hasName = true;
-
-      sheetSummary.push({ sheetName, headerRowIdx, sloColIdx, nidiColIdx, nameColIdx });
-
-      // Cari kolom "No" sebagai anchor tambahan untuk validasi baris data
-      const headerRow = rows[headerRowIdx].map(c => String(c || '').trim());
-      const noColIdx = headerRow.findIndex(h => /^no\.?$|^nomor$/i.test(h));
-
-      // Ambil baris data (setelah header)
-      // Baris dianggap data jika: kolom Nama atau No terisi (anchor), atau ada nilai apapun di kolom SLO/NIDI
-      for (let i = headerRowIdx + 1; i < rows.length; i++) {
-        const row = rows[i];
-        const getCel = col => col >= 0 && col < row.length ? String(row[col] || '').trim() : '';
-
-        const sloRaw  = getCel(sloColIdx);
-        const nidiRaw = getCel(nidiColIdx);
-        const name    = getCel(nameColIdx);
-        const noVal   = getCel(noColIdx);
-
-        // Baris valid = ada nama ATAU ada nomor urut (No), itu artinya ini baris data pelanggan
-        // Jika tidak ada kolom Nama/No, fallback: baris tidak seluruhnya kosong
-        const isDataRow = name
-          ? name.length > 0
-          : noVal
-            ? /^\d/.test(noVal)  // kolom No terisi angka
-            : row.some(c => String(c || '').trim().length > 0); // ada nilai apapun
-
-        if (!isDataRow) continue;
-
-        // Validasi SLO/NIDI: jika terisi harus benar-benar ID (bukan nomor urut/teks rekap)
-        const slo  = looksLikeId(sloRaw)  ? sloRaw  : '';
-        const nidi = looksLikeId(nidiRaw) ? nidiRaw : '';
-
-        allRows.push({
-          sheet: sheetName,
-          rowNum: i + 1,  // nomor baris di Excel (1-based)
-          name,
-          slo,
-          nidi,
-          hasSlo:  slo.length > 0,
-          hasNidi: nidi.length > 0,
-          dupSlo: false,
-          dupNidi: false
-        });
-      }
-    }
-
-    if (allRows.length === 0) {
-      showToast('Tidak ditemukan data SLO/NIDI yang valid di file ini. Pastikan kolom header mengandung kata "SLO" atau "NIDI" dan nilai berisi angka.', 'warn');
-      return;
-    }
-
-    // ── Tampilkan info sheet yang diproses ───────────────────────
-    const pills = document.getElementById('colPills');
-    pills.innerHTML = sheetSummary.map(s => {
-      const cols = [];
-      if (s.sloColIdx >= 0)  cols.push(`<span class="col-pill col-pill-blue">SLO</span>`);
-      if (s.nidiColIdx >= 0) cols.push(`<span class="col-pill col-pill-green">NIDI</span>`);
-      if (s.nameColIdx >= 0) cols.push(`<span class="col-pill col-pill-gray">Nama</span>`);
-      return `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px;margin-bottom:4px;">
-        <span class="col-pill col-pill-gray">📄 ${s.sheetName}</span>${cols.join('')}
-      </span>`;
-    }).join('');
-
-    const sheetsWithData = sheetSummary.length;
-    const sheetsSkipped  = wb.SheetNames.length - sheetsWithData;
-    document.getElementById('colHint').textContent =
-      `${sheetsWithData} sheet diproses${sheetsSkipped > 0 ? `, ${sheetsSkipped} sheet dilewati (tidak ada kolom SLO/NIDI)` : ''} — Total ${allRows.length} baris data ditemukan`;
-    document.getElementById('colDetect').style.display = '';
-
-    // ── Deteksi duplikat lintas sheet ───────────────────────────
-    const sloMap = {}, nidiMap = {};
-    allRows.forEach((r, idx) => {
-      if (r.slo)  { if (!sloMap[r.slo])   sloMap[r.slo]   = []; sloMap[r.slo].push(idx);   }
-      if (r.nidi) { if (!nidiMap[r.nidi]) nidiMap[r.nidi] = []; nidiMap[r.nidi].push(idx); }
-    });
-    Object.values(sloMap).forEach(idxs  => { if (idxs.length > 1) idxs.forEach(i => allRows[i].dupSlo  = true); });
-    Object.values(nidiMap).forEach(idxs => { if (idxs.length > 1) idxs.forEach(i => allRows[i].dupNidi = true); });
-
-    // ── Update UI ────────────────────────────────────────────────
-    document.getElementById('xlsxDrop').style.display = 'none';
-    document.getElementById('xlsxReady').style.display = '';
-    document.getElementById('xlsxName').textContent = file.name;
-    document.getElementById('dot1').className = 'step-dot done';
-    document.getElementById('dot1').textContent = '✓';
-    // Tampilkan kolom sheet & nama jika ada
-    document.getElementById('th-sheet').style.display = sheetsWithData > 1 ? '' : 'none';
-    document.getElementById('th-name').style.display  = hasName ? '' : 'none';
-
-    renderSummary();
-    renderTable();
-    document.getElementById('resultCard').style.display = '';
-    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+  const reader = new FileReader();
+  reader.onload = e => {
+    workbook = XLSX.read(e.target.result, { type: 'array' });
+    document.getElementById('fileInfo').innerHTML =
+      `✅ <strong>${file.name}</strong> — ${workbook.SheetNames.length} sheet: ${workbook.SheetNames.join(', ')}`;
+    document.getElementById('sheetSel').innerHTML =
+      workbook.SheetNames.map(s => `<option value="${s}">${s}</option>`).join('');
+    changeSheet();
+    document.getElementById('configCard').style.display = 'block';
   };
-  r.readAsArrayBuffer(file);
+  reader.readAsArrayBuffer(file);
 }
 
-// ── SUMMARY ───────────────────────────────────────────────────────
-function renderSummary() {
-  const dupRows      = allRows.filter(r => r.dupSlo || r.dupNidi);
-  const dupSloCount  = allRows.filter(r => r.dupSlo).length;
-  const dupNidiCount = allRows.filter(r => r.dupNidi).length;
-  const kosongRows   = allRows.filter(r => !r.hasSlo && !r.hasNidi);
-  const okRows       = allRows.filter(r => !r.dupSlo && !r.dupNidi && r.hasSlo && r.hasNidi);
+function changeSheet() {
+  const ws = workbook.Sheets[document.getElementById('sheetSel').value];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
-  document.getElementById('summaryGrid').innerHTML = `
-    <div class="summary-card info">
-      <div class="sc-num">${allRows.length}</div>
-      <div class="sc-label">Total Data</div>
-    </div>
-    <div class="summary-card ${dupRows.length > 0 ? 'warn' : 'ok'}">
-      <div class="sc-num">${dupRows.length}</div>
-      <div class="sc-label">Baris Duplikat</div>
-    </div>
-    <div class="summary-card ${dupSloCount > 0 ? 'warn' : 'ok'}">
-      <div class="sc-num">${dupSloCount}</div>
-      <div class="sc-label">Nomor SLO Duplikat</div>
-    </div>
-    <div class="summary-card ${dupNidiCount > 0 ? 'warn' : 'ok'}">
-      <div class="sc-num">${dupNidiCount}</div>
-      <div class="sc-label">Nomor NIDI Duplikat</div>
-    </div>
-    <div class="summary-card ${kosongRows.length > 0 ? 'warn' : 'ok'}">
-      <div class="sc-num">${kosongRows.length}</div>
-      <div class="sc-label">Belum Ada SLO/NIDI</div>
-    </div>
-    <div class="summary-card ok">
-      <div class="sc-num">${okRows.length}</div>
-      <div class="sc-label">Data Aman & Lengkap</div>
-    </div>
-  `;
+  // Temukan baris header
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(6, rows.length); i++) {
+    const r = rows[i].map(c => String(c).toLowerCase());
+    if (r.some(c => c.includes('nama') || c.includes('slo') || c.includes('nidi') ||
+                    c.includes('area') || c.includes('alamat') || c.includes('kota'))) {
+      headerIdx = i; break;
+    }
+  }
 
-  const alertBox = document.getElementById('alertBox');
-  const msgs = [];
-  if (dupRows.length > 0)    msgs.push(`<strong>${dupRows.length} baris</strong> duplikat`);
-  if (kosongRows.length > 0) msgs.push(`<strong>${kosongRows.length} baris</strong> belum ada SLO/NIDI`);
-  if (msgs.length === 0) {
-    alertBox.innerHTML = `<div class="alert alert-green">✅ Tidak ditemukan duplikat! Semua nomor SLO & NIDI unik dan lengkap.</div>`;
+  headers  = rows[headerIdx].map(c => String(c));
+  allRows  = rows.slice(headerIdx + 1).filter(r => r.some(c => c !== ''));
+
+  // ── AUTO-DETECT kolom area & alamat ──
+  areaColIdx   = headers.findIndex(h => /(area|kota|kabupaten|wilayah|daerah|region)/i.test(h));
+  alamatColIdx = headers.findIndex(h => /(alamat|address|lokasi|tempat)/i.test(h));
+
+  // Tentukan mode deteksi
+  if (areaColIdx >= 0) {
+    detectedMode = 'kolom';
+  } else if (alamatColIdx >= 0) {
+    detectedMode = 'alamat';
   } else {
-    alertBox.innerHTML = `<div class="alert alert-red">⚠️ Ditemukan ${msgs.join(' dan ')} — cek tabel di bawah ini.</div>`;
-  }
-}
-
-// ── FILTER ────────────────────────────────────────────────────────
-function setFilter(f, btn) {
-  currentFilter = f;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderTable();
-}
-
-// ── RENDER TABLE ──────────────────────────────────────────────────
-function renderTable() {
-  const q = document.getElementById('searchInput').value.toLowerCase().trim();
-  const showSheet = document.getElementById('th-sheet').style.display !== 'none';
-  const showName  = document.getElementById('th-name').style.display  !== 'none';
-  const colCount  = 4 + (showSheet ? 1 : 0) + (showName ? 1 : 0);
-
-  let filtered = allRows.filter(r => {
-    if (currentFilter === 'dup')    return r.dupSlo || r.dupNidi;
-    if (currentFilter === 'ok')     return !r.dupSlo && !r.dupNidi && r.hasSlo && r.hasNidi;
-    if (currentFilter === 'kosong') return !r.hasSlo && !r.hasNidi;
-    if (currentFilter === 'slo')    return r.hasSlo;
-    if (currentFilter === 'nidi')   return r.hasNidi;
-    return true;
-  });
-
-  if (q) {
-    filtered = filtered.filter(r =>
-      r.slo.toLowerCase().includes(q) ||
-      r.nidi.toLowerCase().includes(q) ||
-      r.name.toLowerCase().includes(q) ||
-      r.sheet.toLowerCase().includes(q)
-    );
+    detectedMode = 'scan';
   }
 
-  const hl = txt => {
-    if (!q || !txt) return txt || '<span style="color:var(--slate-300)">—</span>';
-    const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
-    return txt.replace(re, '<mark>$1</mark>');
-  };
+  // Tampilkan status
+  renderDetectStatus();
 
-  const tbody = document.getElementById('tableBody');
-  if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="${colCount}">
-      <div class="empty-state"><div class="es-icon">🔍</div>Tidak ada data yang cocok</div>
-    </td></tr>`;
-    document.getElementById('tableHint').textContent = '';
-    return;
-  }
-
-  tbody.innerHTML = filtered.map(r => {
-    const isDup    = r.dupSlo || r.dupNidi;
-    const isKosong = !r.hasSlo && !r.hasNidi;
-    const isSebagian = (r.hasSlo && !r.hasNidi) || (!r.hasSlo && r.hasNidi);
-
-    let rowClass = '';
-    if (isDup) rowClass = 'dup-row';
-    else if (isKosong) rowClass = 'kosong-row';
-
-    let statusBadge;
-    if (isDup) {
-      const label = r.dupSlo && r.dupNidi ? ' SLO+NIDI' : r.dupSlo ? ' SLO' : ' NIDI';
-      statusBadge = `<span class="badge badge-dup">⚠️ Duplikat${label}</span>`;
-    } else if (isKosong) {
-      statusBadge = `<span class="badge badge-kosong">⬜ Belum Ada</span>`;
-    } else if (isSebagian) {
-      const missing = !r.hasSlo ? 'SLO' : 'NIDI';
-      statusBadge = `<span class="badge badge-partial">🔶 Kurang ${missing}</span>`;
-    } else {
-      statusBadge = `<span class="badge badge-ok">✅ Aman</span>`;
-    }
-
-    const sloCell  = r.hasSlo  ? `<span class="mono" style="color:var(--blue-dark)">${hl(r.slo)}</span>`  : `<span style="color:var(--slate-300)">—</span>`;
-    const nidiCell = r.hasNidi ? `<span class="mono" style="color:var(--green)">${hl(r.nidi)}</span>` : `<span style="color:var(--slate-300)">—</span>`;
-
-    return `<tr class="${rowClass}">
-      <td class="td-row">${r.rowNum}</td>
-      ${showSheet ? `<td style="font-size:11px;color:var(--slate-400)">${hl(r.sheet)}</td>` : ''}
-      ${showName  ? `<td>${r.name ? hl(r.name) : '<span style="color:var(--slate-300)">—</span>'}</td>` : ''}
-      <td>${sloCell}</td>
-      <td>${nidiCell}</td>
-      <td>${statusBadge}</td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('tableHint').textContent =
-    `Menampilkan ${filtered.length} dari ${allRows.length} baris`;
+  // Populate sort col
+  const opts = headers.map((h,i) => `<option value="${i}">${h}</option>`).join('');
+  document.getElementById('sortCol').innerHTML = '<option value="">— Tidak disortir —</option>' + opts;
 }
 
-// ── DOWNLOAD LAPORAN ──────────────────────────────────────────────
-async function downloadReport() {
-  const dupRows = allRows.filter(r => r.dupSlo || r.dupNidi);
-  if (dupRows.length === 0) { showToast('Tidak ada duplikat yang ditemukan!', 'info'); return; }
+function renderDetectStatus() {
+  let icon, text, cls;
+  if (detectedMode === 'kolom') {
+    icon = '📋'; cls = 'kolom';
+    text = `Kolom <strong>"${headers[areaColIdx]}"</strong> ditemukan → data dikelompokkan otomatis dari kolom ini.`;
+  } else if (detectedMode === 'alamat') {
+    icon = '📍'; cls = 'alamat';
+    text = `Kolom area tidak ditemukan. Kolom <strong>"${headers[alamatColIdx]}"</strong> akan di-scan untuk mendeteksi kota/kabupaten.`;
+  } else {
+    icon = '🔍'; cls = 'scan';
+    const allHeaders = headers.filter(h => h).join(', ');
+    text = `Kolom area & alamat tidak ditemukan di header: <em>${allHeaders}</em>. Seluruh teks tiap baris di-scan otomatis untuk mendeteksi nama kota/kabupaten Jawa Barat.`;
+  }
+  document.getElementById('detectStatus').innerHTML = `
+    <div class="detect-row">
+      <span class="detect-label">Mode</span>
+      <span class="badge-mode ${cls}">${icon} ${detectedMode === 'kolom' ? 'Dari Kolom' : detectedMode === 'alamat' ? 'Dari Alamat' : 'Scan Semua'}</span>
+      <span style="font-size:13px;color:var(--slate-600)">${text}</span>
+    </div>`;
+}
 
-  const showSheet = document.getElementById('th-sheet').style.display !== 'none';
-  const header = ['Baris di Excel', ...(showSheet ? ['Sheet'] : []), ...(hasName ? ['Nama'] : []), 'Nomor SLO', 'Nomor NIDI', 'Status'];
-
-  const dataRows = dupRows.map(r => {
-    const status = r.dupSlo && r.dupNidi ? 'Duplikat SLO & NIDI' : r.dupSlo ? 'Duplikat SLO' : 'Duplikat NIDI';
-    return [r.rowNum, ...(showSheet ? [r.sheet] : []), ...(hasName ? [r.name] : []), r.slo, r.nidi, status];
-  });
-
-  const ws = XLSX.utils.aoa_to_sheet([header, ...dataRows]);
-  const wb2 = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb2, ws, 'Duplikat');
-
-  const fileName = `Laporan_Duplikat_${new Date().toISOString().slice(0,10)}.xlsx`;
-  const wbout = XLSX.write(wb2, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-
-  if ('showSaveFilePicker' in window) {
-    try {
-      const fh = await window.showSaveFilePicker({
-        suggestedName: fileName, startIn: 'downloads',
-        types: [{ description: 'Excel File', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }]
-      });
-      const writable = await fh.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      return;
-    } catch (e) {
-      if (e.name === 'AbortError') return;
+// ── Tentukan area sebuah row (OTOMATIS) ─────────────────────────────────────
+function tentukanAreaRow(row) {
+  // Mode 1: ada kolom khusus area/wilayah → pakai langsung
+  if (detectedMode === 'kolom') {
+    const val = String(row[areaColIdx] || '').trim();
+    if (val) {
+      const d = deteksiArea(val);
+      return d || val; // kalau tidak cocok AREA_MAP, gunakan nilai aslinya
     }
   }
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = fileName; a.click();
-  URL.revokeObjectURL(url);
+
+  // Mode 2: ada kolom alamat → scan teks alamat saja
+  if (detectedMode === 'alamat') {
+    const d = deteksiArea(row[alamatColIdx]);
+    if (d) return d;
+  }
+
+  // Mode 3 (scan) atau fallback: scan SEMUA kolom di baris ini
+  for (const cell of row) {
+    const d = deteksiArea(cell);
+    if (d) return d;
+  }
+
+  return 'Lainnya';
 }
 
-// ── RESET ─────────────────────────────────────────────────────────
+// ── Preview ──────────────────────────────────────────────────────────────────
+function doPreview() {
+  const sortIdx = document.getElementById('sortCol').value !== ''
+    ? parseInt(document.getElementById('sortCol').value) : -1;
+
+  areaGroups = {};
+  for (const row of allRows) {
+    const area = tentukanAreaRow(row);
+    if (!areaGroups[area]) areaGroups[area] = [];
+    areaGroups[area].push(row);
+  }
+
+  if (sortIdx >= 0) {
+    for (const area of Object.keys(areaGroups)) {
+      areaGroups[area].sort((a, b) =>
+        String(a[sortIdx]).localeCompare(String(b[sortIdx]), 'id'));
+    }
+  }
+
+  // Sort areas: Lainnya paling bawah, sisanya alfabet
+  const sortedAreas = Object.keys(areaGroups).sort((a, b) => {
+    if (a === 'Lainnya') return 1;
+    if (b === 'Lainnya') return -1;
+    return a.localeCompare(b, 'id');
+  });
+
+  document.getElementById('areaCountRow').innerHTML =
+    sortedAreas.map(a =>
+      `<span class="pill pill-purple">📍 ${a}: ${areaGroups[a].length}</span>`
+    ).join('');
+
+  document.getElementById('previewHead').innerHTML =
+    `<tr><th>Area Terdeteksi</th>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>`;
+
+  let previewRows = [];
+  const max = Math.max(2, Math.floor(50 / sortedAreas.length));
+  for (const area of sortedAreas) {
+    for (const row of areaGroups[area].slice(0, max)) {
+      previewRows.push({ area, row });
+    }
+  }
+
+  document.getElementById('previewBody').innerHTML = previewRows.map(({area, row}) =>
+    `<tr><td><span class="badge-area">${area}</span></td>${headers.map((_,i)=>`<td>${row[i]??''}</td>`).join('')}</tr>`
+  ).join('');
+
+  document.getElementById('previewCard').style.display = 'block';
+  document.getElementById('previewCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── Download ─────────────────────────────────────────────────────────────────
+function downloadRapikan() {
+  const wb = XLSX.utils.book_new();
+
+  const sortedAreas = Object.keys(areaGroups).sort((a, b) => {
+    if (a === 'Lainnya') return 1;
+    if (b === 'Lainnya') return -1;
+    return a.localeCompare(b, 'id');
+  });
+
+  // Sheet Semua Data
+  const allData = [headers];
+  for (const area of sortedAreas)
+    for (const row of areaGroups[area])
+      allData.push(headers.map((_,i) => row[i] ?? ''));
+  const wsAll = XLSX.utils.aoa_to_sheet(allData);
+  wsAll['!cols'] = headers.map(() => ({wch: 22}));
+  XLSX.utils.book_append_sheet(wb, wsAll, 'Semua Data');
+
+  // Sheet per area
+  for (const area of sortedAreas) {
+    const data = [headers, ...areaGroups[area].map(row => headers.map((_,i) => row[i] ?? ''))];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = headers.map(() => ({wch: 22}));
+    const safeName = area.substring(0, 28).replace(/[\\\/\?\*\[\]]/g, '');
+    XLSX.utils.book_append_sheet(wb, ws, safeName || 'Lainnya');
+  }
+
+  XLSX.writeFile(wb, `Excel_Rapi_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ── Reset ────────────────────────────────────────────────────────────────────
 function resetAll() {
-  allRows = []; hasName = false; xlsxFile = null;
-  currentFilter = 'all';
-  document.getElementById('xlsxDrop').style.display = '';
-  document.getElementById('xlsxReady').style.display = 'none';
-  document.getElementById('xlsxIn').value = '';
-  document.getElementById('colDetect').style.display = 'none';
-  document.getElementById('resultCard').style.display = 'none';
-  document.getElementById('dot1').className = 'step-dot';
-  document.getElementById('dot1').textContent = '1';
-  document.getElementById('searchInput').value = '';
-  document.querySelectorAll('.tab-btn').forEach((b, i) => { b.classList.toggle('active', i === 0); });
+  workbook = null; headers = []; allRows = []; areaGroups = {};
+  document.getElementById('fileIn').value = '';
+  document.getElementById('fileInfo').innerHTML = '';
+  document.getElementById('configCard').style.display = 'none';
+  document.getElementById('previewCard').style.display = 'none';
 }
 </script>
-<!-- TOAST -->
-<div id="toast" style="
-  position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(20px);
-  background:#1E293B; color:#fff; padding:.75rem 1.25rem;
-  border-radius:12px; font-size:13px; font-weight:500;
-  box-shadow:0 8px 30px rgba(0,0,0,0.2); z-index:9999;
-  opacity:0; transition:all .3s cubic-bezier(.34,1.56,.64,1);
-  display:flex; align-items:center; gap:8px;
-  pointer-events:none; max-width:90vw;
-"></div>
-<script>
-function showToast(msg, type) {
-  type = type || 'info';
-  var t = document.getElementById('toast');
-  var icons = { success:'✅', error:'❌', warn:'⚠️', info:'💡' };
-  var colors = { success:'#10B981', error:'#EF4444', warn:'#F59E0B', info:'#60A5FA' };
-  t.innerHTML = '<span style="font-size:15px">' + (icons[type]||'💡') + '</span><span>' + msg + '</span>';
-  t.style.borderLeft = '3px solid ' + (colors[type] || colors.info);
-  t.style.opacity = '1';
-  t.style.transform = 'translateX(-50%) translateY(0)';
-  clearTimeout(t._timer);
-  t._timer = setTimeout(function() {
-    t.style.opacity = '0';
-    t.style.transform = 'translateX(-50%) translateY(20px)';
-  }, 3000);
-}
-</script>
+
 <script src="../assets/js/cursor-bridge.js"></script>
 </body>
 </html>
