@@ -288,5 +288,177 @@
 </style>
 
 <script src="assets/js/main.js"></script>
+
+<!-- ✨ CUTE CURSOR EFFECTS ✨ -->
+<div id="customCursor"></div>
+<div id="customCursorDot"></div>
+
+<script>
+(function() {
+  // ── CUSTOM CURSOR ──
+  const cursor    = document.getElementById('customCursor');
+  const cursorDot = document.getElementById('customCursorDot');
+
+  let mouseX = -100, mouseY = -100;
+  let cursorX = -100, cursorY = -100;
+
+  document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    cursorDot.style.left = mouseX + 'px';
+    cursorDot.style.top  = mouseY + 'px';
+  });
+
+  // Smooth cursor follow
+  function animateCursor() {
+    cursorX += (mouseX - cursorX) * 0.12;
+    cursorY += (mouseY - cursorY) * 0.12;
+    cursor.style.left = cursorX + 'px';
+    cursor.style.top  = cursorY + 'px';
+    requestAnimationFrame(animateCursor);
+  }
+  animateCursor();
+
+  // Cursor scale on hover over clickable elements
+  document.querySelectorAll('a, button, .nav-item, .tool-card, .stat-card-slo, .stat-card-nidi, [onclick]').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      cursor.classList.add('cursor-hover');
+      cursorDot.classList.add('dot-hover');
+    });
+    el.addEventListener('mouseleave', () => {
+      cursor.classList.remove('cursor-hover');
+      cursorDot.classList.remove('dot-hover');
+    });
+  });
+
+  // ── TRAILING HEARTS & SPARKLES ──
+  const trailEmojis = ['💙','💜','✨','⭐','🌸','💫','🌟','💎','🩵','🫧'];
+  let trailIdx = 0;
+  let lastTrailTime = 0;
+
+  document.addEventListener('mousemove', (e) => {
+    const now = Date.now();
+    if (now - lastTrailTime < 80) return; // throttle: 1 particle per 80ms
+    lastTrailTime = now;
+
+    const el = document.createElement('div');
+    el.className = 'cursor-trail';
+    el.textContent = trailEmojis[trailIdx % trailEmojis.length];
+    trailIdx++;
+
+    // Slight random offset around cursor
+    const ox = (Math.random() - 0.5) * 16;
+    const oy = (Math.random() - 0.5) * 16;
+    el.style.left = (e.clientX + ox) + 'px';
+    el.style.top  = (e.clientY + oy) + 'px';
+    el.style.fontSize = (11 + Math.random() * 10) + 'px';
+
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 900);
+  });
+
+  // ── CLICK BURST — stars explode on click ──
+  const burstEmojis = ['💥','⭐','✨','💙','💜','🌟','💫','🎀','🩵'];
+
+  document.addEventListener('click', (e) => {
+    const count = 10 + Math.floor(Math.random() * 6);
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement('div');
+      el.className = 'cursor-burst';
+      el.textContent = burstEmojis[Math.floor(Math.random() * burstEmojis.length)];
+
+      const angle  = (360 / count) * i + (Math.random() * 20 - 10);
+      const dist   = 40 + Math.random() * 60;
+      const rad    = angle * Math.PI / 180;
+      const dx     = Math.cos(rad) * dist;
+      const dy     = Math.sin(rad) * dist;
+      const size   = 12 + Math.random() * 14;
+
+      el.style.left     = e.clientX + 'px';
+      el.style.top      = e.clientY + 'px';
+      el.style.fontSize = size + 'px';
+      el.style.setProperty('--dx', dx + 'px');
+      el.style.setProperty('--dy', dy + 'px');
+
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 700);
+    }
+  });
+
+})();
+</script>
+
+<style>
+/* ── HIDE DEFAULT CURSOR ── */
+*, *::before, *::after { cursor: none !important; }
+
+/* ── CUSTOM CURSOR RING ── */
+#customCursor {
+  position: fixed;
+  width: 36px; height: 36px;
+  border: 2.5px solid rgba(147,197,253,0.8);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99999;
+  transform: translate(-50%, -50%);
+  transition: width .2s, height .2s, border-color .2s, background .2s;
+  mix-blend-mode: normal;
+}
+#customCursor.cursor-hover {
+  width: 52px; height: 52px;
+  border-color: rgba(167,139,250,0.9);
+  background: rgba(167,139,250,0.08);
+}
+
+/* ── CURSOR DOT ── */
+#customCursorDot {
+  position: fixed;
+  width: 7px; height: 7px;
+  background: #93C5FD;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 100000;
+  transform: translate(-50%, -50%);
+  transition: width .15s, height .15s, background .15s;
+}
+#customCursorDot.dot-hover {
+  width: 10px; height: 10px;
+  background: #A78BFA;
+}
+
+/* ── TRAILING HEARTS ── */
+.cursor-trail {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99998;
+  transform: translate(-50%, -50%);
+  animation: trailFade 0.9s ease-out forwards;
+  user-select: none;
+}
+@keyframes trailFade {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 28px)) scale(0.4); }
+}
+
+/* ── CLICK BURST ── */
+.cursor-burst {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99997;
+  transform: translate(-50%, -50%);
+  animation: burstFly 0.7s cubic-bezier(.2,.8,.4,1) forwards;
+  user-select: none;
+}
+@keyframes burstFly {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.3); }
+}
+
+/* Hide cursor effects on mobile/touch */
+@media (hover: none) and (pointer: coarse) {
+  #customCursor, #customCursorDot { display: none; }
+  *, *::before, *::after { cursor: auto !important; }
+}
+</style>
 </body>
 </html>
