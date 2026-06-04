@@ -9,266 +9,274 @@
 </head>
 <body>
 
-<!-- SIDEBAR OVERLAY (mobile) -->
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<!-- AURORA BACKGROUND -->
+<div id="dash-aurora" aria-hidden="true"></div>
 
 <!-- FLOATING PARTICLES -->
 <div class="particles" id="particles" aria-hidden="true"></div>
 
-<!-- SIDEBAR -->
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon"><span>N</span></div>
-    <div>
-      <div class="logo-text">Tools NADIA</div>
-      <div class="logo-sub">Wilayah Jawa Barat</div>
-    </div>
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo-icon"><span>N</span></div>
+    <span class="topbar-brand-name">Tools NADIA</span>
   </div>
-
-  <div class="nav-section">
-    <div class="nav-label">Menu</div>
-    <a class="nav-item active" onclick="showPage('home', this)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      Dashboard
-    </a>
+  <div class="topbar-center">
+    <span class="topbar-title" id="topbarTitle">Dashboard</span>
+    <span class="topbar-sep">·</span>
+    <span class="topbar-breadcrumb" id="topbarBreadcrumb">Tools NADIA</span>
   </div>
-
-  <div class="nav-section">
-    <div class="nav-label">Tools</div>
-    <a class="nav-item" data-page="slo-nidi" onclick="showPage('slo-nidi', this)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      SLO & NIDI Extractor
-    </a>
-    <a class="nav-item" data-page="rename-pdf" onclick="showPage('rename-pdf', this)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-      Rename PDF
-      <span class="nav-badge">New</span>
-    </a>
-    <a class="nav-item" data-page="cek-duplikat" onclick="showPage('cek-duplikat', this)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="11" y1="8" x2="11" y2="14"/></svg>
-      Cek Duplikat SLO & NIDI
-      <span class="nav-badge">New</span>
-    </a>
-    <a class="nav-item" data-page="rekap" onclick="showPage('rekap', this)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-      Rekap & Laporan
-      <span class="nav-badge">New</span>
-    </a>
-    <a class="nav-item" data-page="rapikan" onclick="showPage('rapikan', this)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-      Rapikan Excel
-      <span class="nav-badge">New</span>
-    </a>
-    <a class="nav-item" data-page="cari-data" onclick="showPage('cari-data', this)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      Cari Data
-      <span class="nav-badge">New</span>
-    </a>
-    <!-- TAMBAH MENU BARU DI SINI -->
-  </div>
-
-  <div class="sidebar-bottom">
-    <div class="user-card">
-      <div class="user-avatar">N</div>
-      <div>
-        <div class="user-name">Nadia Ramdiana</div>
-        <div class="user-role">Wilayah Jawa Barat</div>
-      </div>
-      <button class="btn-logout" onclick="logout()" title="Keluar">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      </button>
-    </div>
-  </div>
-</aside>
-
-<!-- MAIN -->
-<div class="main">
-  <div class="topbar">
-    <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  <div class="topbar-right">
+    <div class="topbar-date" id="clock"></div>
+    <button class="topbar-user-btn" onclick="logout()" title="Keluar">
+      <div class="topbar-avatar" id="topbarAvatar">N</div>
     </button>
-    <div>
-      <div class="topbar-title" id="topbarTitle">Dashboard</div>
-      <div class="topbar-breadcrumb" id="topbarBreadcrumb">Tools NADIA</div>
-    </div>
-    <div class="topbar-right">
-      <div class="topbar-date" id="clock"></div>
-    </div>
-  </div>
-
-  <div class="content">
-
-    <!-- HOME PAGE -->
-    <div class="page active" id="page-home">
-      <div class="welcome-card">
-        <div class="welcome-hearts">
-          <span class="heart h1">💙</span>
-          <span class="heart h2">💜</span>
-          <span class="heart h3">💙</span>
-          <span class="heart h4">✨</span>
-          <span class="heart h5">⭐</span>
-        </div>
-        <h2 id="greetingText">Selamat datang! 🩵</h2>
-        <p>Semua tools penerbitan SLO & NIDI tersedia di sini.</p>
-        <div class="welcome-emoji" id="welcomeEmoji">✨</div>
-      </div>
-
-      <div class="stats-grid">
-        <div class="stat-card stat-card-tools">
-          <div class="stat-icon blue">📄</div>
-          <div class="stat-num" data-tools-count>6</div>
-          <div class="stat-label">Tools Tersedia</div>
-          <div class="stat-sparkle">✨</div>
-        </div>
-        <div class="stat-card stat-card-slo" onclick="showPage('slo-nidi', document.querySelector('[data-page=slo-nidi]'))" style="cursor:pointer" title="Buka SLO & NIDI Extractor">
-          <div class="stat-icon blue">📋</div>
-          <div class="stat-num stat-num-slo" id="statSloCount">0</div>
-          <div class="stat-label">SLO Diekstrak</div>
-          <div class="stat-sublabel" id="statSloSub">Belum ada data</div>
-          <div class="stat-badge-go">Buka →</div>
-        </div>
-        <div class="stat-card stat-card-nidi" onclick="showPage('slo-nidi', document.querySelector('[data-page=slo-nidi]'))" style="cursor:pointer" title="Buka SLO & NIDI Extractor">
-          <div class="stat-icon purple">🪪</div>
-          <div class="stat-num stat-num-nidi" id="statNidiCount">0</div>
-          <div class="stat-label">NIDI Diekstrak</div>
-          <div class="stat-sublabel" id="statNidiSub">Belum ada data</div>
-          <div class="stat-badge-go">Buka →</div>
-        </div>
-      </div>
-
-      <div class="section-header">
-        <div class="section-title">Tools yang Tersedia</div>
-        <div class="section-sub">Klik tool untuk mulai menggunakan</div>
-      </div>
-
-      <div class="tools-grid">
-        <div class="tool-card" data-page="slo-nidi" onclick="showPage('slo-nidi', document.querySelector('[data-page=slo-nidi]'))">
-          <div class="tool-icon">📋</div>
-          <div class="tool-name">SLO & NIDI Extractor</div>
-          <div class="tool-desc">Upload PDF SLO & NIDI, ekstrak nomor otomatis, dan isi file Excel dari Pak Lontung.</div>
-          <div class="tool-arrow">Buka tool →</div>
-        </div>
-        <div class="tool-card" data-page="rename-pdf" onclick="showPage('rename-pdf', document.querySelector('[data-page=rename-pdf]'))">
-          <div class="tool-icon">✏️</div>
-          <div class="tool-name">Rename PDF</div>
-          <div class="tool-desc">Upload PDF SLO & NIDI, rename otomatis sesuai nama pemilik di dalam sertifikat, lalu download sebagai ZIP.</div>
-          <div class="tool-arrow">Buka tool →</div>
-        </div>
-        <div class="tool-card" data-page="cek-duplikat" onclick="showPage('cek-duplikat', document.querySelector('[data-page=cek-duplikat]'))">
-          <div class="tool-icon">🔍</div>
-          <div class="tool-name">Cek Duplikat SLO & NIDI</div>
-          <div class="tool-desc">Upload Excel → deteksi otomatis nomor SLO atau NIDI yang muncul lebih dari sekali, lalu download laporan duplikatnya.</div>
-          <div class="tool-arrow">Buka tool →</div>
-        </div>
-        <div class="tool-card" data-page="rekap" onclick="showPage('rekap', document.querySelector('[data-page=rekap]'))">
-          <div class="tool-icon">📊</div>
-          <div class="tool-name">Rekap & Laporan</div>
-          <div class="tool-desc">Upload Excel multi-sheet per area → hitung total SLO & NIDI otomatis, tampilkan ringkasan, dan download laporan siap kirim.</div>
-          <div class="tool-arrow">Buka tool →</div>
-        </div>
-        <div class="tool-card" data-page="rapikan" onclick="showPage('rapikan', document.querySelector('[data-page=rapikan]'))">
-          <div class="tool-icon">🧹</div>
-          <div class="tool-name">Rapikan Excel</div>
-          <div class="tool-desc">Upload Excel yang berantakan → sortir dan pisahkan data per area ke masing-masing sheet secara otomatis.</div>
-          <div class="tool-arrow">Buka tool →</div>
-        </div>
-        <div class="tool-card" data-page="cari-data" onclick="showPage('cari-data', document.querySelector('[data-page=cari-data]'))">
-          <div class="tool-icon">🔎</div>
-          <div class="tool-name">Cari Data</div>
-          <div class="tool-desc">Cari nama, nomor SLO, atau NIDI dari semua sheet sekaligus tanpa buka Excel manual.</div>
-          <div class="tool-arrow">Buka tool →</div>
-        </div>
-        <!-- TAMBAH TOOL CARD BARU DI SINI -->
-      </div>
-    </div>
-
-    <!-- SLO NIDI PAGE -->
-    <div class="page" id="page-slo-nidi">
-      <div class="section-header">
-        <div class="section-title">SLO & NIDI Extractor</div>
-        <div class="section-sub">Ekstrak nomor SLO & NIDI dari PDF dan isi Excel secara otomatis</div>
-      </div>
-      <div class="tool-frame">
-        <iframe src="pages/slo-nidi.html" id="sloFrame"></iframe>
-      </div>
-    </div>
-
-    <!-- TAMBAH HALAMAN TOOL BARU DI SINI -->
-    <!-- REKAP PAGE -->
-    <div class="page" id="page-rekap">
-      <div class="section-header">
-        <div class="section-title">Rekap & Laporan</div>
-        <div class="section-sub">Upload Excel per area → rekap otomatis jumlah SLO & NIDI → download laporan</div>
-      </div>
-      <div class="tool-frame">
-        <iframe src="pages/rekap.html" id="rekapFrame"></iframe>
-      </div>
-    </div>
-    <!-- RAPIKAN EXCEL PAGE -->
-    <div class="page" id="page-rapikan">
-      <div class="section-header">
-        <div class="section-title">Rapikan Excel</div>
-        <div class="section-sub">Upload Excel berantakan → sortir & pisahkan per area otomatis → download Excel rapi</div>
-      </div>
-      <div class="tool-frame">
-        <iframe src="pages/rapikan.html" id="rapikanFrame"></iframe>
-      </div>
-    </div>
-    <!-- CARI DATA PAGE -->
-    <div class="page" id="page-cari-data">
-      <div class="section-header">
-        <div class="section-title">Cari Data</div>
-        <div class="section-sub">Cari nama, nomor SLO, atau NIDI dari semua sheet sekaligus</div>
-      </div>
-      <div class="tool-frame">
-        <iframe src="pages/cari-data.html" id="cariFrame"></iframe>
-      </div>
-    </div>
-    <!-- CEK DUPLIKAT PAGE -->
-    <div class="page" id="page-cek-duplikat">
-      <div class="section-header">
-        <div class="section-title">Cek Duplikat SLO & NIDI</div>
-        <div class="section-sub">Deteksi nomor SLO & NIDI yang muncul lebih dari sekali dalam file Excel</div>
-      </div>
-      <div class="tool-frame">
-        <iframe src="pages/cek-duplikat.html" id="dupFrame"></iframe>
-      </div>
-    </div>
-    <!-- RENAME PDF PAGE -->
-    <div class="page" id="page-rename-pdf">
-      <div class="section-header">
-        <div class="section-title">Rename PDF</div>
-        <div class="section-sub">Rename otomatis berdasarkan nama pemilik di dalam sertifikat SLO & NIDI</div>
-      </div>
-      <div class="tool-frame">
-        <iframe src="pages/rename-pdf.html" id="renameFrame"></iframe>
-      </div>
-    </div>
-
   </div>
 </div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- HOME PAGE -->
+  <div class="page active" id="page-home">
+    <div class="welcome-card">
+      <div class="welcome-hearts">
+        <span class="heart h1">💙</span>
+        <span class="heart h2">💜</span>
+        <span class="heart h3">💙</span>
+        <span class="heart h4">✨</span>
+        <span class="heart h5">⭐</span>
+      </div>
+      <h2 id="greetingText">Selamat datang! 🩵</h2>
+      <p>Semua tools penerbitan SLO & NIDI tersedia di sini.</p>
+      <div class="welcome-emoji" id="welcomeEmoji">✨</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card stat-card-tools">
+        <div class="stat-icon blue">📄</div>
+        <div class="stat-num" data-tools-count>6</div>
+        <div class="stat-label">Tools Tersedia</div>
+        <div class="stat-sparkle">✨</div>
+      </div>
+      <div class="stat-card stat-card-slo" onclick="showPage('slo-nidi', document.querySelector('[data-page=slo-nidi]'))" style="cursor:pointer" title="Buka SLO & NIDI Extractor">
+        <div class="stat-icon blue">📋</div>
+        <div class="stat-num stat-num-slo" id="statSloCount">0</div>
+        <div class="stat-label">SLO Diekstrak</div>
+        <div class="stat-sublabel" id="statSloSub">Belum ada data</div>
+        <div class="stat-badge-go">Buka →</div>
+      </div>
+      <div class="stat-card stat-card-nidi" onclick="showPage('slo-nidi', document.querySelector('[data-page=slo-nidi]'))" style="cursor:pointer" title="Buka SLO & NIDI Extractor">
+        <div class="stat-icon purple">🪪</div>
+        <div class="stat-num stat-num-nidi" id="statNidiCount">0</div>
+        <div class="stat-label">NIDI Diekstrak</div>
+        <div class="stat-sublabel" id="statNidiSub">Belum ada data</div>
+        <div class="stat-badge-go">Buka →</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">Tools yang Tersedia</div>
+      <div class="section-sub">Klik tool untuk mulai menggunakan</div>
+    </div>
+
+    <div class="tools-grid">
+      <div class="tool-card" data-page="slo-nidi" onclick="showPage('slo-nidi', document.querySelector('[data-page=slo-nidi]'))">
+        <div class="tool-icon">📋</div>
+        <div class="tool-name">SLO & NIDI Extractor</div>
+        <div class="tool-desc">Upload PDF SLO & NIDI, ekstrak nomor otomatis, dan isi file Excel dari Pak Lontung.</div>
+        <div class="tool-arrow">Buka tool →</div>
+      </div>
+      <div class="tool-card" data-page="rename-pdf" onclick="showPage('rename-pdf', document.querySelector('[data-page=rename-pdf]'))">
+        <div class="tool-icon">✏️</div>
+        <div class="tool-name">Rename PDF</div>
+        <div class="tool-desc">Upload PDF SLO & NIDI, rename otomatis sesuai nama pemilik di dalam sertifikat, lalu download sebagai ZIP.</div>
+        <div class="tool-arrow">Buka tool →</div>
+      </div>
+      <div class="tool-card" data-page="cek-duplikat" onclick="showPage('cek-duplikat', document.querySelector('[data-page=cek-duplikat]'))">
+        <div class="tool-icon">🔍</div>
+        <div class="tool-name">Cek Duplikat SLO & NIDI</div>
+        <div class="tool-desc">Upload Excel → deteksi otomatis nomor SLO atau NIDI yang muncul lebih dari sekali, lalu download laporan duplikatnya.</div>
+        <div class="tool-arrow">Buka tool →</div>
+      </div>
+      <div class="tool-card" data-page="rekap" onclick="showPage('rekap', document.querySelector('[data-page=rekap]'))">
+        <div class="tool-icon">📊</div>
+        <div class="tool-name">Rekap & Laporan</div>
+        <div class="tool-desc">Upload Excel multi-sheet per area → hitung total SLO & NIDI otomatis, tampilkan ringkasan, dan download laporan siap kirim.</div>
+        <div class="tool-arrow">Buka tool →</div>
+      </div>
+      <div class="tool-card" data-page="rapikan" onclick="showPage('rapikan', document.querySelector('[data-page=rapikan]'))">
+        <div class="tool-icon">🧹</div>
+        <div class="tool-name">Rapikan Excel</div>
+        <div class="tool-desc">Upload Excel yang berantakan → sortir dan pisahkan data per area ke masing-masing sheet secara otomatis.</div>
+        <div class="tool-arrow">Buka tool →</div>
+      </div>
+      <div class="tool-card" data-page="cari-data" onclick="showPage('cari-data', document.querySelector('[data-page=cari-data]'))">
+        <div class="tool-icon">🔎</div>
+        <div class="tool-name">Cari Data</div>
+        <div class="tool-desc">Cari nama, nomor SLO, atau NIDI dari semua sheet sekaligus tanpa buka Excel manual.</div>
+        <div class="tool-arrow">Buka tool →</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLO NIDI PAGE -->
+  <div class="page" id="page-slo-nidi">
+    <div class="section-header">
+      <div class="section-title">SLO & NIDI Extractor</div>
+      <div class="section-sub">Ekstrak nomor SLO & NIDI dari PDF dan isi Excel secara otomatis</div>
+    </div>
+    <div class="tool-frame"><iframe src="pages/slo-nidi.html" id="sloFrame"></iframe></div>
+  </div>
+
+  <!-- REKAP PAGE -->
+  <div class="page" id="page-rekap">
+    <div class="section-header">
+      <div class="section-title">Rekap & Laporan</div>
+      <div class="section-sub">Upload Excel per area → rekap otomatis jumlah SLO & NIDI → download laporan</div>
+    </div>
+    <div class="tool-frame"><iframe src="pages/rekap.html" id="rekapFrame"></iframe></div>
+  </div>
+
+  <!-- RAPIKAN EXCEL PAGE -->
+  <div class="page" id="page-rapikan">
+    <div class="section-header">
+      <div class="section-title">Rapikan Excel</div>
+      <div class="section-sub">Upload Excel berantakan → sortir & pisahkan per area otomatis → download Excel rapi</div>
+    </div>
+    <div class="tool-frame"><iframe src="pages/rapikan.html" id="rapikanFrame"></iframe></div>
+  </div>
+
+  <!-- CARI DATA PAGE -->
+  <div class="page" id="page-cari-data">
+    <div class="section-header">
+      <div class="section-title">Cari Data</div>
+      <div class="section-sub">Cari nama, nomor SLO, atau NIDI dari semua sheet sekaligus</div>
+    </div>
+    <div class="tool-frame"><iframe src="pages/cari-data.html" id="cariFrame"></iframe></div>
+  </div>
+
+  <!-- CEK DUPLIKAT PAGE -->
+  <div class="page" id="page-cek-duplikat">
+    <div class="section-header">
+      <div class="section-title">Cek Duplikat SLO & NIDI</div>
+      <div class="section-sub">Deteksi nomor SLO & NIDI yang muncul lebih dari sekali dalam file Excel</div>
+    </div>
+    <div class="tool-frame"><iframe src="pages/cek-duplikat.html" id="dupFrame"></iframe></div>
+  </div>
+
+  <!-- RENAME PDF PAGE -->
+  <div class="page" id="page-rename-pdf">
+    <div class="section-header">
+      <div class="section-title">Rename PDF</div>
+      <div class="section-sub">Rename otomatis berdasarkan nama pemilik di dalam sertifikat SLO & NIDI</div>
+    </div>
+    <div class="tool-frame"><iframe src="pages/rename-pdf.html" id="renameFrame"></iframe></div>
+  </div>
+
+</div><!-- /content -->
+
+<!-- DOCK TRIGGER ZONE (invisible hit area) -->
+<div id="dockTrigger" style="position:fixed;bottom:0;left:0;right:0;height:100px;z-index:199;pointer-events:auto;"></div>
+
+<!-- DOCK NAVIGATION -->
+<nav class="dock" id="dock">
+  <div class="dock-track" id="dockTrack">
+
+    <button class="dock-item nav-item active" data-page="home" data-label="Dashboard" onclick="showPage('home', this)">
+      <div class="dock-icon-wrap">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <span class="dock-label">Dashboard</span>
+      <span class="dock-dot"></span>
+    </button>
+
+    <button class="dock-item nav-item" data-page="slo-nidi" data-label="SLO & NIDI" onclick="showPage('slo-nidi', this)">
+      <div class="dock-icon-wrap">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <span class="dock-label">SLO & NIDI</span>
+      <span class="dock-dot"></span>
+    </button>
+
+    <button class="dock-item nav-item" data-page="rename-pdf" data-label="Rename PDF" onclick="showPage('rename-pdf', this)">
+      <div class="dock-icon-wrap">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </div>
+      <span class="dock-label">Rename PDF</span>
+      <span class="dock-dot"></span>
+    </button>
+
+    <button class="dock-item nav-item" data-page="cek-duplikat" data-label="Cek Duplikat" onclick="showPage('cek-duplikat', this)">
+      <div class="dock-icon-wrap">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="11" y1="8" x2="11" y2="14"/></svg>
+      </div>
+      <span class="dock-label">Duplikat</span>
+      <span class="dock-dot"></span>
+    </button>
+
+    <button class="dock-item nav-item" data-page="rekap" data-label="Rekap & Laporan" onclick="showPage('rekap', this)">
+      <div class="dock-icon-wrap">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      </div>
+      <span class="dock-label">Rekap</span>
+      <span class="dock-dot"></span>
+    </button>
+
+    <button class="dock-item nav-item" data-page="rapikan" data-label="Rapikan Excel" onclick="showPage('rapikan', this)">
+      <div class="dock-icon-wrap">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </div>
+      <span class="dock-label">Rapikan</span>
+      <span class="dock-dot"></span>
+    </button>
+
+    <button class="dock-item nav-item" data-page="cari-data" data-label="Cari Data" onclick="showPage('cari-data', this)">
+      <div class="dock-icon-wrap">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+      <span class="dock-label">Cari Data</span>
+      <span class="dock-dot"></span>
+    </button>
+
+    <div class="dock-sep"></div>
+
+    <button class="dock-item dock-logout" data-label="Keluar" onclick="logout()" title="Keluar">
+      <div class="dock-icon-wrap">
+        <div class="dock-avatar" id="dockAvatar">N</div>
+      </div>
+      <span class="dock-label">Keluar</span>
+    </button>
+
+  </div>
+</nav>
 
 <!-- MODAL LOGOUT -->
 <div id="logoutModal" style="
   display:none; position:fixed; inset:0; z-index:9999;
-  background:rgba(15,23,42,0.55); backdrop-filter:blur(6px);
+  background:rgba(0,0,0,0.6); backdrop-filter:blur(8px);
   align-items:center; justify-content:center;
 ">
   <div style="
-    background:#fff; border-radius:20px; padding:2rem 2rem 1.5rem;
+    background:rgba(6,12,26,0.92);
+    border:1px solid rgba(147,197,253,0.15);
+    border-radius:20px; padding:2rem 2rem 1.5rem;
     width:320px; max-width:90vw; text-align:center;
-    box-shadow:0 24px 60px rgba(15,23,42,0.18);
+    box-shadow:0 24px 60px rgba(0,0,0,0.5);
+    backdrop-filter:blur(20px);
     animation: modalPop .2s cubic-bezier(.34,1.56,.64,1);
   ">
     <div style="font-size:44px; margin-bottom:.75rem;">👋</div>
-    <div style="font-size:16px; font-weight:700; color:#1E293B; margin-bottom:.4rem;">Yakin mau keluar?</div>
-    <div style="font-size:13px; color:#94A3B8; margin-bottom:1.5rem;">Kamu harus login lagi untuk masuk</div>
+    <div style="font-size:16px; font-weight:700; color:#f8fafc; margin-bottom:.4rem;">Yakin mau keluar?</div>
+    <div style="font-size:13px; color:#94a3b8; margin-bottom:1.5rem;">Kamu akan diarahkan ke halaman utama</div>
     <div style="display:flex; gap:8px; justify-content:center;">
       <button onclick="closeLogoutModal()" style="
-        flex:1; padding:10px; border-radius:10px; border:1.5px solid #E2E8F0;
-        background:#fff; font-size:13px; font-weight:600; color:#475569;
+        flex:1; padding:10px; border-radius:10px;
+        border:1px solid rgba(147,197,253,0.2);
+        background:rgba(255,255,255,0.05);
+        font-size:13px; font-weight:600; color:#94a3b8;
         cursor:pointer; font-family:inherit; transition:all .15s;
-      " onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='#fff'">Batal</button>
+      " onmouseover="this.style.background='rgba(255,255,255,0.1)';this.style.color='#f8fafc'" onmouseout="this.style.background='rgba(255,255,255,0.05)';this.style.color='#94a3b8'">Batal</button>
       <button onclick="confirmLogout()" style="
         flex:1; padding:10px; border-radius:10px; border:none;
         background:linear-gradient(135deg,#F87171,#EF4444);
@@ -280,38 +288,121 @@
   </div>
 </div>
 
-<style>
-@keyframes modalPop {
-  from { opacity:0; transform:scale(.85) translateY(10px); }
-  to   { opacity:1; transform:scale(1) translateY(0); }
-}
-</style>
-
 <script src="assets/js/main.js"></script>
+<script src="assets/js/splash-cursor.js"></script>
+<script src="assets/js/signature.js"></script>
 
-<script src="assets/js/cursor.js"></script>
+<!-- OGL Aurora Background -->
+<script src="https://cdn.jsdelivr.net/npm/ogl@1.0.8/dist/ogl.umd.js"></script>
+<script>
+(function initDashAurora() {
+  const ctn = document.getElementById('dash-aurora');
+  if (!ctn || !window.ogl) return;
+  const { Renderer, Program, Mesh, Color, Triangle } = window.ogl;
+  const VERT = `#version 300 es\nin vec2 position;\nvoid main() { gl_Position = vec4(position, 0.0, 1.0); }`;
+  const FRAG = `#version 300 es\nprecision highp float;\nuniform float uTime; uniform float uAmplitude;\nuniform vec3 uColorStops[3]; uniform vec2 uResolution; uniform float uBlend;\nout vec4 fragColor;\nvec3 permute(vec3 x){return mod(((x*34.0)+1.0)*x,289.0);}\nfloat snoise(vec2 v){\n  const vec4 C=vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);\n  vec2 i=floor(v+dot(v,C.yy));vec2 x0=v-i+dot(i,C.xx);\n  vec2 i1=(x0.x>x0.y)?vec2(1.0,0.0):vec2(0.0,1.0);\n  vec4 x12=x0.xyxy+C.xxzz;x12.xy-=i1;i=mod(i,289.0);\n  vec3 p=permute(permute(i.y+vec3(0.0,i1.y,1.0))+i.x+vec3(0.0,i1.x,1.0));\n  vec3 m=max(0.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.0);\n  m=m*m;m=m*m;\n  vec3 x=2.0*fract(p*C.www)-1.0;vec3 h=abs(x)-0.5;\n  vec3 ox=floor(x+0.5);vec3 a0=x-ox;\n  m*=1.79284291400159-0.85373472095314*(a0*a0+h*h);\n  vec3 g;g.x=a0.x*x0.x+h.x*x0.y;g.yz=a0.yz*x12.xz+h.yz*x12.yw;\n  return 130.0*dot(m,g);}\nstruct ColorStop{vec3 color;float position;};\n#define COLOR_RAMP(colors,factor,finalColor){int index=0;for(int i=0;i<2;i++){ColorStop cc=colors[i];bool iib=cc.position<=factor;index=int(mix(float(index),float(i),float(iib)));}ColorStop cc=colors[index];ColorStop nc=colors[index+1];float range=nc.position-cc.position;float lf=(factor-cc.position)/range;finalColor=mix(cc.color,nc.color,lf);}\nvoid main(){\n  vec2 uv=gl_FragCoord.xy/uResolution;\n  ColorStop colors[3];\n  colors[0]=ColorStop(uColorStops[0],0.0);\n  colors[1]=ColorStop(uColorStops[1],0.5);\n  colors[2]=ColorStop(uColorStops[2],1.0);\n  vec3 rampColor;COLOR_RAMP(colors,uv.x,rampColor);\n  float height=snoise(vec2(uv.x*2.0+uTime*0.1,uTime*0.25))*0.5*uAmplitude;\n  height=exp(height);height=(uv.y*2.0-height+0.2);\n  float intensity=0.6*height;\n  float midPoint=0.20;\n  float auroraAlpha=smoothstep(midPoint-uBlend*0.5,midPoint+uBlend*0.5,intensity);\n  vec3 auroraColor=intensity*rampColor;\n  fragColor=vec4(auroraColor*auroraAlpha,auroraAlpha);}`;
+  const colorStops = ['#3B82F6', '#818CF8', '#A78BFA'];
+  const renderer = new Renderer({ alpha: true, premultipliedAlpha: true, antialias: true });
+  const gl = renderer.gl;
+  gl.clearColor(0,0,0,0); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  let program;
+  function resize() { const w=ctn.offsetWidth,h=ctn.offsetHeight; renderer.setSize(w,h); if(program)program.uniforms.uResolution.value=[w,h]; }
+  const geometry = new Triangle(gl);
+  if (geometry.attributes.uv) delete geometry.attributes.uv;
+  const colorStopsArray = colorStops.map(hex => { const c=new Color(hex); return [c.r,c.g,c.b]; });
+  program = new Program(gl, { vertex:VERT, fragment:FRAG, uniforms:{ uTime:{value:0}, uAmplitude:{value:1.0}, uColorStops:{value:colorStopsArray}, uResolution:{value:[ctn.offsetWidth,ctn.offsetHeight]}, uBlend:{value:0.39} } });
+  const mesh = new Mesh(gl, { geometry, program });
+  ctn.appendChild(gl.canvas);
+  new ResizeObserver(resize).observe(ctn);
+  requestAnimationFrame(resize);
+  (function update(t) { requestAnimationFrame(update); program.uniforms.uTime.value=t*0.001*1.3*0.1; renderer.render({scene:mesh}); })(0);
+})();
+</script>
+
+<!-- DOCK AUTO-HIDE -->
+<script>
+(function initDockAutoHide() {
+  const dock    = document.getElementById('dock');
+  const track   = document.getElementById('dockTrack');
+  const trigger = document.getElementById('dockTrigger');
+  if (!dock) return;
+
+  const DELAY = 5000;
+  let hideTimer = null;
+
+  function show() {
+    clearTimeout(hideTimer);
+    hideTimer = null;
+    dock.style.transition = '';
+    dock.classList.remove('dock-hidden');
+    // Sembunyikan hit area saat dock terlihat (agar tidak block dock)
+    if (trigger) trigger.style.pointerEvents = 'none';
+  }
+
+  function hide() {
+    dock.style.transition = 'transform 0.2s ease-in, opacity 0.16s ease';
+    dock.classList.add('dock-hidden');
+    // Aktifkan kembali hit area saat dock sembunyi
+    if (trigger) trigger.style.pointerEvents = 'auto';
+  }
+
+  function scheduleHide() {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(hide, DELAY);
+  }
+
+  // Hit area bawah layar → show langsung saat cursor masuk
+  trigger?.addEventListener('mouseenter', show);
+
+  // Dock track
+  track?.addEventListener('mouseenter', () => { clearTimeout(hideTimer); hideTimer = null; show(); });
+  track?.addEventListener('mouseleave', scheduleHide);
+
+  // Mulai countdown dari page load
+  scheduleHide();
+})();
+</script>
+
+<!-- DOCK MAGNIFICATION -->
+<script>
+(function initDock() {
+  const track = document.getElementById('dockTrack');
+  if (!track) return;
+  const items = Array.from(track.querySelectorAll('.dock-item'));
+  const MAX_SCALE = 1.16, SIGMA = 48;
+
+  function update(mouseX) {
+    items.forEach(item => {
+      const r = item.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const d = Math.abs(mouseX - cx);
+      const scale = d < SIGMA * 2.8
+        ? 1 + (MAX_SCALE - 1) * Math.exp(-(d * d) / (2 * SIGMA * SIGMA))
+        : 1;
+      const lift = (scale - 1) * 12;
+      item.style.transform = `scale(${scale}) translateY(-${lift}px)`;
+    });
+  }
+
+  function reset() {
+    items.forEach(item => { item.style.transform = ''; });
+  }
+
+  track.addEventListener('mousemove', e => update(e.clientX));
+  track.addEventListener('mouseleave', reset);
+})();
+</script>
 
 <!-- Animasi masuk setelah login -->
 <script>
 (function() {
   if (sessionStorage.getItem('ppiln_just_logged_in') === 'true') {
     sessionStorage.removeItem('ppiln_just_logged_in');
-
-    // Overlay masih terlihat (warna dari login), fade out dengan reveal
     const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position: fixed; inset: 0; z-index: 9999;
-      background: linear-gradient(135deg, #60A5FA, #818CF8, #A78BFA);
-      opacity: 1; pointer-events: all;
-      transition: opacity 0.6s ease 0.1s;
-    `;
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#060c1a;opacity:1;pointer-events:all;transition:opacity 0.55s ease 0.1s;';
     document.body.appendChild(overlay);
-
-    // Sembunyikan semua konten dulu, biar transisi mulus
     document.body.style.opacity = '0';
-
     requestAnimationFrame(() => {
-      // Reveal konten, lalu fade overlay keluar
       setTimeout(() => {
         document.body.style.transition = 'opacity 0.01s';
         document.body.style.opacity = '1';

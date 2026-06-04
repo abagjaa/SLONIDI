@@ -1,6 +1,6 @@
 // ── AUTH CHECK ──
 if (sessionStorage.getItem('ppiln_auth') !== 'true') {
-  window.location.href = 'login.html';
+  window.location.href = 'landing.html';
 }
 
 // ── CURRENT USER ──
@@ -217,7 +217,7 @@ function closeLogoutModal() {
 function confirmLogout() {
   sessionStorage.removeItem('ppiln_auth');
   sessionStorage.removeItem('ppiln_user');
-  window.location.href = 'login.html';
+  window.location.href = 'landing.html';
 }
 
 // Tutup modal kalau klik background
@@ -225,24 +225,9 @@ document.getElementById('logoutModal')?.addEventListener('click', function(e) {
   if (e.target === this) closeLogoutModal();
 });
 
-// ── SIDEBAR MOBILE ──
-function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebarOverlay');
-  sidebar.classList.toggle('open');
-  overlay.classList.toggle('visible');
-}
+// (sidebar dihapus — diganti dock)
 
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebarOverlay').classList.remove('visible');
-}
-
-document.querySelectorAll('.nav-item').forEach(item => {
-  item.addEventListener('click', () => {
-    if (window.innerWidth <= 768) closeSidebar();
-  });
-});
+// (sidebar removed — dock navigation tidak butuh close handler)
 
 // ── CATATAN PINTAS ──
 const NOTE_KEY = 'nadia_catatan';

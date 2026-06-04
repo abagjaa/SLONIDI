@@ -24,7 +24,7 @@ function tryLogin() {
     // Animasi exit sebelum pindah halaman
     doLoginTransition(() => {
       window.location.href = 'index.html';
-    });
+    }, user.name.split(' ')[0]);
   } else {
     const err = document.getElementById('errorMsg');
     err.style.display = 'block';
@@ -37,94 +37,82 @@ function tryLogin() {
   }
 }
 
-function doLoginTransition(callback) {
-  // Buat overlay transisi
+function doLoginTransition(callback, firstName) {
   const overlay = document.createElement('div');
-  overlay.id = 'login-transition-overlay';
   overlay.style.cssText = `
-    position: fixed; inset: 0; z-index: 9999;
-    background: linear-gradient(135deg, #60A5FA, #818CF8, #A78BFA);
-    background-size: 200% 200%;
-    opacity: 0; pointer-events: none;
-    display: flex; align-items: center; justify-content: center;
-    flex-direction: column; gap: 16px;
-    transition: opacity 0.5s ease;
+    position:fixed;inset:0;z-index:9999;
+    background:#060c1a;
+    opacity:0;pointer-events:none;
+    display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:20px;
+    transition:opacity 0.45s ease;
   `;
 
-  // Isi overlay — logo + teks + dots
   overlay.innerHTML = `
-    <div style="
-      width:80px;height:80px;
-      background:rgba(255,255,255,0.25);
-      border-radius:26px;
-      display:flex;align-items:center;justify-content:center;
-      font-size:32px;font-weight:700;color:#fff;
-      box-shadow:0 12px 40px rgba(0,0,0,0.2);
-      animation: overlayLogoIn 0.7s cubic-bezier(.34,1.56,.64,1) 0.3s both, overlayLogoPulse 2s ease-in-out 1.2s infinite;
-    ">N</div>
-    <div style="
-      color:rgba(255,255,255,0.95);font-size:18px;font-weight:700;
-      font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:0.03em;
-      animation: overlayTextIn 0.6s ease 0.6s both;
-    ">Halo, Nadia! 🩵</div>
-    <div style="
-      color:rgba(255,255,255,0.7);font-size:13px;
-      font-family:'Plus Jakarta Sans',sans-serif;
-      animation: overlayTextIn 0.6s ease 0.8s both;
-    ">Membuka dashboard untukmu...</div>
-    <div style="
-      display:flex;gap:8px;margin-top:8px;
-      animation: overlayTextIn 0.6s ease 1.0s both;
-    ">
-      <span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.8);animation:dotBounce 1.2s ease-in-out 1.2s infinite;"></span>
-      <span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.8);animation:dotBounce 1.2s ease-in-out 1.4s infinite;"></span>
-      <span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.8);animation:dotBounce 1.2s ease-in-out 1.6s infinite;"></span>
+    <div style="position:relative;width:88px;height:88px;display:flex;align-items:center;justify-content:center;">
+      <svg style="position:absolute;inset:0;width:100%;height:100%;animation:spinRing 1.4s linear infinite;" viewBox="0 0 88 88" fill="none">
+        <circle cx="44" cy="44" r="40" stroke="rgba(147,197,253,0.1)" stroke-width="2"/>
+        <circle cx="44" cy="44" r="40" stroke="url(#g)" stroke-width="2" stroke-linecap="round" stroke-dasharray="60 192"/>
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="88" y2="88" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#60A5FA"/>
+            <stop offset="1" stop-color="#A78BFA"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div style="
+        width:60px;height:60px;border-radius:18px;
+        background:linear-gradient(135deg,#3B82F6,#818CF8);
+        display:flex;align-items:center;justify-content:center;
+        font-size:24px;font-weight:800;color:#fff;
+        font-family:'Plus Jakarta Sans',sans-serif;
+        box-shadow:0 8px 32px rgba(59,130,246,0.4);
+        animation:logoIn 0.6s cubic-bezier(.34,1.56,.64,1) 0.2s both;
+      ">N</div>
+    </div>
+    <div style="text-align:center;animation:fadeUp 0.5s ease 0.5s both;">
+      <div style="font-size:17px;font-weight:700;color:#f8fafc;font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.01em;margin-bottom:4px;">
+        Halo, ${firstName}! 🩵
+      </div>
+      <div style="font-size:12px;color:#475569;font-family:'Plus Jakarta Sans',sans-serif;">
+        Membuka dashboard...
+      </div>
     </div>
   `;
 
   const style = document.createElement('style');
   style.textContent = `
-    @keyframes overlayLogoIn {
-      from { opacity:0; transform:scale(0.4) rotate(-15deg); }
-      to   { opacity:1; transform:scale(1) rotate(0deg); }
+    @keyframes spinRing { to { transform: rotate(360deg); } }
+    @keyframes logoIn {
+      from { opacity:0; transform:scale(0.5); }
+      to   { opacity:1; transform:scale(1); }
     }
-    @keyframes overlayLogoPulse {
-      0%,100% { box-shadow:0 12px 40px rgba(0,0,0,0.2); transform:scale(1); }
-      50%      { box-shadow:0 16px 50px rgba(255,255,255,0.3); transform:scale(1.06); }
-    }
-    @keyframes overlayTextIn {
-      from { opacity:0; transform:translateY(14px); }
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(10px); }
       to   { opacity:1; transform:translateY(0); }
-    }
-    @keyframes dotBounce {
-      0%,80%,100% { transform:translateY(0); opacity:0.5; }
-      40%          { transform:translateY(-10px); opacity:1; }
     }
     @keyframes cardShake {
       0%,100% { transform:translateX(0); }
-      20%      { transform:translateX(-8px) rotate(-1deg); }
-      40%      { transform:translateX(8px) rotate(1deg); }
-      60%      { transform:translateX(-5px); }
-      80%      { transform:translateX(5px); }
+      20% { transform:translateX(-8px) rotate(-0.8deg); }
+      40% { transform:translateX(8px) rotate(0.8deg); }
+      60% { transform:translateX(-5px); }
+      80% { transform:translateX(5px); }
     }
   `;
   document.head.appendChild(style);
   document.body.appendChild(overlay);
 
-  // Fade card keluar
   const card = document.querySelector('.card');
-  card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+  card.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
   card.style.opacity = '0';
-  card.style.transform = 'scale(0.94) translateY(-12px)';
+  card.style.transform = 'scale(0.95) translateY(-8px)';
 
-  // Fade overlay masuk
   requestAnimationFrame(() => {
     overlay.style.pointerEvents = 'all';
     overlay.style.opacity = '1';
   });
 
-  // Pindah halaman setelah animasi cukup lama dinikmati
-  setTimeout(callback, 2200);
+  setTimeout(callback, 1800);
 }
 
 // Jika sudah login, langsung ke dashboard

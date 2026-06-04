@@ -1,0 +1,251 @@
+/* tools.css — Dark glassmorphism override, dimuat setelah style inline */
+
+:root {
+  --bg:             #060c1a;
+  --blue-50:        rgba(59,130,246,0.08);
+  --blue-100:       rgba(59,130,246,0.14);
+  --blue-200:       rgba(59,130,246,0.24);
+  --blue-300:       #93C5FD;
+  --blue-400:       #60A5FA;
+  --blue-600:       #93C5FD;
+  --blue-dark:      #60A5FA;
+  --green:          #34D399;
+  --green-light:    rgba(52,211,153,0.09);
+  --green-border:   rgba(52,211,153,0.22);
+  --amber:          #FCD34D;
+  --amber-light:    rgba(252,211,77,0.08);
+  --amber-border:   rgba(252,211,77,0.2);
+  --red:            #F87171;
+  --red-light:      rgba(248,113,113,0.09);
+  --slate-50:       rgba(255,255,255,0.03);
+  --slate-100:      rgba(255,255,255,0.06);
+  --slate-200:      rgba(255,255,255,0.1);
+  --slate-400:      #94a3b8;
+  --slate-600:      #64748b;
+  --slate-800:      #f8fafc;
+  --purple:         #818CF8;
+  --purple-light:   rgba(129,140,248,0.09);
+  --purple-border:  rgba(129,140,248,0.22);
+}
+
+/* ── BASE ── */
+body {
+  background: var(--bg) !important;
+  color: #f8fafc !important;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(147,197,253,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(147,197,253,0.28); }
+
+/* ── CARDS ── */
+.card {
+  background: rgba(255,255,255,0.04) !important;
+  border-color: rgba(147,197,253,0.11) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.28) !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
+.card-header {
+  background: rgba(255,255,255,0.03) !important;
+  border-bottom-color: rgba(147,197,253,0.09) !important;
+}
+.card-header span[style*="font-size"] { filter: none; }
+.card-title,
+.card-title * { color: #f8fafc !important; }
+
+/* ── DROP ZONE ── */
+.drop-zone {
+  background: rgba(59,130,246,0.06) !important;
+  border-color: rgba(147,197,253,0.18) !important;
+}
+.drop-zone:hover, .drop-zone.drag {
+  background: rgba(59,130,246,0.11) !important;
+  border-color: rgba(96,165,250,0.45) !important;
+}
+.drop-zone p   { color: #93C5FD !important; }
+.drop-zone span { color: #475569 !important; }
+
+/* ── INPUTS ── */
+input:not([type=file]):not([type=range]),
+select,
+textarea {
+  background: rgba(255,255,255,0.07) !important;
+  border: 1px solid rgba(147,197,253,0.2) !important;
+  color: #f8fafc !important;
+  border-radius: 10px !important;
+}
+input:not([type=file]):not([type=range]):focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(147,197,253,0.38) !important;
+  background: rgba(255,255,255,0.07) !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.11) !important;
+  outline: none !important;
+}
+input::placeholder, textarea::placeholder { color: rgba(148,163,184,0.55) !important; }
+select option { background: #0d1525; color: #f8fafc; }
+
+/* ── BUTTONS ── */
+.btn:not(.btn-primary):not(.btn-success):not(.btn-green):not(.btn-ghost):not(.btn-review):not(.btn-view-pdf):not(.btn-verify-pdf) {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(147,197,253,0.13) !important;
+  color: #94a3b8 !important;
+}
+.btn:not(.btn-primary):not(.btn-success):not(.btn-green):not(.btn-ghost):not(.btn-review):not(.btn-view-pdf):not(.btn-verify-pdf):hover:not(:disabled) {
+  background: rgba(255,255,255,0.1) !important;
+  border-color: rgba(147,197,253,0.28) !important;
+  color: #f8fafc !important;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #3B82F6, #818CF8) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: 0 4px 16px rgba(59,130,246,0.3) !important;
+}
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 6px 22px rgba(59,130,246,0.42) !important;
+}
+.btn-success, .btn-green {
+  background: linear-gradient(135deg, #34D399, #10B981) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: 0 4px 16px rgba(52,211,153,0.28) !important;
+}
+.btn-success:hover:not(:disabled), .btn-green:hover:not(:disabled) {
+  box-shadow: 0 6px 22px rgba(52,211,153,0.38) !important;
+}
+.btn-ghost {
+  background: transparent !important;
+  border-color: rgba(248,113,113,0.18) !important;
+  color: #F87171 !important;
+}
+.btn-ghost:hover:not(:disabled) { background: rgba(248,113,113,0.09) !important; }
+
+/* ── STATUS PILLS & BADGES ── */
+.info-pill,
+.pill-blue  { background: rgba(59,130,246,0.09) !important; border-color: rgba(147,197,253,0.2) !important; color: #93C5FD !important; }
+.pill-green { background: rgba(52,211,153,0.09) !important; border-color: rgba(52,211,153,0.22) !important; color: #34D399 !important; }
+.pill-amber { background: rgba(252,211,77,0.09) !important; border-color: rgba(252,211,77,0.2) !important;  color: #FCD34D !important; }
+.pill-purple{ background: rgba(129,140,248,0.09) !important; border-color: rgba(129,140,248,0.2) !important; color: #818CF8 !important; }
+
+.badge-slo  { background: rgba(59,130,246,0.14) !important;  color: #60A5FA !important; }
+.badge-nidi { background: rgba(52,211,153,0.14) !important;  color: #34D399 !important; }
+.badge-unk  { background: rgba(255,255,255,0.06) !important; color: #475569 !important; }
+.badge-area { background: rgba(129,140,248,0.1) !important; border-color: rgba(129,140,248,0.22) !important; color: #818CF8 !important; }
+
+.badge-mode.kolom  { background: rgba(59,130,246,0.1) !important; border-color: rgba(147,197,253,0.2) !important; color: #93C5FD !important; }
+.badge-mode.alamat { background: rgba(252,211,77,0.1) !important; border-color: rgba(252,211,77,0.2) !important; color: #FCD34D !important; }
+.badge-mode.scan   { background: rgba(129,140,248,0.1) !important; border-color: rgba(129,140,248,0.2) !important; color: #818CF8 !important; }
+.badge-mode.sheet  { background: rgba(52,211,153,0.1) !important; border-color: rgba(52,211,153,0.2) !important; color: #34D399 !important; }
+
+/* ── PDF / FILE ITEMS ── */
+.pdf-item, .file-item {
+  background: rgba(255,255,255,0.04) !important;
+  border-color: rgba(147,197,253,0.09) !important;
+}
+.pdf-item .name, .file-item .name { color: #94a3b8 !important; }
+
+/* ── FILE READY ── */
+.file-ready {
+  background: rgba(52,211,153,0.07) !important;
+  border-color: rgba(52,211,153,0.2) !important;
+  color: #34D399 !important;
+}
+
+/* ── TABLES ── */
+th {
+  background: rgba(255,255,255,0.04) !important;
+  color: #475569 !important;
+  border-color: rgba(147,197,253,0.09) !important;
+}
+td {
+  border-color: rgba(255,255,255,0.04) !important;
+  color: #f8fafc !important;
+}
+tr:hover td, .area-table tr:hover td {
+  background: rgba(59,130,246,0.05) !important;
+}
+.table-scroll {
+  border-color: rgba(147,197,253,0.09) !important;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.area-table th {
+  background: rgba(255,255,255,0.04) !important;
+  color: #475569 !important;
+  border-color: rgba(147,197,253,0.09) !important;
+}
+.area-table td { border-color: rgba(255,255,255,0.04) !important; }
+.num-slo   { color: #60A5FA !important; }
+.num-nidi  { color: #34D399 !important; }
+.num-total { color: #f8fafc !important; }
+
+/* ── SUMMARY CARDS ── */
+.summary-card.blue   { background: rgba(59,130,246,0.07) !important; border-color: rgba(59,130,246,0.18) !important; }
+.summary-card.green  { background: rgba(52,211,153,0.07) !important; border-color: rgba(52,211,153,0.18) !important; }
+.summary-card.purple { background: rgba(129,140,248,0.07) !important; border-color: rgba(129,140,248,0.18) !important; }
+.summary-num.blue    { color: #93C5FD !important; }
+.summary-num.green   { color: #34D399 !important; }
+.summary-num.purple  { color: #818CF8 !important; }
+.summary-label       { color: #475569 !important; }
+
+/* ── PROGRESS ── */
+.progress-bg  { background: rgba(255,255,255,0.07) !important; }
+.progress-bar { background: linear-gradient(90deg, #3B82F6, #818CF8) !important; }
+.progress-fill{ background: linear-gradient(90deg, #3B82F6, #818CF8) !important; }
+
+/* ── DETECT STATUS / SHEET INFO ── */
+.detect-status {
+  background: rgba(255,255,255,0.04) !important;
+  border-color: rgba(147,197,253,0.1) !important;
+  color: #94a3b8 !important;
+}
+.detect-label { color: #475569 !important; }
+.sheet-info   { color: #475569 !important; }
+
+/* ── MODALS ── */
+.modal-overlay { background: rgba(6,12,26,0.75) !important; backdrop-filter: blur(8px); }
+.modal-box {
+  background: rgba(8,14,28,0.96) !important;
+  border: 1px solid rgba(147,197,253,0.11) !important;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.55) !important;
+}
+.modal-head {
+  background: rgba(252,211,77,0.07) !important;
+  border-bottom-color: rgba(147,197,253,0.09) !important;
+}
+.modal-head-title { color: #FCD34D !important; }
+.modal-foot {
+  background: rgba(255,255,255,0.02) !important;
+  border-top-color: rgba(147,197,253,0.09) !important;
+}
+
+/* ── AMBIGU ITEMS ── */
+.ambigu-item     { background: rgba(252,211,77,0.06) !important; border-color: rgba(252,211,77,0.18) !important; }
+.ambigu-alamat   { color: #94a3b8 !important; border-left-color: #FCD34D !important; }
+.ambigu-label    { color: #475569 !important; }
+.ambigu-detected { background: rgba(252,211,77,0.09) !important; color: #FCD34D !important; border-color: rgba(252,211,77,0.2) !important; }
+.ambigu-count-badge { background: rgba(252,211,77,0.8) !important; color: #0d1525 !important; }
+
+.area-choice-btn {
+  background: rgba(255,255,255,0.04) !important;
+  border-color: rgba(147,197,253,0.13) !important;
+  color: #94a3b8 !important;
+}
+.area-choice-btn:hover {
+  border-color: #60A5FA !important;
+  color: #60A5FA !important;
+  background: rgba(59,130,246,0.07) !important;
+}
+.area-choice-btn.selected {
+  border-color: #3B82F6 !important;
+  background: #3B82F6 !important;
+  color: #fff !important;
+}
+
+/* ── STEP DOT ── */
+.step-dot { box-shadow: 0 2px 10px rgba(96,165,250,0.3) !important; }
+.step-dot.done { background: linear-gradient(135deg, #34D399, #10B981) !important; box-shadow: 0 2px 10px rgba(52,211,153,0.3) !important; }

@@ -2,220 +2,134 @@
   if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
   if (window.self !== window.top) return;
 
-  // ── INJECT CSS ──
   const style = document.createElement('style');
   style.textContent = `
     html, body, *, *::before, *::after { cursor: none !important; }
 
-    #customCursor {
+    #nCursor {
       position: fixed;
-      width: 36px; height: 36px;
-      border: 2.5px solid rgba(147,197,253,0.8);
+      width: 32px; height: 32px;
+      border: 2px solid rgba(147,197,253,0.75);
       border-radius: 50%;
       pointer-events: none;
       z-index: 99999;
       left: -100px; top: -100px;
       transform: translate(-50%, -50%);
-      transition: width .2s, height .2s, border-color .2s, background .2s, opacity .3s;
+      transition: width .18s, height .18s, border-color .18s, background .18s, opacity .3s;
       will-change: left, top;
     }
-    #customCursor.cursor-hover {
-      width: 52px; height: 52px;
-      border-color: rgba(167,139,250,0.9);
-      background: rgba(167,139,250,0.08);
+    #nCursor.c-hover {
+      width: 46px; height: 46px;
+      border-color: rgba(232,121,249,0.8);
+      background: rgba(232,121,249,0.06);
     }
-    #customCursor.cursor-hidden,
-    #customCursorDot.cursor-hidden {
-      opacity: 0 !important;
-      animation: none !important;
+    #nCursor.c-hidden, #nDot.c-hidden { opacity: 0 !important; }
+    #nCursor.c-afk {
+      animation: nAfk 1.4s ease-in-out infinite;
+      border-color: rgba(232,121,249,0.65);
     }
-
-    #customCursor.cursor-afk {
-      animation: afkPulse 1.4s ease-in-out infinite;
-      border-color: rgba(167,139,250,0.7);
-    }
-    #customCursorDot.cursor-afk {
-      animation: afkDotPulse 1.4s ease-in-out infinite;
-      background: #A78BFA;
-    }
-    @keyframes afkPulse {
-      0%, 100% { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
-      50%       { transform: translate(-50%, -50%) scale(1.5); opacity: 0.4; }
-    }
-    @keyframes afkDotPulse {
-      0%, 100% { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
-      50%       { transform: translate(-50%, -50%) scale(0.4); opacity: 0.3; }
+    @keyframes nAfk {
+      0%,100% { transform:translate(-50%,-50%) scale(1); opacity:1; }
+      50%      { transform:translate(-50%,-50%) scale(1.5); opacity:0.28; }
     }
 
-    #customCursorDot {
-      position: fixed;
-      width: 7px; height: 7px;
-      background: #93C5FD;
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 100000;
+    #nDot {
+      position: fixed; width: 5px; height: 5px;
+      background: #93C5FD; border-radius: 50%;
+      pointer-events: none; z-index: 100000;
       left: -100px; top: -100px;
       transform: translate(-50%, -50%);
-      transition: width .1s, height .1s, background .1s, opacity .3s;
+      transition: width .12s, height .12s, background .15s, opacity .3s;
       will-change: left, top;
     }
-    #customCursorDot.dot-hover {
-      width: 10px; height: 10px;
-      background: #A78BFA;
-    }
+    #nDot.d-hover { width: 7px; height: 7px; background: #E879F9; }
 
-    .cursor-trail {
-      position: fixed;
-      pointer-events: none;
-      z-index: 99998;
-      transform: translate(-50%, -50%);
-      animation: cursorTrailFade 0.9s ease-out forwards;
-      user-select: none;
+    @keyframes nPixelFade {
+      0%   { opacity: 0.9; transform: translate(-50%,-50%) scale(1); }
+      100% { opacity: 0;   transform: translate(-50%, calc(-50% - 22px)) scale(0.1); }
     }
-    @keyframes cursorTrailFade {
-      0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-      100% { opacity: 0; transform: translate(-50%, calc(-50% - 28px)) scale(0.4); }
-    }
-
-    .cursor-burst {
-      position: fixed;
-      pointer-events: none;
-      z-index: 99997;
-      transform: translate(-50%, -50%);
-      animation: cursorBurstFly 0.7s cubic-bezier(.2,.8,.4,1) forwards;
-      user-select: none;
-    }
-    @keyframes cursorBurstFly {
-      0%   { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-      100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.3); }
+    @keyframes nStarBurst {
+      0%   { opacity:1; transform:translate(-50%,-50%) scale(1.1); }
+      100% { opacity:0; transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0); }
     }
   `;
   document.head.appendChild(style);
 
-  // ── INJECT HTML ──
-  const cursor = document.createElement('div');
-  cursor.id    = 'customCursor';
-  const dot    = document.createElement('div');
-  dot.id       = 'customCursorDot';
+  const cursor = document.createElement('div'); cursor.id = 'nCursor';
+  const dot    = document.createElement('div'); dot.id    = 'nDot';
   document.body.appendChild(cursor);
   document.body.appendChild(dot);
 
-  // ── STATE ──
-  const trailEmojis = ['💙','💜','✨','⭐','🌸','💫','🌟','💎','🩵','🫧'];
-  let trailIdx = 0, lastTrail = 0;
-  let mouseX = -100, mouseY = -100;
-  let curX   = -100, curY   = -100;
-  let afkTimer = null;
-  let isAfk = false;
-  const AFK_DELAY = 3000;
+  const COLORS = ['#93C5FD','#A78BFA','#C4B5FD','#60A5FA','#F9A8D4','#818CF8','#7DD3FC','#E879F9','#FCA5D4'];
+  const STARS  = ['✦','✧','·','∗','⊹','✦','✧','✦'];
+  let lastTrail = 0, mx = -100, my = -100, cx = -100, cy = -100;
+  let afkTmr = null, isAfk = false;
 
-  // ── HELPERS ──
-  function setHover(on) {
-    cursor.classList.toggle('cursor-hover', on);
-    dot.classList.toggle('dot-hover', on);
-  }
-
-  function setAfk(on) {
-    isAfk = on;
-    cursor.classList.toggle('cursor-afk', on);
-    dot.classList.toggle('cursor-afk', on);
-  }
-
-  function setVisible(on) {
-    cursor.classList.toggle('cursor-hidden', !on);
-    dot.classList.toggle('cursor-hidden', !on);
-  }
-
-  function hide() {
-    setVisible(false);
-    setAfk(false);
-    clearTimeout(afkTimer);
-  }
-
-  function resetAfkTimer() {
+  const setHover   = on => { cursor.classList.toggle('c-hover', on); dot.classList.toggle('d-hover', on); };
+  const setAfk     = on => { isAfk = on; cursor.classList.toggle('c-afk', on); };
+  const setVisible = on => { cursor.classList.toggle('c-hidden', !on); dot.classList.toggle('c-hidden', !on); };
+  const hide = () => { setVisible(false); setAfk(false); clearTimeout(afkTmr); };
+  const resetAfk = () => {
     if (isAfk) setAfk(false);
-    clearTimeout(afkTimer);
-    afkTimer = setTimeout(() => setAfk(true), AFK_DELAY);
-  }
+    clearTimeout(afkTmr);
+    afkTmr = setTimeout(() => setAfk(true), 3000);
+  };
 
-  function updatePos(x, y) {
-    mouseX = x;
-    mouseY = y;
-    dot.style.left = x + 'px';
-    dot.style.top  = y + 'px';
-  }
+  function updatePos(x, y) { mx = x; my = y; dot.style.left = x + 'px'; dot.style.top = y + 'px'; }
 
-  function spawnTrail(x, y) {
+  function spawnPixelTrail(x, y) {
     const now = Date.now();
-    if (now - lastTrail < 80) return;
+    if (now - lastTrail < 30) return;
     lastTrail = now;
     const el = document.createElement('div');
-    el.className   = 'cursor-trail';
-    el.textContent = trailEmojis[trailIdx++ % trailEmojis.length];
-    el.style.left     = (x + (Math.random() - .5) * 16) + 'px';
-    el.style.top      = (y + (Math.random() - .5) * 16) + 'px';
-    el.style.fontSize = (11 + Math.random() * 10) + 'px';
+    const sz  = 3 + Math.random() * 5;
+    const col = COLORS[Math.floor(Math.random() * COLORS.length)];
+    const dur = 0.4 + Math.random() * 0.4;
+    el.style.cssText = `
+      position:fixed; pointer-events:none; z-index:99998; border-radius:50%;
+      width:${sz}px; height:${sz}px; background:${col};
+      left:${x + (Math.random() - .5) * 10}px;
+      top:${y + (Math.random() - .5) * 10}px;
+      animation: nPixelFade ${dur}s ease-out forwards;
+    `;
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 900);
+    setTimeout(() => el.remove(), dur * 1000 + 60);
   }
 
-  // ── MOUSE EVENTS (parent) ──
-  document.addEventListener('mousemove', (e) => {
-    setVisible(true);
-    resetAfkTimer();
+  document.addEventListener('mousemove', e => {
+    setVisible(true); resetAfk();
     updatePos(e.clientX, e.clientY);
-    spawnTrail(e.clientX, e.clientY);
+    spawnPixelTrail(e.clientX, e.clientY);
   });
-
   document.addEventListener('mouseleave', () => hide());
-  document.addEventListener('mouseenter', () => {
-    setVisible(true);
-    resetAfkTimer();
-  });
-
-  // ── SEMBUNYIKAN SAAT WINDOW KEHILANGAN FOKUS ──
-  // Ini mencakup: buka dialog file upload, alt-tab, klik di luar browser
+  document.addEventListener('mouseenter', () => { setVisible(true); resetAfk(); });
   window.addEventListener('blur', () => hide());
-  window.addEventListener('focus', () => {
-    // Jangan langsung tampil — tunggu mousemove dulu agar posisi akurat
-  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) hide(); });
 
-  // Jaga-jaga: visibility change (tab disembunyikan)
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) hide();
-  });
-
-  // ── PESAN DARI IFRAME ──
-  window.addEventListener('message', (e) => {
+  window.addEventListener('message', e => {
     if (!e.data || !e.data._bridge) return;
-    if (e.data.type === 'iframe-mousemove') {
-      setVisible(true);
-      resetAfkTimer();
+    const t = e.data.type;
+    if (t === 'iframe-mousemove') {
+      setVisible(true); resetAfk();
       updatePos(e.data.x, e.data.y);
-      spawnTrail(e.data.x, e.data.y);
-    } else if (e.data.type === 'iframe-mouseleave') {
-      hide();
-    } else if (e.data.type === 'iframe-hover-on') {
-      setHover(true);
-    } else if (e.data.type === 'iframe-hover-off') {
-      setHover(false);
-    }
+      spawnPixelTrail(e.data.x, e.data.y);
+    } else if (t === 'iframe-mouseleave') { hide(); }
+    else if (t === 'iframe-hover-on')    { setHover(true); }
+    else if (t === 'iframe-hover-off')   { setHover(false); }
   });
 
-  // ── SMOOTH RING ──
-  (function animate() {
-    curX += (mouseX - curX) * 0.12;
-    curY += (mouseY - curY) * 0.12;
-    cursor.style.left = curX + 'px';
-    cursor.style.top  = curY + 'px';
-    requestAnimationFrame(animate);
+  // Smooth ring follow
+  (function frame() {
+    cx += (mx - cx) * 0.12;
+    cy += (my - cy) * 0.12;
+    cursor.style.left = cx + 'px';
+    cursor.style.top  = cy + 'px';
+    requestAnimationFrame(frame);
   })();
 
-  // ── HOVER BIND (parent) ──
   function bindHover() {
-    document.querySelectorAll('a, button, .nav-item, .tool-card, [onclick], label, select, input, textarea').forEach(el => {
-      if (el._cursorBound) return;
-      el._cursorBound = true;
+    document.querySelectorAll('a,button,.nav-item,.tool-card,[onclick],label,select,input,textarea').forEach(el => {
+      if (el._cb) return; el._cb = true;
       el.addEventListener('mouseenter', () => setHover(true));
       el.addEventListener('mouseleave', () => setHover(false));
     });
@@ -223,28 +137,28 @@
   bindHover();
   setInterval(bindHover, 2000);
 
-  // ── CLICK BURST ──
-  const burstEmojis = ['💥','⭐','✨','💙','💜','🌟','💫','🎀','🩵'];
-  document.addEventListener('click', (e) => {
-    const count = 10 + Math.floor(Math.random() * 6);
-    for (let i = 0; i < count; i++) {
-      const el = document.createElement('div');
-      el.className   = 'cursor-burst';
-      el.textContent = burstEmojis[Math.floor(Math.random() * burstEmojis.length)];
-      const angle = (360 / count) * i + (Math.random() * 20 - 10);
-      const dist  = 40 + Math.random() * 60;
-      const rad   = angle * Math.PI / 180;
-      el.style.left     = e.clientX + 'px';
-      el.style.top      = e.clientY + 'px';
-      el.style.fontSize = (12 + Math.random() * 14) + 'px';
-      el.style.setProperty('--dx', Math.cos(rad) * dist + 'px');
-      el.style.setProperty('--dy', Math.sin(rad) * dist + 'px');
+  // Click burst — elegant star symbols
+  document.addEventListener('click', e => {
+    const n = 8 + Math.floor(Math.random() * 5);
+    for (let i = 0; i < n; i++) {
+      const el  = document.createElement('div');
+      const col = COLORS[Math.floor(Math.random() * COLORS.length)];
+      const ang = (360 / n) * i + (Math.random() * 20 - 10);
+      const dist = 32 + Math.random() * 52;
+      const rad  = ang * Math.PI / 180;
+      const sz   = 9 + Math.random() * 11;
+      el.textContent = STARS[Math.floor(Math.random() * STARS.length)];
+      el.style.cssText = `
+        position:fixed; pointer-events:none; z-index:99997;
+        color:${col}; font-size:${sz}px; font-weight:700;
+        left:${e.clientX}px; top:${e.clientY}px;
+        --dx:${Math.cos(rad) * dist}px; --dy:${Math.sin(rad) * dist}px;
+        animation: nStarBurst 0.55s cubic-bezier(.2,.8,.4,1) forwards;
+      `;
       document.body.appendChild(el);
-      setTimeout(() => el.remove(), 700);
+      setTimeout(() => el.remove(), 600);
     }
   });
 
-  // Mulai timer AFK
-  resetAfkTimer();
-
+  resetAfk();
 })();

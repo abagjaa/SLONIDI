@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tools NADIA — Wilayah Jawa Barat</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #060c1a;
+      --blue:         #3B82F6;
+      --blue-light:   #60A5FA;
+      --purple:       #818CF8;
+      --purple-light: #A78BFA;
+      --text:         #f8fafc;
+      --text-muted:   #94a3b8;
+      --card-bg:      rgba(255,255,255,0.04);
+      --card-border:  rgba(147,197,253,0.12);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Grain overlay */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      opacity: .025;
+      pointer-events: none;
+      z-index: 9998;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Aurora container */
+    #aurora-bg {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.85;
+    }
+    #aurora-bg canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    /* Splash cursor */
+    #splash-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+      display: block;
+    }
+
+    /* ── PillNav ── */
+    .pill-nav-wrap {
+      position: fixed;
+      top: 1.5rem; left: 0; right: 0;
+      z-index: 200;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+      padding: 0 18%;
+      box-sizing: border-box;
+      transition: padding 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .pill-nav-wrap.scrolled { padding: 0; }
+
+    .pill-nav {
+      --base: rgba(6,12,26,0.75);
+      --pill-bg: #3B82F6;
+      --hover-text: #fff;
+      --pill-text: #e0eaff;
+      --nav-h: 44px;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      justify-content: center;
+      gap: 8px;
+      pointer-events: auto;
+      background: transparent;
+    }
+
+    /* Spacer yang bisa di-animate — flex-grow IS animatable */
+    .nav-spacer {
+      flex-grow: 1;
+      min-width: 0;
+      transition: flex-grow 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .pill-nav.scrolled .nav-spacer { flex-grow: 0; }
+
+    .nav-group {
+      display: flex; align-items: center; gap: 6px;
+      flex-shrink: 0;
+    }
+    .pill-logo-link {
+      width: var(--nav-h); height: var(--nav-h);
+      border-radius: 50%;
+      background: rgba(59,130,246,0.18);
+      border: 1px solid rgba(147,197,253,0.25);
+      backdrop-filter: blur(16px);
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none;
+      flex-shrink: 0;
+      transition: background 0.2s, border-color 0.2s, width 0.75s cubic-bezier(0.4,0,0.2,1), height 0.75s cubic-bezier(0.4,0,0.2,1);
+    }
+    .pill-nav.scrolled .pill-logo-link {
+      width: calc(var(--nav-h) - 4px);
+      height: calc(var(--nav-h) - 4px);
+    }
+    .pill-logo-link:hover { background: rgba(59,130,246,0.3); border-color: rgba(147,197,253,0.5); }
+    .logo-n {
+      font-size: 1.1rem; font-weight: 800;
+      background: linear-gradient(135deg, #60A5FA, #A78BFA);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+    }
+    .pill-nav-items {
+      display: flex; align-items: center;
+      height: var(--nav-h);
+      background: rgba(6,12,26,0.65);
+      border: 1px solid rgba(147,197,253,0.15);
+      border-radius: 9999px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .pill-list {
+      list-style: none;
+      display: flex; align-items: stretch;
+      gap: 3px;
+      padding: 3px;
+      height: 100%;
+    }
+    .pill-list > li { display: flex; height: 100%; }
+    .pill {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 100%; padding: 0 18px;
+      background: transparent;
+      color: var(--pill-text);
+      text-decoration: none;
+      border-radius: 9999px;
+      font-weight: 600; font-size: 0.875rem;
+      white-space: nowrap; cursor: pointer;
+      position: relative; overflow: hidden;
+      transition: color 0.15s;
+    }
+    .pill .hover-circle {
+      position: absolute; left: 50%; bottom: 0;
+      border-radius: 50%;
+      background: var(--pill-bg);
+      z-index: 1; display: block;
+      pointer-events: none; will-change: transform;
+    }
+    .pill .label-stack {
+      position: relative; display: inline-block;
+      line-height: 1; z-index: 2;
+    }
+    .pill .pill-label {
+      position: relative; z-index: 2;
+      display: inline-block; line-height: 1; will-change: transform;
+    }
+    .pill .pill-label-hover {
+      position: absolute; left: 0; top: 0;
+      color: var(--hover-text); z-index: 3;
+      display: inline-block; will-change: transform, opacity;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative; z-index: 2;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 6rem 2rem 4rem;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(59,130,246,0.12);
+      border: 1px solid rgba(147,197,253,0.25);
+      border-radius: 999px;
+      padding: 0.35rem 1rem;
+      font-size: 0.78rem; font-weight: 600;
+      color: var(--blue-light);
+      letter-spacing: 0.04em;
+      margin-bottom: 2rem;
+      animation: fadeUp 0.6s ease 0.2s both;
+    }
+    .hero-title {
+      font-size: clamp(3rem, 9vw, 7rem);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      margin-bottom: 1.5rem;
+      animation: fadeUp 0.7s ease 0.35s both;
+    }
+    .hero-title .highlight {
+      background: linear-gradient(135deg, #60A5FA 0%, #A78BFA 50%, #38BDF8 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-block;
+    }
+    .hero-sub {
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      font-weight: 400;
+      color: var(--text-muted);
+      line-height: 1.7;
+      max-width: 520px;
+      margin: 0 auto 2.5rem;
+      animation: fadeUp 0.7s ease 0.45s both;
+    }
+    .hero-sub strong { color: rgba(248,250,252,0.85); font-weight: 600; }
+
+    /* Feature pills */
+    .hero-features {
+      display: flex; flex-wrap: wrap;
+      gap: 0.5rem; justify-content: center;
+      margin-bottom: 2.5rem;
+      animation: fadeUp 0.7s ease 0.55s both;
+    }
+    .feat-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      padding: 0.35rem 0.85rem;
+      font-size: 0.78rem; font-weight: 500;
+      color: var(--text-muted);
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .feat-pill:hover { border-color: rgba(147,197,253,0.3); color: var(--text); }
+
+    /* CTA */
+    .hero-ctas {
+      display: flex; gap: 1rem; flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeUp 0.7s ease 0.65s both;
+    }
+    .cta-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, #3B82F6, #818CF8);
+      color: #fff;
+      font-size: 1rem; font-weight: 700;
+      padding: 0.85rem 2rem;
+      border-radius: 14px;
+      text-decoration: none;
+      letter-spacing: 0.01em;
+      box-shadow: 0 8px 32px rgba(59,130,246,0.35);
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+      border: none; cursor: pointer;
+    }
+    .cta-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 40px rgba(59,130,246,0.45);
+    }
+    .cta-primary:active { transform: scale(0.97) translateY(0); }
+    .cta-secondary {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(147,197,253,0.2);
+      color: var(--text-muted);
+      font-size: 0.95rem; font-weight: 600;
+      padding: 0.85rem 1.75rem;
+      border-radius: 14px;
+      text-decoration: none;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    .cta-secondary:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(147,197,253,0.35);
+      color: var(--text);
+    }
+
+    /* Footer note */
+    .hero-note {
+      margin-top: 3rem;
+      font-size: 0.75rem;
+      color: rgba(148,163,184,0.5);
+      letter-spacing: 0.04em;
+      animation: fadeUp 0.7s ease 0.8s both;
+    }
+
+    /* Features section */
+    .features-section {
+      position: relative; z-index: 2;
+      padding: 4rem 2rem 6rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .features-label {
+      text-align: center;
+      font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--blue-light);
+      margin-bottom: 1rem;
+      opacity: 0.7;
+    }
+    .features-title {
+      text-align: center;
+      font-size: clamp(1.5rem, 4vw, 2.25rem);
+      font-weight: 700;
+      margin-bottom: 2.5rem;
+      color: var(--text);
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover {
+      background: rgba(59,130,246,0.07);
+      border-color: rgba(147,197,253,0.28);
+      transform: translateY(-2px);
+    }
+    .feature-icon { font-size: 1.5rem; margin-bottom: 0.75rem; }
+    .feature-name { font-size: 0.95rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+    .feature-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+
+    /* Divider */
+    .divider {
+      position: relative; z-index: 2;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(147,197,253,0.2), transparent);
+      margin: 0 2rem;
+    }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SHINY NADIA ── */
+    .hero-title .highlight {
+      background: linear-gradient(90deg,
+        #60A5FA, #A78BFA, #F472B6, #E879F9, #818CF8, #38BDF8, #60A5FA
+      );
+      background-size: 300% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-block;
+      animation: shinyNadia 4s linear infinite, fadeUp 0.7s ease 0.35s both;
+    }
+    @keyframes shinyNadia {
+      0%   { background-position: 0% center; }
+      100% { background-position: 300% center; }
+    }
+
+    /* ── CHARACTER REVEAL ── */
+    @keyframes charReveal {
+      from {
+        opacity: 0;
+        transform: translateY(34px) scale(0.8);
+        filter: blur(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+      }
+    }
+    .c-reveal {
+      display: inline-block;
+      opacity: 0;
+      animation: charReveal 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    /* ── SCROLL REVEAL: FEATURE CARDS ── */
+    .feature-card {
+      opacity: 0;
+      transform: translateY(28px) scale(0.97);
+      transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  background 0.2s, border-color 0.2s;
+    }
+    .feature-card.f-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .feature-card.f-visible:hover {
+      transform: translateY(-3px) scale(1.01);
+    }
+
+    /* ── HERO TITLE WORD GLOW ── */
+    .hero-title-word {
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Aurora WebGL background -->
+<div id="aurora-bg"></div>
+
+<!-- Splash cursor (canvas injected by JS) -->
+
+<!-- PillNav -->
+<div class="pill-nav-wrap">
+  <nav class="pill-nav" id="pill-nav">
+
+    <!-- Kiri: Logo + Fitur -->
+    <div class="nav-group nav-left">
+      <a class="pill-logo-link" href="landing.html" title="Beranda">
+        <div class="logo-n">N</div>
+      </a>
+      <div class="pill-nav-items">
+        <ul class="pill-list" id="pill-list">
+          <li><a href="#features" class="pill" data-idx="0">
+            <span class="hover-circle"></span>
+            <span class="label-stack">
+              <span class="pill-label">Fitur</span>
+              <span class="pill-label-hover">Fitur</span>
+            </span>
+          </a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Spacer animatable (flex-grow: 1 → 0) -->
+    <div class="nav-spacer" id="navSpacer"></div>
+
+    <!-- Kanan: Masuk -->
+    <div class="nav-group nav-right">
+      <div class="pill-nav-items">
+        <ul class="pill-list">
+          <li><a href="login.html" class="pill" data-idx="1">
+            <span class="hover-circle"></span>
+            <span class="label-stack">
+              <span class="pill-label">Masuk</span>
+              <span class="pill-label-hover">Masuk</span>
+            </span>
+          </a></li>
+        </ul>
+      </div>
+    </div>
+
+  </nav>
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-badge">🩵 Wilayah Jawa Barat</div>
+
+  <h1 class="hero-title">
+    Tools<br><span class="highlight">NADIA</span>
+  </h1>
+
+  <p class="hero-sub">
+    Semua kebutuhan penerbitan <strong>SLO & NIDI</strong> tersedia di sini,
+    cepat, otomatis, dan mudah digunakan.
+  </p>
+
+  <div class="hero-features">
+    <span class="feat-pill">📋 SLO & NIDI Extractor</span>
+    <span class="feat-pill">✏️ Rename PDF</span>
+    <span class="feat-pill">🔍 Cek Duplikat</span>
+    <span class="feat-pill">📊 Rekap & Laporan</span>
+    <span class="feat-pill">🧹 Rapikan Excel</span>
+    <span class="feat-pill">🔎 Cari Data</span>
+  </div>
+
+  <div class="hero-ctas">
+    <a href="login.html" class="cta-primary">
+      Mulai Sekarang
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+    <a href="#features" class="cta-secondary">
+      Lihat semua tools ↓
+    </a>
+  </div>
+
+  <p class="hero-note">Dibuat dengan 💙</p>
+</section>
+
+<div class="divider"></div>
+
+<!-- Features Section -->
+<section class="features-section" id="features">
+  <div class="features-label">Tools yang tersedia</div>
+  <h2 class="features-title">6 Tools dalam 1 Dashboard</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <div class="feature-name">SLO & NIDI Extractor</div>
+      <div class="feature-desc">Upload PDF SLO & NIDI, ekstrak nomor otomatis, dan isi file Excel dari Pak Lontung.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">✏️</div>
+      <div class="feature-name">Rename PDF</div>
+      <div class="feature-desc">Rename otomatis sesuai nama pemilik di dalam sertifikat, lalu download sebagai ZIP.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔍</div>
+      <div class="feature-name">Cek Duplikat SLO & NIDI</div>
+      <div class="feature-desc">Deteksi otomatis nomor SLO atau NIDI yang muncul lebih dari sekali dalam Excel.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <div class="feature-name">Rekap & Laporan</div>
+      <div class="feature-desc">Upload Excel multi-sheet per area → hitung total SLO & NIDI → download laporan siap kirim.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🧹</div>
+      <div class="feature-name">Rapikan Excel</div>
+      <div class="feature-desc">Upload Excel berantakan → sortir dan pisahkan data per area ke masing-masing sheet.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔎</div>
+      <div class="feature-name">Cari Data</div>
+      <div class="feature-desc">Cari nama, nomor SLO, atau NIDI dari semua sheet sekaligus tanpa buka Excel manual.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER COPYRIGHT -->
+<footer class="landing-footer">
+  <span class="footer-copy">© 2025 Tools NADIA · Wilayah Jawa Barat</span>
+</footer>
+
+<style>
+.landing-footer {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem 3rem 2rem;
+  border-top: 1px solid rgba(147,197,253,0.08);
+}
+.footer-copy {
+  font-size: 0.72rem; color: rgba(148,163,184,0.3);
+  letter-spacing: 0.04em;
+}
+</style>
+
+<!-- Split text + scroll reveal -->
+<script>
+// Split "Tools" into animated characters
+(function() {
+  const h1 = document.querySelector('.hero-title');
+  if (!h1) return;
+  h1.childNodes.forEach(node => {
+    if (node.nodeType !== Node.TEXT_NODE) return;
+    const text = node.textContent.trim();
+    if (!text) return;
+    const frag = document.createDocumentFragment();
+    [...text].forEach((char, i) => {
+      const s = document.createElement('span');
+      s.className = 'c-reveal';
+      s.textContent = char;
+      s.style.animationDelay = (0.45 + i * 0.07) + 's';
+      frag.appendChild(s);
+    });
+    node.parentNode.replaceChild(frag, node);
+  });
+})();
+
+// Scroll reveal for feature cards
+(function() {
+  const cards = document.querySelectorAll('.feature-card');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const delay = parseInt(e.target.dataset.ri || 0) * 90;
+      setTimeout(() => e.target.classList.add('f-visible'), delay);
+      io.unobserve(e.target);
+    });
+  }, { threshold: 0.12 });
+  cards.forEach((c, i) => { c.dataset.ri = i; io.observe(c); });
+})();
+</script>
+
+<!-- GSAP CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<!-- OGL CDN (WebGL for Aurora) -->
+<script src="https://cdn.jsdelivr.net/npm/ogl@1.0.8/dist/ogl.umd.js"></script>
+
+<script>
+// ══════════════════════════════════════════
+// 1. AURORA (WebGL via OGL)
+// ══════════════════════════════════════════
+(function initAurora() {
+  const ctn = document.getElementById('aurora-bg');
+  if (!ctn || !window.ogl) return;
+
+  const { Renderer, Program, Mesh, Color, Triangle } = window.ogl;
+
+  const VERT = `#version 300 es
+in vec2 position;
+void main() { gl_Position = vec4(position, 0.0, 1.0); }`;
+
+  const FRAG = `#version 300 es
+precision highp float;
+uniform float uTime; uniform float uAmplitude;
+uniform vec3 uColorStops[3]; uniform vec2 uResolution; uniform float uBlend;
+out vec4 fragColor;
+vec3 permute(vec3 x){return mod(((x*34.0)+1.0)*x,289.0);}
+float snoise(vec2 v){
+  const vec4 C=vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);
+  vec2 i=floor(v+dot(v,C.yy));vec2 x0=v-i+dot(i,C.xx);
+  vec2 i1=(x0.x>x0.y)?vec2(1.0,0.0):vec2(0.0,1.0);
+  vec4 x12=x0.xyxy+C.xxzz;x12.xy-=i1;i=mod(i,289.0);
+  vec3 p=permute(permute(i.y+vec3(0.0,i1.y,1.0))+i.x+vec3(0.0,i1.x,1.0));
+  vec3 m=max(0.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.0);
+  m=m*m;m=m*m;
+  vec3 x=2.0*fract(p*C.www)-1.0;vec3 h=abs(x)-0.5;
+  vec3 ox=floor(x+0.5);vec3 a0=x-ox;
+  m*=1.79284291400159-0.85373472095314*(a0*a0+h*h);
+  vec3 g;g.x=a0.x*x0.x+h.x*x0.y;g.yz=a0.yz*x12.xz+h.yz*x12.yw;
+  return 130.0*dot(m,g);}
+struct ColorStop{vec3 color;float position;};
+#define COLOR_RAMP(colors,factor,finalColor){int index=0;for(int i=0;i<2;i++){ColorStop cc=colors[i];bool iib=cc.position<=factor;index=int(mix(float(index),float(i),float(iib)));}ColorStop cc=colors[index];ColorStop nc=colors[index+1];float range=nc.position-cc.position;float lf=(factor-cc.position)/range;finalColor=mix(cc.color,nc.color,lf);}
+void main(){
+  vec2 uv=gl_FragCoord.xy/uResolution;
+  ColorStop colors[3];
+  colors[0]=ColorStop(uColorStops[0],0.0);
+  colors[1]=ColorStop(uColorStops[1],0.5);
+  colors[2]=ColorStop(uColorStops[2],1.0);
+  vec3 rampColor;COLOR_RAMP(colors,uv.x,rampColor);
+  float height=snoise(vec2(uv.x*2.0+uTime*0.1,uTime*0.25))*0.5*uAmplitude;
+  height=exp(height);height=(uv.y*2.0-height+0.2);
+  float intensity=0.6*height;
+  float midPoint=0.20;
+  float auroraAlpha=smoothstep(midPoint-uBlend*0.5,midPoint+uBlend*0.5,intensity);
+  vec3 auroraColor=intensity*rampColor;
+  fragColor=vec4(auroraColor*auroraAlpha,auroraAlpha);}`;
+
+  const colorStops = ['#818CF8', '#A78BFA', '#F472B6'];
+  const amplitude = 1.0, blend = 0.39, speed = 1.3;
+
+  const renderer = new Renderer({ alpha: true, premultipliedAlpha: true, antialias: true });
+  const gl = renderer.gl;
+  gl.clearColor(0, 0, 0, 0);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  gl.canvas.style.backgroundColor = 'transparent';
+
+  let program;
+  function resize() {
+    const w = ctn.offsetWidth, h = ctn.offsetHeight;
+    renderer.setSize(w, h);
+    if (program) program.uniforms.uResolution.value = [w, h];
+  }
+
+  const geometry = new Triangle(gl);
+  if (geometry.attributes.uv) delete geometry.attributes.uv;
+
+  const colorStopsArray = colorStops.map(hex => {
+    const c = new Color(hex); return [c.r, c.g, c.b];
+  });
+
+  program = new Program(gl, {
+    vertex: VERT, fragment: FRAG,
+    uniforms: {
+      uTime: { value: 0 }, uAmplitude: { value: amplitude },
+      uColorStops: { value: colorStopsArray },
+      uResolution: { value: [ctn.offsetWidth, ctn.offsetHeight] },
+      uBlend: { value: blend }
+    }
+  });
+
+  const mesh = new Mesh(gl, { geometry, program });
+  ctn.appendChild(gl.canvas);
+
+  const ro = new ResizeObserver(() => resize());
+  ro.observe(ctn);
+  requestAnimationFrame(() => resize());
+
+  let raf;
+  function update(t) {
+    raf = requestAnimationFrame(update);
+    program.uniforms.uTime.value = t * 0.01 * speed * 0.1;
+    renderer.render({ scene: mesh });
+  }
+  raf = requestAnimationFrame(update);
+})();
+
+
+// ══════════════════════════════════════════
+// 2. PILLNAV (GSAP hover animation)
+// ══════════════════════════════════════════
+(function initPillNav() {
+  if (!window.gsap) return;
+
+  const pills = document.querySelectorAll('.pill');
+  const timelines = [];
+  const activeTweens = [];
+  const ease = 'power3.out';
+
+  function layout() {
+    pills.forEach((pill, i) => {
+      const circle = pill.querySelector('.hover-circle');
+      if (!circle) return;
+
+      const rect = pill.getBoundingClientRect();
+      const w = rect.width, h = rect.height;
+      if (!w || !h) return;
+
+      const R = ((w * w) / 4 + h * h) / (2 * h);
+      const D = Math.ceil(2 * R) + 2;
+      const delta = Math.ceil(R - Math.sqrt(Math.max(0, R * R - (w * w) / 4))) + 1;
+      const originY = D - delta;
+
+      circle.style.width = `${D}px`;
+      circle.style.height = `${D}px`;
+      circle.style.bottom = `-${delta}px`;
+
+      gsap.set(circle, { xPercent: -50, scale: 0, transformOrigin: `50% ${originY}px` });
+
+      const label = pill.querySelector('.pill-label');
+      const hover = pill.querySelector('.pill-label-hover');
+      if (label) gsap.set(label, { y: 0 });
+      if (hover) gsap.set(hover, { y: Math.ceil(h + 100), opacity: 0 });
+
+      timelines[i]?.kill();
+      const tl = gsap.timeline({ paused: true });
+      tl.to(circle, { scale: 1.2, xPercent: -50, duration: 2, ease, overwrite: 'auto' }, 0);
+      if (label) tl.to(label, { y: -(h + 8), duration: 2, ease, overwrite: 'auto' }, 0);
+      if (hover) tl.to(hover, { y: 0, opacity: 1, duration: 2, ease, overwrite: 'auto' }, 0);
+      timelines[i] = tl;
+    });
+  }
+
+  layout();
+  window.addEventListener('resize', layout);
+  if (document.fonts?.ready) document.fonts.ready.then(layout).catch(() => {});
+
+  pills.forEach((pill, i) => {
+    pill.addEventListener('mouseenter', () => {
+      activeTweens[i]?.kill();
+      activeTweens[i] = timelines[i]?.tweenTo(timelines[i].duration(), { duration: 0.3, ease, overwrite: 'auto' });
+    });
+    pill.addEventListener('mouseleave', () => {
+      activeTweens[i]?.kill();
+      activeTweens[i] = timelines[i]?.tweenTo(0, { duration: 0.2, ease, overwrite: 'auto' });
+    });
+  });
+})();
+
+
+// ══════════════════════════════════════════
+// 3. (moved to splash-cursor.js)
+// ══════════════════════════════════════════
+(function unused_placeholder() { return;
+  const canvas = document.createElement('canvas');
+  canvas.id = 'splash-canvas';
+  document.body.appendChild(canvas);
+
+  const config = {
+    SIM_RESOLUTION: 128, DYE_RESOLUTION: 1440,
+    DENSITY_DISSIPATION: 3.5, VELOCITY_DISSIPATION: 2,
+    PRESSURE: 0.1, PRESSURE_ITERATIONS: 20, CURL: 3,
+    SPLAT_RADIUS: 0.2, SPLAT_FORCE: 6000, SHADING: true,
+    COLOR_UPDATE_SPEED: 10, TRANSPARENT: true, RAINBOW_MODE: true,
+    BACK_COLOR: { r: 0, g: 0, b: 0 }
+  };
+
+  function pointerProto() { this.id=-1;this.texcoordX=0;this.texcoordY=0;this.prevTexcoordX=0;this.prevTexcoordY=0;this.deltaX=0;this.deltaY=0;this.down=false;this.moved=false;this.color=[0,0,0]; }
+  let pointers = [new pointerProto()];
+
+  const params = { alpha:true, depth:false, stencil:false, antialias:false, preserveDrawingBuffer:false };
+  let gl = canvas.getContext('webgl2', params);
+  const isWebGL2 = !!gl;
+  if (!gl) gl = canvas.getContext('webgl', params) || canvas.getContext('experimental-webgl', params);
+
+  let halfFloat, supportLinearFiltering;
+  if (isWebGL2) {
+    gl.getExtension('EXT_color_buffer_float');
+    supportLinearFiltering = gl.getExtension('OES_texture_float_linear');
+  } else {
+    halfFloat = gl.getExtension('OES_texture_half_float');
+    supportLinearFiltering = gl.getExtension('OES_texture_half_float_linear');
+  }
+  gl.clearColor(0,0,0,1);
+
+  const halfFloatTexType = isWebGL2 ? gl.HALF_FLOAT : halfFloat?.HALF_FLOAT_OES;
+
+  function getSupportedFormat(gl, internalFormat, format, type) {
+    if (!supportRTF(gl, internalFormat, format, type)) {
+      if (internalFormat === gl.R16F) return getSupportedFormat(gl, gl.RG16F, gl.RG, type);
+      if (internalFormat === gl.RG16F) return getSupportedFormat(gl, gl.RGBA16F, gl.RGBA, type);
+      return null;
+    }
+    return { internalFormat, format };
+  }
+  function supportRTF(gl, internalFormat, format, type) {
+    const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, 4, 4, 0, format, type, null);
+    const fbo = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    return gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+  }
+
+  let formatRGBA, formatRG, formatR;
+  if (isWebGL2) {
+    formatRGBA = getSupportedFormat(gl, gl.RGBA16F, gl.RGBA, halfFloatTexType);
+    formatRG   = getSupportedFormat(gl, gl.RG16F,   gl.RG,   halfFloatTexType);
+    formatR    = getSupportedFormat(gl, gl.R16F,    gl.RED,  halfFloatTexType);
+  } else {
+    formatRGBA = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
+    formatRG   = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
+    formatR    = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
+  }
+  if (!supportLinearFiltering) { config.DYE_RESOLUTION = 256; config.SHADING = false; }
+
+  function hashCode(s) { let h=0; for(let i=0;i<s.length;i++){h=(h<<5)-h+s.charCodeAt(i);h|=0;} return h; }
+  function addKeywords(src, kw) { if(!kw) return src; return kw.map(k=>'#define '+k+'\n').join('')+src; }
+  function compileShader(type, src, kw) {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, addKeywords(src, kw)); gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) console.warn(gl.getShaderInfoLog(sh));
+    return sh;
+  }
+  function createProgram(vs, fs) {
+    const p = gl.createProgram(); gl.attachShader(p,vs); gl.attachShader(p,fs); gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) console.warn(gl.getProgramInfoLog(p));
+    return p;
+  }
+  function getUniforms(p) {
+    const u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for (let i=0;i<n;i++) { const name=gl.getActiveUniform(p,i).name; u[name]=gl.getUniformLocation(p,name); }
+    return u;
+  }
+  class GLProgram { constructor(vs,fs){this.program=createProgram(vs,fs);this.uniforms=getUniforms(this.program);} bind(){gl.useProgram(this.program);} }
+  class Material {
+    constructor(vs,fsrc){this.vs=vs;this.fsrc=fsrc;this.programs=[];this.active=null;this.uniforms=[];}
+    setKeywords(kw){let h=0;kw.forEach(k=>h+=hashCode(k));let p=this.programs[h];if(!p){const fs=compileShader(gl.FRAGMENT_SHADER,this.fsrc,kw);p=createProgram(this.vs,fs);this.programs[h]=p;}if(p===this.active)return;this.uniforms=getUniforms(p);this.active=p;}
+    bind(){gl.useProgram(this.active);}
+  }
+
+  const baseVS = compileShader(gl.VERTEX_SHADER, `precision highp float;attribute vec2 aPosition;varying vec2 vUv,vL,vR,vT,vB;uniform vec2 texelSize;void main(){vUv=aPosition*0.5+0.5;vL=vUv-vec2(texelSize.x,0);vR=vUv+vec2(texelSize.x,0);vT=vUv+vec2(0,texelSize.y);vB=vUv-vec2(0,texelSize.y);gl_Position=vec4(aPosition,0,1);}`);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,-1,1,1,1,1,-1]), gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0,1,2,0,2,3]), gl.STATIC_DRAW);
+  gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0); gl.enableVertexAttribArray(0);
+
+  const blit = (target, clear=false) => {
+    if (!target){gl.viewport(0,0,gl.drawingBufferWidth,gl.drawingBufferHeight);gl.bindFramebuffer(gl.FRAMEBUFFER,null);}
+    else{gl.viewport(0,0,target.width,target.height);gl.bindFramebuffer(gl.FRAMEBUFFER,target.fbo);}
+    if(clear){gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);}
+    gl.drawElements(gl.TRIANGLES,6,gl.UNSIGNED_SHORT,0);
+  };
+
+  function createFBO(w,h,inFmt,fmt,type,param){
+    gl.activeTexture(gl.TEXTURE0);const tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,param);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,param);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D,0,inFmt,w,h,0,fmt,type,null);
+    const fbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);
+    gl.viewport(0,0,w,h);gl.clear(gl.COLOR_BUFFER_BIT);
+    return{tex,fbo,width:w,height:h,texelSizeX:1/w,texelSizeY:1/h,attach(id){gl.activeTexture(gl.TEXTURE0+id);gl.bindTexture(gl.TEXTURE_2D,tex);return id;}};
+  }
+  function createDoubleFBO(w,h,inFmt,fmt,type,param){
+    let f1=createFBO(w,h,inFmt,fmt,type,param),f2=createFBO(w,h,inFmt,fmt,type,param);
+    return{width:w,height:h,texelSizeX:f1.texelSizeX,texelSizeY:f1.texelSizeY,
+      get read(){return f1;},set read(v){f1=v;},
+      get write(){return f2;},set write(v){f2=v;},
+      swap(){const t=f1;f1=f2;f2=t;}};
+  }
+  function resizeFBO(tgt,w,h,inFmt,fmt,type,param){
+    const n=createFBO(w,h,inFmt,fmt,type,param);
+    copyP.bind();gl.uniform1i(copyP.uniforms.uTexture,tgt.attach(0));blit(n);return n;
+  }
+  function resizeDoubleFBO(tgt,w,h,inFmt,fmt,type,param){
+    if(tgt.width===w&&tgt.height===h)return tgt;
+    tgt.read=resizeFBO(tgt.read,w,h,inFmt,fmt,type,param);
+    tgt.write=createFBO(w,h,inFmt,fmt,type,param);
+    tgt.width=w;tgt.height=h;tgt.texelSizeX=1/w;tgt.texelSizeY=1/h;return tgt;
+  }
+  function getResolution(res){let ar=gl.drawingBufferWidth/gl.drawingBufferHeight;if(ar<1)ar=1/ar;const min=Math.round(res),max=Math.round(res*ar);return gl.drawingBufferWidth>gl.drawingBufferHeight?{width:max,height:min}:{width:min,height:max};}
+  function scaleByPixelRatio(i){return Math.floor(i*(window.devicePixelRatio||1));}
+
+  const copyFS  = compileShader(gl.FRAGMENT_SHADER, `precision mediump float;precision mediump sampler2D;varying highp vec2 vUv;uniform sampler2D uTexture;void main(){gl_FragColor=texture2D(uTexture,vUv);}`);
+  const clearFS = compileShader(gl.FRAGMENT_SHADER, `precision mediump float;precision mediump sampler2D;varying highp vec2 vUv;uniform sampler2D uTexture;uniform float value;void main(){gl_FragColor=value*texture2D(uTexture,vUv);}`);
+  const splatFS = compileShader(gl.FRAGMENT_SHADER, `precision highp float;precision highp sampler2D;varying vec2 vUv;uniform sampler2D uTarget;uniform float aspectRatio;uniform vec3 color;uniform vec2 point;uniform float radius;void main(){vec2 p=vUv-point;p.x*=aspectRatio;vec3 s=exp(-dot(p,p)/radius)*color;vec3 b=texture2D(uTarget,vUv).xyz;gl_FragColor=vec4(b+s,1.0);}`);
+  const advFS   = compileShader(gl.FRAGMENT_SHADER, `precision highp float;precision highp sampler2D;varying vec2 vUv;uniform sampler2D uVelocity,uSource;uniform vec2 texelSize,dyeTexelSize;uniform float dt,dissipation;vec4 bilerp(sampler2D s,vec2 uv,vec2 ts){vec2 st=uv/ts-0.5;vec2 iuv=floor(st);vec2 fuv=fract(st);vec4 a=texture2D(s,(iuv+vec2(0.5,0.5))*ts);vec4 b=texture2D(s,(iuv+vec2(1.5,0.5))*ts);vec4 c=texture2D(s,(iuv+vec2(0.5,1.5))*ts);vec4 d=texture2D(s,(iuv+vec2(1.5,1.5))*ts);return mix(mix(a,b,fuv.x),mix(c,d,fuv.x),fuv.y);}void main(){vec2 coord=vUv-dt*texture2D(uVelocity,vUv).xy*texelSize;vec4 res=texture2D(uSource,coord);float decay=1.0+dissipation*dt;gl_FragColor=res/decay;}`, supportLinearFiltering?null:['MANUAL_FILTERING']);
+  const divFS   = compileShader(gl.FRAGMENT_SHADER, `precision mediump float;precision mediump sampler2D;varying highp vec2 vUv,vL,vR,vT,vB;uniform sampler2D uVelocity;void main(){float L=texture2D(uVelocity,vL).x,R=texture2D(uVelocity,vR).x,T=texture2D(uVelocity,vT).y,B=texture2D(uVelocity,vB).y;vec2 C=texture2D(uVelocity,vUv).xy;if(vL.x<0.0)L=-C.x;if(vR.x>1.0)R=-C.x;if(vT.y>1.0)T=-C.y;if(vB.y<0.0)B=-C.y;gl_FragColor=vec4(0.5*(R-L+T-B),0,0,1);}`);
+  const curlFS  = compileShader(gl.FRAGMENT_SHADER, `precision mediump float;precision mediump sampler2D;varying highp vec2 vUv,vL,vR,vT,vB;uniform sampler2D uVelocity;void main(){float L=texture2D(uVelocity,vL).y,R=texture2D(uVelocity,vR).y,T=texture2D(uVelocity,vT).x,B=texture2D(uVelocity,vB).x;gl_FragColor=vec4(0.5*(R-L-T+B),0,0,1);}`);
+  const vortFS  = compileShader(gl.FRAGMENT_SHADER, `precision highp float;precision highp sampler2D;varying vec2 vUv,vL,vR,vT,vB;uniform sampler2D uVelocity,uCurl;uniform float curl,dt;void main(){float L=texture2D(uCurl,vL).x,R=texture2D(uCurl,vR).x,T=texture2D(uCurl,vT).x,B=texture2D(uCurl,vB).x,C=texture2D(uCurl,vUv).x;vec2 f=0.5*vec2(abs(T)-abs(B),abs(R)-abs(L));f/=length(f)+0.0001;f*=curl*C;f.y*=-1.0;vec2 v=texture2D(uVelocity,vUv).xy+f*dt;v=min(max(v,-1000.0),1000.0);gl_FragColor=vec4(v,0,1);}`);
+  const pressFS = compileShader(gl.FRAGMENT_SHADER, `precision mediump float;precision mediump sampler2D;varying highp vec2 vUv,vL,vR,vT,vB;uniform sampler2D uPressure,uDivergence;void main(){float L=texture2D(uPressure,vL).x,R=texture2D(uPressure,vR).x,T=texture2D(uPressure,vT).x,B=texture2D(uPressure,vB).x,div=texture2D(uDivergence,vUv).x;gl_FragColor=vec4((L+R+B+T-div)*0.25,0,0,1);}`);
+  const gradFS  = compileShader(gl.FRAGMENT_SHADER, `precision mediump float;precision mediump sampler2D;varying highp vec2 vUv,vL,vR,vT,vB;uniform sampler2D uPressure,uVelocity;void main(){float L=texture2D(uPressure,vL).x,R=texture2D(uPressure,vR).x,T=texture2D(uPressure,vT).x,B=texture2D(uPressure,vB).x;vec2 v=texture2D(uVelocity,vUv).xy;v.xy-=vec2(R-L,T-B);gl_FragColor=vec4(v,0,1);}`);
+  const dispSrc = `precision highp float;precision highp sampler2D;varying vec2 vUv,vL,vR,vT,vB;uniform sampler2D uTexture;uniform vec2 texelSize;void main(){vec3 c=texture2D(uTexture,vUv).rgb;#ifdef SHADING\nvec3 lc=texture2D(uTexture,vL).rgb,rc=texture2D(uTexture,vR).rgb,tc=texture2D(uTexture,vT).rgb,bc=texture2D(uTexture,vB).rgb;float dx=length(rc)-length(lc),dy=length(tc)-length(bc);vec3 n=normalize(vec3(dx,dy,length(texelSize)));float diff=clamp(dot(n,vec3(0,0,1))+0.7,0.7,1.0);c*=diff;#endif\nfloat a=max(c.r,max(c.g,c.b));gl_FragColor=vec4(c,a);}`;
+
+  const copyP=new GLProgram(baseVS,copyFS), clearP=new GLProgram(baseVS,clearFS);
+  const splatP=new GLProgram(baseVS,splatFS), advP=new GLProgram(baseVS,advFS);
+  const divP=new GLProgram(baseVS,divFS), curlP=new GLProgram(baseVS,curlFS);
+  const vortP=new GLProgram(baseVS,vortFS), pressP=new GLProgram(baseVS,pressFS);
+  const gradP=new GLProgram(baseVS,gradFS);
+  const dispM=new Material(baseVS,dispSrc);
+  function updateKeywords(){let kw=[];if(config.SHADING)kw.push('SHADING');dispM.setKeywords(kw);}
+  updateKeywords();
+
+  let dye,velocity,divergence,curl,pressure;
+  function initFBOs(){
+    const sr=getResolution(config.SIM_RESOLUTION),dr=getResolution(config.DYE_RESOLUTION);
+    const tt=halfFloatTexType,filter=supportLinearFiltering?gl.LINEAR:gl.NEAREST;
+    gl.disable(gl.BLEND);
+    if(!dye) dye=createDoubleFBO(dr.width,dr.height,formatRGBA.internalFormat,formatRGBA.format,tt,filter);
+    else dye=resizeDoubleFBO(dye,dr.width,dr.height,formatRGBA.internalFormat,formatRGBA.format,tt,filter);
+    if(!velocity) velocity=createDoubleFBO(sr.width,sr.height,formatRG.internalFormat,formatRG.format,tt,filter);
+    else velocity=resizeDoubleFBO(velocity,sr.width,sr.height,formatRG.internalFormat,formatRG.format,tt,filter);
+    divergence=createFBO(sr.width,sr.height,formatR.internalFormat,formatR.format,tt,gl.NEAREST);
+    curl=createFBO(sr.width,sr.height,formatR.internalFormat,formatR.format,tt,gl.NEAREST);
+    pressure=createDoubleFBO(sr.width,sr.height,formatR.internalFormat,formatR.format,tt,gl.NEAREST);
+  }
+  initFBOs();
+
+  function HSVtoRGB(h,s,v){let r,g,b,i=Math.floor(h*6),f=h*6-i,p=v*(1-s),q=v*(1-f*s),t=v*(1-(1-f)*s);switch(i%6){case 0:r=v;g=t;b=p;break;case 1:r=q;g=v;b=p;break;case 2:r=p;g=v;b=t;break;case 3:r=p;g=q;b=v;break;case 4:r=t;g=p;b=v;break;case 5:r=v;g=p;b=q;break;}return{r,g,b};}
+  function generateColor(){let c=HSVtoRGB(Math.random(),1,1);c.r*=0.15;c.g*=0.15;c.b*=0.15;return c;}
+  function correctRadius(r){let ar=canvas.width/canvas.height;if(ar>1)r*=ar;return r;}
+  function correctDX(d){let ar=canvas.width/canvas.height;if(ar<1)d*=ar;return d;}
+  function correctDY(d){let ar=canvas.width/canvas.height;if(ar>1)d/=ar;return d;}
+
+  function splat(x,y,dx,dy,color){
+    splatP.bind();
+    gl.uniform1i(splatP.uniforms.uTarget,velocity.read.attach(0));
+    gl.uniform1f(splatP.uniforms.aspectRatio,canvas.width/canvas.height);
+    gl.uniform2f(splatP.uniforms.point,x,y);
+    gl.uniform3f(splatP.uniforms.color,dx,dy,0);
+    gl.uniform1f(splatP.uniforms.radius,correctRadius(config.SPLAT_RADIUS/100));
+    blit(velocity.write);velocity.swap();
+    gl.uniform1i(splatP.uniforms.uTarget,dye.read.attach(0));
+    gl.uniform3f(splatP.uniforms.color,color.r,color.g,color.b);
+    blit(dye.write);dye.swap();
+  }
+  function splatPointer(p){splat(p.texcoordX,p.texcoordY,p.deltaX*config.SPLAT_FORCE,p.deltaY*config.SPLAT_FORCE,p.color);}
+  function clickSplat(p){const c=generateColor();c.r*=10;c.g*=10;c.b*=10;splat(p.texcoordX,p.texcoordY,10*(Math.random()-0.5),30*(Math.random()-0.5),c);}
+
+  let lastTime=Date.now(),colorTimer=0,rafId;
+  function step(dt){
+    gl.disable(gl.BLEND);
+    curlP.bind();gl.uniform2f(curlP.uniforms.texelSize,velocity.texelSizeX,velocity.texelSizeY);gl.uniform1i(curlP.uniforms.uVelocity,velocity.read.attach(0));blit(curl);
+    vortP.bind();gl.uniform2f(vortP.uniforms.texelSize,velocity.texelSizeX,velocity.texelSizeY);gl.uniform1i(vortP.uniforms.uVelocity,velocity.read.attach(0));gl.uniform1i(vortP.uniforms.uCurl,curl.attach(1));gl.uniform1f(vortP.uniforms.curl,config.CURL);gl.uniform1f(vortP.uniforms.dt,dt);blit(velocity.write);velocity.swap();
+    divP.bind();gl.uniform2f(divP.uniforms.texelSize,velocity.texelSizeX,velocity.texelSizeY);gl.uniform1i(divP.uniforms.uVelocity,velocity.read.attach(0));blit(divergence);
+    clearP.bind();gl.uniform1i(clearP.uniforms.uTexture,pressure.read.attach(0));gl.uniform1f(clearP.uniforms.value,config.PRESSURE);blit(pressure.write);pressure.swap();
+    pressP.bind();gl.uniform2f(pressP.uniforms.texelSize,velocity.texelSizeX,velocity.texelSizeY);gl.uniform1i(pressP.uniforms.uDivergence,divergence.attach(0));
+    for(let i=0;i<config.PRESSURE_ITERATIONS;i++){gl.uniform1i(pressP.uniforms.uPressure,pressure.read.attach(1));blit(pressure.write);pressure.swap();}
+    gradP.bind();gl.uniform2f(gradP.uniforms.texelSize,velocity.texelSizeX,velocity.texelSizeY);gl.uniform1i(gradP.uniforms.uPressure,pressure.read.attach(0));gl.uniform1i(gradP.uniforms.uVelocity,velocity.read.attach(1));blit(velocity.write);velocity.swap();
+    advP.bind();gl.uniform2f(advP.uniforms.texelSize,velocity.texelSizeX,velocity.texelSizeY);
+    if(!supportLinearFiltering)gl.uniform2f(advP.uniforms.dyeTexelSize,velocity.texelSizeX,velocity.texelSizeY);
+    const vid=velocity.read.attach(0);gl.uniform1i(advP.uniforms.uVelocity,vid);gl.uniform1i(advP.uniforms.uSource,vid);gl.uniform1f(advP.uniforms.dt,dt);gl.uniform1f(advP.uniforms.dissipation,config.VELOCITY_DISSIPATION);blit(velocity.write);velocity.swap();
+    if(!supportLinearFiltering)gl.uniform2f(advP.uniforms.dyeTexelSize,dye.texelSizeX,dye.texelSizeY);
+    gl.uniform1i(advP.uniforms.uVelocity,velocity.read.attach(0));gl.uniform1i(advP.uniforms.uSource,dye.read.attach(1));gl.uniform1f(advP.uniforms.dissipation,config.DENSITY_DISSIPATION);blit(dye.write);dye.swap();
+  }
+  function render(){gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.enable(gl.BLEND);dispM.bind();if(config.SHADING)gl.uniform2f(dispM.uniforms.texelSize,1/gl.drawingBufferWidth,1/gl.drawingBufferHeight);gl.uniform1i(dispM.uniforms.uTexture,dye.read.attach(0));blit(null);}
+
+  function frame(){
+    rafId=requestAnimationFrame(frame);
+    let dt=Math.min((Date.now()-lastTime)/1000,0.016666);lastTime=Date.now();
+    colorTimer+=dt*config.COLOR_UPDATE_SPEED;if(colorTimer>=1){colorTimer=0;pointers.forEach(p=>p.color=generateColor());}
+    let w=scaleByPixelRatio(canvas.clientWidth),h=scaleByPixelRatio(canvas.clientHeight);
+    if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;initFBOs();}
+    pointers.forEach(p=>{if(p.moved){p.moved=false;splatPointer(p);}});
+    step(dt);render();
+  }
+  frame();
+
+  function onMouseDown(e){const p=pointers[0],x=scaleByPixelRatio(e.clientX),y=scaleByPixelRatio(e.clientY);p.id=-1;p.down=true;p.moved=false;p.texcoordX=x/canvas.width;p.texcoordY=1-y/canvas.height;p.prevTexcoordX=p.texcoordX;p.prevTexcoordY=p.texcoordY;p.deltaX=0;p.deltaY=0;p.color=generateColor();clickSplat(p);}
+  let firstMove=false;
+  function onMouseMove(e){const p=pointers[0],x=scaleByPixelRatio(e.clientX),y=scaleByPixelRatio(e.clientY),tx=x/canvas.width,ty=1-y/canvas.height;if(!firstMove){p.texcoordX=tx;p.texcoordY=ty;p.prevTexcoordX=tx;p.prevTexcoordY=ty;p.deltaX=0;p.deltaY=0;p.color=generateColor();firstMove=true;return;}p.prevTexcoordX=p.texcoordX;p.prevTexcoordY=p.texcoordY;p.texcoordX=tx;p.texcoordY=ty;p.deltaX=correctDX(tx-p.prevTexcoordX);p.deltaY=correctDY(ty-p.prevTexcoordY);p.moved=Math.abs(p.deltaX)>0||Math.abs(p.deltaY)>0;}
+})();
+</script>
+<script src="assets/js/splash-cursor.js"></script>
+<script src="assets/js/signature.js"></script>
+
+<script>
+// Nav scroll compact/expand
+(function() {
+  const nav  = document.getElementById('pill-nav');
+  const wrap = nav?.closest('.pill-nav-wrap');
+  if (!nav) return;
+  let ticking = false;
+  function update() {
+    const scrolled = window.scrollY > 60;
+    nav.classList.toggle('scrolled', scrolled);
+    wrap?.classList.toggle('scrolled', scrolled);
+    ticking = false;
+  }
+  window.addEventListener('scroll', () => {
+    if (!ticking) { requestAnimationFrame(update); ticking = true; }
+  }, { passive: true });
+})();
+</script>
+</body>
+</html>
