@@ -93,6 +93,12 @@
         <div class="tool-desc">Upload PDF SLO & NIDI, rename otomatis sesuai nama pemilik di dalam sertifikat, lalu download sebagai ZIP.</div>
         <div class="tool-arrow">Buka tool →</div>
       </div>
+      <div class="tool-card" data-page="split-pdf" onclick="showPage('split-pdf', document.querySelector('[data-page=split-pdf]'))">
+        <div class="tool-icon">✂️</div>
+        <div class="tool-name">Pisahkan PDF</div>
+        <div class="tool-desc">Upload PDF hasil scan berisi banyak halaman → pisahkan jadi satu file per halaman, beri nama manual atau acak.</div>
+        <div class="tool-arrow">Buka tool →</div>
+      </div>
       <div class="tool-card" data-page="cek-duplikat" onclick="showPage('cek-duplikat', document.querySelector('[data-page=cek-duplikat]'))">
         <div class="tool-icon">🔍</div>
         <div class="tool-name">Cek Duplikat SLO & NIDI</div>
@@ -156,6 +162,15 @@
     <div class="tool-frame"><iframe src="pages/cari-data.html" id="cariFrame"></iframe></div>
   </div>
 
+  <!-- SPLIT PDF PAGE -->
+  <div class="page" id="page-split-pdf">
+    <div class="section-header">
+      <div class="section-title">Pisahkan PDF</div>
+      <div class="section-sub">Pisahkan PDF hasil scan menjadi satu file per halaman — nama manual atau acak</div>
+    </div>
+    <div class="tool-frame"><iframe src="pages/split-pdf.html" id="splitFrame"></iframe></div>
+  </div>
+
   <!-- CEK DUPLIKAT PAGE -->
   <div class="page" id="page-cek-duplikat">
     <div class="section-header">
@@ -204,6 +219,14 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       </div>
       <span class="dock-label">Rename PDF</span>
+      <span class="dock-dot"></span>
+    </button>
+
+    <button class="dock-item nav-item" data-page="split-pdf" data-label="Pisahkan PDF" onclick="showPage('split-pdf', this)">
+      <div class="dock-icon-wrap">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18"/><path d="M18 3v18"/><path d="M3 9h4"/><path d="M17 9h4"/><path d="M3 15h4"/><path d="M17 15h4"/></svg>
+      </div>
+      <span class="dock-label">Pisahkan PDF</span>
       <span class="dock-dot"></span>
     </button>
 

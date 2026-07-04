@@ -183,6 +183,7 @@ const pageTitles = {
   'home':         ['Dashboard', 'Tools NADIA'],
   'slo-nidi':     ['SLO & NIDI Extractor', 'Tools'],
   'rename-pdf':   ['Rename PDF', 'Tools'],
+  'split-pdf':    ['Pisahkan PDF', 'Tools'],
   'cek-duplikat': ['Cek Duplikat SLO & NIDI', 'Tools'],
   'rekap':        ['Rekap & Laporan', 'Tools'],
   'rapikan':      ['Rapikan Excel', 'Tools'],

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pisahkan PDF SLO & NIDI</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; cursor: none !important; }
+    :root {
+      --blue-50:#EFF6FF;--blue-100:#DBEAFE;--blue-200:#BFDBFE;
+      --blue-300:#93C5FD;--blue-400:#60A5FA;--blue-600:#2563EB;--blue-dark:#1D4ED8;
+      --green:#16A34A;--green-light:#F0FDF4;--green-border:#BBF7D0;
+      --amber:#D97706;--amber-light:#FFFBEB;--amber-border:#FDE68A;
+      --red:#DC2626;--red-light:#FEF2F2;--red-border:#FECACA;
+      --purple:#7C3AED;--purple-light:#F5F3FF;--purple-border:#DDD6FE;
+      --slate-50:#F8FAFC;--slate-100:#F1F5F9;--slate-200:#E2E8F0;
+      --slate-400:#94A3B8;--slate-600:#475569;--slate-800:#1E293B;
+      --radius:16px;--radius-sm:10px;
+    }
+    body { font-family:'Plus Jakarta Sans',sans-serif; background:transparent; color:var(--slate-800); padding:1.5rem; font-size:14px; line-height:1.6; }
+
+    .info-pill { display:inline-flex; align-items:center; gap:6px; background:var(--blue-50); border:1px solid var(--blue-200); color:var(--blue-600); border-radius:20px; padding:6px 14px; font-size:12px; font-weight:500; margin-bottom:1.5rem; }
+
+    .steps { display:flex; flex-direction:column; gap:1rem; }
+
+    .card { background:#fff; border:1px solid rgba(147,197,253,0.25); border-radius:var(--radius); overflow:hidden; box-shadow:0 2px 12px rgba(96,165,250,0.06); }
+    .card-header { display:flex; align-items:center; gap:10px; padding:1rem 1.25rem; background:linear-gradient(135deg,#F8FBFF,#F5F3FF); border-bottom:1px solid rgba(147,197,253,0.15); }
+    .step-dot { width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,#60A5FA,#A78BFA); color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 2px 8px rgba(96,165,250,0.3); }
+    .step-dot.done { background:linear-gradient(135deg,#34D399,#10B981); box-shadow:0 2px 8px rgba(52,211,153,0.3); }
+    .card-title { font-weight:600; font-size:14px; color:var(--slate-800); }
+    .card-body { padding:1.25rem; }
+
+    .drop-zone { border:2px dashed var(--blue-200); border-radius:var(--radius-sm); padding:2.5rem 1.5rem; text-align:center; cursor:pointer; transition:all .2s; background:var(--blue-50); }
+    .drop-zone:hover,.drop-zone.drag { border-color:var(--blue-400); background:#EFF6FF; transform:scale(1.01); }
+    .drop-zone-icon { font-size:36px; margin-bottom:.5rem; }
+    .drop-zone p { font-size:14px; color:var(--slate-600); font-weight:500; }
+    .drop-zone span { font-size:12px; color:var(--slate-400); }
+    input[type=file] { display:none; }
+
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:10px 20px; border-radius:var(--radius-sm); border:1.5px solid var(--slate-200); background:#fff; font-size:13px; font-weight:600; cursor:pointer; color:var(--slate-800); font-family:inherit; transition:all .15s; }
+    .btn:hover { background:var(--slate-50); border-color:var(--blue-300); }
+    .btn:disabled { opacity:.4; cursor:not-allowed; }
+    .btn-primary { background:linear-gradient(135deg,#60A5FA,#818CF8); border-color:transparent; color:#fff; box-shadow:0 4px 14px rgba(96,165,250,0.3); }
+    .btn-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 20px rgba(96,165,250,0.4); }
+    .btn-success { background:linear-gradient(135deg,#34D399,#10B981); border-color:transparent; color:#fff; box-shadow:0 4px 14px rgba(52,211,153,0.3); }
+    .btn-success:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 20px rgba(52,211,153,0.4); }
+    .btn-files { background:linear-gradient(135deg,#60A5FA,#3B82F6); border-color:transparent; color:#fff; box-shadow:0 4px 14px rgba(59,130,246,0.3); }
+    .btn-files:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 20px rgba(59,130,246,0.4); }
+    .btn-sm { padding:5px 12px; font-size:12px; }
+    .btn-ghost { background:none; border-color:transparent; color:var(--red); }
+    .btn-ghost:hover { background:var(--red-light); }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:1rem; }
+
+    .progress-wrap { margin-top:.75rem; }
+    .progress-label { font-size:12px; color:var(--slate-400); margin-bottom:5px; }
+    .progress-bg { height:6px; background:var(--blue-100); border-radius:3px; overflow:hidden; }
+    .progress-bar { height:100%; background:linear-gradient(90deg,#60A5FA,#A78BFA); border-radius:3px; transition:width .3s; width:0; }
+
+    .summary-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:1rem; }
+    .pill { display:flex; align-items:center; gap:5px; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:600; }
+    .pill-blue  { background:var(--blue-100); color:var(--blue-dark); }
+    .pill-green { background:var(--green-light); color:var(--green); border:1px solid var(--green-border); }
+    .pill-amber { background:var(--amber-light); color:var(--amber); border:1px solid var(--amber-border); }
+    .pill-red   { background:var(--red-light); color:var(--red); border:1px solid var(--red-border); }
+
+    .divider { height:1px; background:var(--slate-100); margin:1.25rem 0; }
+    .hint { font-size:11px; color:var(--slate-400); margin-top:6px; }
+
+    .file-list { display:flex; flex-direction:column; gap:5px; margin-top:.75rem; }
+    .file-item { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--slate-50); border:1px solid var(--slate-100); border-radius:var(--radius-sm); font-size:13px; }
+    .file-item .fname { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--slate-600); }
+    .file-item.processed { border-color:var(--green-border); background:var(--green-light); }
+    .file-item.processed .fname { color:var(--green); }
+
+    /* ── MODE SELECTOR ── */
+    .rename-mode-selector { display:flex; gap:10px; margin-bottom:1.25rem; flex-wrap:wrap; }
+    .rename-mode-btn {
+      flex:1; min-width:160px;
+      display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+      padding:.875rem 1rem; border-radius:var(--radius-sm);
+      border:2px solid var(--slate-200); background:#fff;
+      cursor:pointer; font-family:inherit; transition:all .18s;
+      color:var(--slate-600); text-align:left;
+    }
+    .rename-mode-btn:hover { border-color:var(--blue-300); background:var(--blue-50); transform:translateY(-2px); box-shadow:0 4px 16px rgba(96,165,250,0.15); }
+    .rename-mode-btn.active { border-color:var(--blue-400); background:var(--blue-50); color:var(--blue-dark); box-shadow:0 4px 16px rgba(96,165,250,0.2); }
+    .rename-mode-btn.active-replace { border-color:var(--purple); background:var(--purple-light); color:var(--purple); box-shadow:0 4px 16px rgba(124,58,237,0.18); }
+    .rename-mode-icon { font-size:22px; line-height:1; }
+    .rename-mode-label { font-size:13px; font-weight:700; }
+    .rename-mode-desc { font-size:10px; font-weight:500; opacity:.75; line-height:1.4; }
+    .rename-mode-example { font-size:10px; font-family:'Consolas',monospace; padding:4px 8px; border-radius:5px; margin-top:2px; background:rgba(0,0,0,0.04); color:inherit; opacity:.8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+
+    /* ── PAGE GROUP / GRID ── */
+    .page-group { margin-bottom:1.5rem; }
+    .page-group:last-child { margin-bottom:0; }
+    .page-group-head { display:flex; align-items:center; gap:8px; margin-bottom:.75rem; flex-wrap:wrap; }
+    .page-group-title { font-size:13px; font-weight:700; color:var(--slate-800); }
+    .page-group-count { font-size:11px; color:var(--slate-400); }
+    .page-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:12px; }
+    .page-card { border:1.5px solid var(--slate-200); border-radius:var(--radius-sm); overflow:hidden; background:#fff; display:flex; flex-direction:column; transition:all .15s; }
+    .page-card.excluded { opacity:.45; }
+    .page-card-thumb { background:#374151; display:flex; align-items:center; justify-content:center; min-height:140px; padding:8px; }
+    .page-card-thumb img { max-width:100%; max-height:160px; border-radius:4px; box-shadow:0 2px 10px rgba(0,0,0,0.3); display:block; }
+    .page-card-thumb .thumb-fallback { color:#94A3B8; font-size:11px; text-align:center; }
+    .page-card-body { padding:.6rem .7rem; display:flex; flex-direction:column; gap:.45rem; }
+    .page-card-meta { display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--slate-400); font-weight:600; }
+    .page-card-check { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--slate-600); }
+    .page-card-name-wrap { display:flex; gap:4px; align-items:center; }
+    .page-card-name-wrap input { flex:1; min-width:0; border:1.5px solid var(--blue-200); border-radius:8px; padding:6px 8px; font-size:12px; font-weight:600; font-family:'Consolas',monospace; color:var(--slate-800); background:var(--blue-50); }
+    .page-card-name-wrap input:focus { outline:none; border-color:var(--blue-400); background:#fff; }
+    .btn-dice { flex-shrink:0; border:1.5px solid var(--slate-200); background:#fff; border-radius:8px; width:28px; height:28px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; }
+    .btn-dice:hover { border-color:var(--blue-300); background:var(--blue-50); }
+    .page-card-actions { display:flex; gap:6px; }
+    .page-card-actions .btn { flex:1; justify-content:center; padding:6px 8px; font-size:11px; }
+
+    @media (max-width:700px) {
+      .rename-mode-selector { gap:6px; }
+    }
+  </style>
+  <link rel="stylesheet" href="../assets/css/tools.css">
+</head>
+<body>
+
+<div class="info-pill">✂️ Pisahkan PDF hasil scan menjadi satu file per halaman</div>
+
+<div class="steps">
+
+  <!-- STEP 1 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-dot" id="dot1">1</div>
+      <span class="card-title">Upload PDF hasil scan (bisa lebih dari satu berkas)</span>
+    </div>
+    <div class="card-body">
+      <div class="drop-zone" id="dropPdf" onclick="document.getElementById('inPdf').click()">
+        <div class="drop-zone-icon">📄</div>
+        <p>Klik atau drag <strong>file PDF</strong> hasil scan di sini</p>
+        <span>Bisa pilih banyak berkas sekaligus — tiap berkas akan dipisah per halaman</span>
+      </div>
+      <input type="file" id="inPdf" accept=".pdf" multiple>
+
+      <div class="file-list" id="fileList"></div>
+      <div id="fileActions" style="display:none;gap:6px;margin-top:.75rem;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="document.getElementById('inPdf').click()">+ Tambah Lagi</button>
+        <button class="btn btn-sm btn-ghost" onclick="clearFiles()">Hapus semua</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="step-dot" id="dot2">2</div>
+      <span class="card-title">Pilih Format Nama Halaman & Pisahkan</span>
+    </div>
+    <div class="card-body">
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:12px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.6rem;">Penamaan File Hasil</div>
+        <div class="rename-mode-selector">
+          <button class="rename-mode-btn active" id="nmodeBtnManual" onclick="setNameMode('manual')">
+            <span class="rename-mode-icon">✏️</span>
+            <span class="rename-mode-label">Nama Manual per Halaman</span>
+            <span class="rename-mode-desc">Beri nama sendiri untuk tiap halaman (misal jenis dokumennya) setelah melihat preview</span>
+            <span class="rename-mode-example">scan.pdf → hal.1 "KTP Budi.pdf"</span>
+          </button>
+          <button class="rename-mode-btn" id="nmodeBtnRandom" onclick="setNameMode('random')">
+            <span class="rename-mode-icon">🎲</span>
+            <span class="rename-mode-label">Nama Acak</span>
+            <span class="rename-mode-desc">Tidak perlu mengetik apa-apa — tiap halaman langsung diberi nama acak</span>
+            <span class="rename-mode-example" id="exampleRandom">scan.pdf → SCAN-a1b2c3d4.pdf</span>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btnProses" disabled onclick="processAll()">✂️ Pisahkan PDF</button>
+      <p class="hint" id="newFileHint" style="display:none;margin-top:.5rem">📎 Ada PDF baru — klik proses untuk melanjutkan tanpa mengulang dari awal.</p>
+      <div id="progressWrap" style="display:none" class="progress-wrap">
+        <div class="progress-label" id="progressLabel">Memproses...</div>
+        <div class="progress-bg"><div class="progress-bar" id="progressBar"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="card" id="resultCard" style="display:none">
+    <div class="card-header">
+      <div class="step-dot done">✓</div>
+      <span class="card-title">Preview Hasil — Edit nama jika perlu, lalu Download</span>
+    </div>
+    <div class="card-body">
+      <div class="summary-row" id="summaryRow"></div>
+      <div id="pageGroups"></div>
+
+      <p class="hint">💡 Hilangkan centang "Sertakan" untuk melewati halaman yang tidak perlu diekspor (misal halaman kosong).</p>
+      <div class="divider"></div>
+      <div class="actions">
+        <button class="btn btn-success" id="btnDownloadZip" onclick="downloadAll()">⬇️ Download Semua sebagai ZIP</button>
+        <button class="btn btn-files" id="btnDownloadFiles" onclick="downloadFiles()">📁 Download File Satu per Satu</button>
+        <button class="btn" onclick="resetAll()">🔄 Mulai Ulang</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" style="position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(20px);background:#1E293B;color:#fff;padding:.75rem 1.25rem;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,0.2);z-index:9999;opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:8px;pointer-events:none;max-width:90vw;"></div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const { PDFDocument } = PDFLib;
+
+let pdfFiles = [];
+// pages: { id, sourceName, pageNum, totalPages, thumb, name, bytes, include }
+let pages = [];
+let processedFiles = new Set();
+let hasProcessedOnce = false;
+let nameMode = 'manual'; // 'manual' | 'random'
+let pageSeq = 0;
+
+function setNameMode(mode) {
+  nameMode = mode;
+  document.getElementById('nmodeBtnManual').className = 'rename-mode-btn' + (mode === 'manual' ? ' active' : '');
+  document.getElementById('nmodeBtnRandom').className = 'rename-mode-btn' + (mode === 'random' ? ' active-replace' : '');
+}
+
+// ── DRAG & DROP ────────────────────────────────────────────────────
+const dropEl = document.getElementById('dropPdf');
+dropEl.addEventListener('dragover', e => { e.preventDefault(); dropEl.classList.add('drag'); });
+dropEl.addEventListener('dragleave', () => dropEl.classList.remove('drag'));
+dropEl.addEventListener('drop', e => {
+  e.preventDefault(); dropEl.classList.remove('drag');
+  addFiles(Array.from(e.dataTransfer.files).filter(f => /\.pdf$/i.test(f.name)));
+});
+document.getElementById('inPdf').onchange = e => addFiles(Array.from(e.target.files));
+
+// ── FILE MANAGEMENT ───────────────────────────────────────────────
+function addFiles(files) {
+  files.forEach(f => { if (!pdfFiles.find(p => p.name === f.name)) pdfFiles.push(f); });
+  renderFileList();
+  checkReady();
+}
+
+function clearFiles() {
+  pdfFiles = []; pages = [];
+  processedFiles = new Set();
+  hasProcessedOnce = false;
+  renderFileList();
+  document.getElementById('inPdf').value = '';
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('newFileHint').style.display = 'none';
+  checkReady();
+}
+
+function renderFileList() {
+  const el = document.getElementById('fileList');
+  el.innerHTML = pdfFiles.map((f, i) => {
+    const isDone = processedFiles.has(f.name);
+    return `<div class="file-item${isDone ? ' processed' : ''}">
+      ${isDone ? '<span class="badge badge-ok" style="font-size:10px;padding:2px 8px;border-radius:20px;background:var(--green-light);color:var(--green);border:1px solid var(--green-border)">✓ Selesai</span>' : '<span class="badge" style="font-size:10px;padding:2px 8px;border-radius:20px;background:var(--blue-100);color:var(--blue-dark)">Baru</span>'}
+      <span class="fname" title="${f.name}">${f.name}</span>
+      <button class="btn btn-sm btn-ghost" style="padding:2px 8px" onclick="removeFile(${i})">✕</button>
+    </div>`;
+  }).join('');
+
+  const act = document.getElementById('fileActions');
+  act.style.display = pdfFiles.length ? 'flex' : 'none';
+  const d1 = document.getElementById('dot1');
+  if (pdfFiles.length) { d1.classList.add('done'); d1.textContent = '✓'; }
+  else { d1.classList.remove('done'); d1.textContent = '1'; }
+}
+
+function removeFile(i) {
+  const fname = pdfFiles[i].name;
+  pdfFiles.splice(i, 1);
+  processedFiles.delete(fname);
+  pages = pages.filter(p => p.sourceName !== fname);
+  renderFileList();
+  checkReady();
+  if (hasProcessedOnce && pages.length > 0) renderResult();
+  else if (pages.length === 0) document.getElementById('resultCard').style.display = 'none';
+}
+
+function checkReady() {
+  const hasNew = pdfFiles.some(f => !processedFiles.has(f.name));
+  document.getElementById('btnProses').disabled = !hasNew;
+  document.getElementById('btnProses').textContent = hasProcessedOnce && hasNew ? '➕ Pisahkan PDF Baru' : '✂️ Pisahkan PDF';
+  document.getElementById('newFileHint').style.display = (hasProcessedOnce && hasNew) ? 'block' : 'none';
+}
+
+// ── NAMING HELPERS ─────────────────────────────────────────────────
+function sanitize(s) { return (s || '').replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim(); }
+function baseNameNoExt(name) { return name.replace(/\.pdf$/i, ''); }
+function randomName() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const arr = new Uint8Array(8);
+  crypto.getRandomValues(arr);
+  let s = '';
+  for (const v of arr) s += chars[v % chars.length];
+  return 'SCAN-' + s;
+}
+function defaultNameFor(sourceName, pageNum) {
+  return nameMode === 'random' ? randomName() : `${sanitize(baseNameNoExt(sourceName))} - Halaman ${pageNum}`;
+}
+
+// ── MAIN PROCESS ───────────────────────────────────────────────────
+async function processAll() {
+  const toProcess = pdfFiles.filter(f => !processedFiles.has(f.name));
+  if (toProcess.length === 0) { showToast('Semua PDF sudah dipisahkan!', 'info'); return; }
+
+  document.getElementById('progressWrap').style.display = 'block';
+  const prog = (p, lbl) => { document.getElementById('progressBar').style.width = p + '%'; document.getElementById('progressLabel').textContent = lbl; };
+  document.getElementById('btnProses').disabled = true;
+
+  let totalPagesAll = 0, donePagesAll = 0;
+  const perFilePages = [];
+  try {
+    for (const file of toProcess) {
+      const abCount = await file.arrayBuffer();
+      const srcDoc = await PDFDocument.load(abCount);
+      const n = srcDoc.getPageCount();
+      perFilePages.push(n);
+      totalPagesAll += n;
+    }
+  } catch (e) { /* fallback: unknown count, progress just won't be exact */ }
+
+  for (let fi = 0; fi < toProcess.length; fi++) {
+    const file = toProcess[fi];
+    prog(Math.round((donePagesAll / Math.max(totalPagesAll, 1)) * 100), `(${fi + 1}/${toProcess.length}) ${file.name}`);
+    try {
+      const abLib = await file.arrayBuffer();
+      const abJs  = await file.arrayBuffer();
+      const srcDoc = await PDFDocument.load(abLib);
+      const pdfJsDoc = await pdfjsLib.getDocument({ data: abJs }).promise;
+      const total = srcDoc.getPageCount();
+
+      for (let i = 0; i < total; i++) {
+        let thumb = '';
+        try {
+          const page = await pdfJsDoc.getPage(i + 1);
+          const vp = page.getViewport({ scale: 0.45, rotation: page.rotate });
+          const canvas = document.createElement('canvas');
+          canvas.width = vp.width; canvas.height = vp.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+          thumb = canvas.toDataURL('image/jpeg', 0.75);
+        } catch (e) { thumb = ''; }
+
+        const newDoc = await PDFDocument.create();
+        const [copied] = await newDoc.copyPages(srcDoc, [i]);
+        newDoc.addPage(copied);
+        const bytes = await newDoc.save();
+
+        pages.push({
+          id: 'pg' + (pageSeq++),
+          sourceName: file.name,
+          pageNum: i + 1,
+          totalPages: total,
+          thumb,
+          name: defaultNameFor(file.name, i + 1),
+          bytes,
+          include: true
+        });
+
+        donePagesAll++;
+        prog(Math.round((donePagesAll / Math.max(totalPagesAll, 1)) * 100), `(${fi + 1}/${toProcess.length}) ${file.name} — hal. ${i + 1}/${total}`);
+      }
+      processedFiles.add(file.name);
+    } catch (e) {
+      showToast(`Gagal memproses ${file.name}: ${e.message}`, 'error');
+    }
+  }
+
+  hasProcessedOnce = true;
+  prog(100, '✓ Selesai!');
+  document.getElementById('dot2').classList.add('done');
+  document.getElementById('dot2').textContent = '✓';
+
+  checkReady();
+  renderFileList();
+  renderResult();
+}
+
+// ── RENDER RESULT ──────────────────────────────────────────────────
+function renderResult() {
+  const included = pages.filter(p => p.include).length;
+  document.getElementById('summaryRow').innerHTML = `
+    <div class="pill pill-blue">📄 Total Halaman: ${pages.length}</div>
+    <div class="pill pill-green">✓ Akan Diekspor: ${included}</div>
+    ${included < pages.length ? `<div class="pill pill-amber">⏸ Dilewati: ${pages.length - included}</div>` : ''}`;
+
+  const groups = {};
+  const order = [];
+  pages.forEach(p => {
+    if (!groups[p.sourceName]) { groups[p.sourceName] = []; order.push(p.sourceName); }
+    groups[p.sourceName].push(p);
+  });
+
+  document.getElementById('pageGroups').innerHTML = order.map(sourceName => {
+    const group = groups[sourceName];
+    return `<div class="page-group">
+      <div class="page-group-head">
+        <span class="page-group-title">📄 ${sourceName}</span>
+        <span class="page-group-count">${group.length} halaman</span>
+      </div>
+      <div class="page-grid">
+        ${group.map(p => `
+          <div class="page-card${p.include ? '' : ' excluded'}" id="card_${p.id}">
+            <div class="page-card-thumb">
+              ${p.thumb ? `<img src="${p.thumb}" alt="Halaman ${p.pageNum}">` : '<div class="thumb-fallback">Preview tidak tersedia</div>'}
+            </div>
+            <div class="page-card-body">
+              <div class="page-card-meta">
+                <span>Hal. ${p.pageNum}/${p.totalPages}</span>
+                <label class="page-card-check">
+                  <input type="checkbox" ${p.include ? 'checked' : ''} onchange="toggleInclude('${p.id}', this.checked)"> Sertakan
+                </label>
+              </div>
+              <div class="page-card-name-wrap">
+                <input type="text" value="${p.name}" spellcheck="false" oninput="renamePage('${p.id}', this.value)" title="Klik untuk edit nama">
+                <button class="btn-dice" title="Acak nama" onclick="rerollPage('${p.id}')">🎲</button>
+              </div>
+              <div class="page-card-actions">
+                <button class="btn btn-sm" onclick="downloadOne('${p.id}')">⬇️ Download</button>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function findPage(id) { return pages.find(p => p.id === id); }
+
+function toggleInclude(id, checked) {
+  const p = findPage(id); if (!p) return;
+  p.include = checked;
+  document.getElementById('card_' + id).classList.toggle('excluded', !checked);
+  renderSummaryOnly();
+}
+
+function renameSharedInput(id) {
+  return document.querySelector(`#card_${id} .page-card-name-wrap input[type=text]`);
+}
+
+function renamePage(id, val) {
+  const p = findPage(id); if (!p) return;
+  p.name = val;
+}
+
+function rerollPage(id) {
+  const p = findPage(id); if (!p) return;
+  p.name = randomName();
+  const input = renameSharedInput(id);
+  if (input) input.value = p.name;
+  showToast('🎲 Nama diacak ulang', 'info');
+}
+
+function renderSummaryOnly() {
+  const included = pages.filter(p => p.include).length;
+  document.getElementById('summaryRow').innerHTML = `
+    <div class="pill pill-blue">📄 Total Halaman: ${pages.length}</div>
+    <div class="pill pill-green">✓ Akan Diekspor: ${included}</div>
+    ${included < pages.length ? `<div class="pill pill-amber">⏸ Dilewati: ${pages.length - included}</div>` : ''}`;
+}
+
+// ── NAMA UNIK UNTUK EKSPOR ─────────────────────────────────────────
+function finalNamesFor(list) {
+  const nc = {};
+  return list.map(p => {
+    let fn = sanitize(p.name) || 'halaman';
+    fn = fn.toLowerCase().endsWith('.pdf') ? fn : fn + '.pdf';
+    const key = fn.toLowerCase();
+    if (nc[key] === undefined) nc[key] = 1;
+    else { nc[key]++; fn = fn.replace(/\.pdf$/i, ` (${nc[key]}).pdf`); }
+    return { page: p, fileName: fn };
+  });
+}
+
+// ── DOWNLOAD SATU HALAMAN ──────────────────────────────────────────
+function downloadOne(id) {
+  const p = findPage(id); if (!p) return;
+  const fn = (sanitize(p.name) || 'halaman') + '.pdf';
+  const url = URL.createObjectURL(new Blob([p.bytes], { type: 'application/pdf' }));
+  const a = document.createElement('a'); a.href = url; a.download = fn; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── DOWNLOAD ZIP ───────────────────────────────────────────────────
+async function downloadAll() {
+  const included = pages.filter(p => p.include);
+  if (!included.length) { showToast('Tidak ada halaman yang disertakan!', 'warn'); return; }
+  const btn = document.getElementById('btnDownloadZip');
+  btn.disabled = true; btn.textContent = '⏳ Menyiapkan ZIP...';
+  try {
+    const zip = new JSZip();
+    finalNamesFor(included).forEach(({ page, fileName }) => zip.file(fileName, page.bytes));
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const zipName = `PDF_Split_${new Date().toISOString().slice(0, 10)}.zip`;
+    if ('showSaveFilePicker' in window) {
+      try {
+        const fh = await window.showSaveFilePicker({ suggestedName: zipName, startIn: 'downloads', types: [{ description: 'ZIP File', accept: { 'application/zip': ['.zip'] } }] });
+        const wr = await fh.createWritable(); await wr.write(blob); await wr.close();
+        btn.innerHTML = '⬇️ Download Semua sebagai ZIP'; btn.disabled = false; return;
+      } catch (e) { if (e.name === 'AbortError') { btn.innerHTML = '⬇️ Download Semua sebagai ZIP'; btn.disabled = false; return; } }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = zipName; a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) { showToast('Gagal membuat ZIP: ' + e.message, 'error'); }
+  btn.disabled = false; btn.innerHTML = '⬇️ Download Semua sebagai ZIP';
+}
+
+// ── DOWNLOAD SATU PER SATU ─────────────────────────────────────────
+async function downloadFiles() {
+  const included = pages.filter(p => p.include);
+  if (!included.length) { showToast('Tidak ada halaman yang disertakan!', 'warn'); return; }
+  const btn = document.getElementById('btnDownloadFiles');
+  const named = finalNamesFor(included);
+
+  if ('showDirectoryPicker' in window) {
+    let dir;
+    try { dir = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'downloads' }); }
+    catch (e) { return; }
+    btn.disabled = true; btn.textContent = '⏳ Menyimpan...';
+    let saved = 0;
+    for (const { page, fileName } of named) {
+      const fh = await dir.getFileHandle(fileName, { create: true });
+      const wr = await fh.createWritable(); await wr.write(page.bytes); await wr.close();
+      saved++; btn.textContent = `⏳ ${saved}/${named.length}...`;
+    }
+    showToast(`${saved} file berhasil disimpan!`, 'success');
+    btn.disabled = false; btn.innerHTML = '📁 Download File Satu per Satu';
+  } else {
+    btn.disabled = true; btn.textContent = '⏳ Mengunduh...';
+    for (const { page, fileName } of named) {
+      const url = URL.createObjectURL(new Blob([page.bytes], { type: 'application/pdf' }));
+      const a = document.createElement('a'); a.href = url; a.download = fileName; a.click();
+      URL.revokeObjectURL(url);
+      await new Promise(r => setTimeout(r, 300));
+    }
+    btn.disabled = false; btn.innerHTML = '📁 Download File Satu per Satu';
+  }
+}
+
+// ── RESET ──────────────────────────────────────────────────────────
+function resetAll() {
+  pdfFiles = []; pages = [];
+  processedFiles = new Set();
+  hasProcessedOnce = false;
+  pageSeq = 0;
+  document.getElementById('fileList').innerHTML = '';
+  document.getElementById('inPdf').value = '';
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('fileActions').style.display = 'none';
+  document.getElementById('newFileHint').style.display = 'none';
+  setNameMode('manual');
+  ['dot1', 'dot2'].forEach((id, i) => { const d = document.getElementById(id); d.classList.remove('done'); d.textContent = i + 1; });
+  checkReady();
+}
+
+// ── TOAST ──────────────────────────────────────────────────────────
+function showToast(msg, type) {
+  type = type || 'info';
+  const t = document.getElementById('toast');
+  const icons = { success: '✅', error: '❌', warn: '⚠️', info: '💡' };
+  const colors = { success: '#10B981', error: '#EF4444', warn: '#F59E0B', info: '#60A5FA' };
+  t.innerHTML = `<span style="font-size:15px">${icons[type] || '💡'}</span><span>${msg}</span>`;
+  t.style.borderLeft = `3px solid ${colors[type] || colors.info}`;
+  t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(20px)'; }, 3000);
+}
+</script>
+
+<script src="../assets/js/cursor-bridge.js"></script>
+</body>
+</html>
